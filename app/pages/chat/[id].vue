@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ThreadRecord } from "#shared/types/thread";
+import { resumeOptionsFromThread } from "~/composables/chat/providers/eve/thread-state";
 import { useChatNavigation } from "~/composables/chat/navigation";
 import { useAuthorizationChallenges } from "~/composables/chat/useAuthorizationChallenges";
 import { useStreamLog } from "~/composables/chat/providers/eve/stream-log";
@@ -7,15 +9,36 @@ import { useChatSession } from "~/composables/chat/useChatSession";
 const route = useRoute();
 const chatId = computed(() => route.params.id as string);
 
+interface ThreadPageData {
+  thread: ThreadRecord;
+  resume: ReturnType<typeof resumeOptionsFromThread>;
+}
+
+const { data, error, pending: resumePending } = await useAsyncData(
+  () => `thread-${chatId.value}`,
+  async (): Promise<ThreadPageData> => {
+    const { thread } = await $fetch<{ thread: ThreadRecord }>(`/api/threads/${chatId.value}`);
+    return { thread, resume: resumeOptionsFromThread(thread) };
+  },
+  { watch: [chatId], server: false },
+);
+
+if (error.value || !data.value?.thread) {
+  await navigateTo("/");
+}
+
+const thread = computed(() => data.value!.thread);
+
 const {
   messages,
   status,
-  error,
+  error: chatError,
   isBusy,
   sendMessage,
   sendInputResponses,
   stop,
-} = useChatSession(chatId);
+  retry,
+} = useChatSession(chatId, () => data.value?.resume ?? {});
 
 const { consumePendingOnMount } = useChatNavigation(chatId);
 const { resetTurnEventCounts } = useStreamLog();
@@ -40,13 +63,7 @@ onMounted(() => {
     onUnmounted(() => window.removeEventListener("focus", onFocus));
   }
 
-  if (consumePendingOnMount(sendMessage)) {
-    return;
-  }
-
-  if (messages.value.length === 0) {
-    void navigateTo("/");
-  }
+  consumePendingOnMount(sendMessage);
 });
 
 function handleSubmit(e: Event) {
@@ -72,14 +89,24 @@ function handleInputResponses(responses: Parameters<typeof sendInputResponses>[0
       <Navbar>
         <template #title>
           <p class="truncate text-sm font-medium text-highlighted">
-            Chat
+            {{ thread.title }}
           </p>
         </template>
       </Navbar>
     </template>
 
     <template #body>
-      <div class="flex flex-1">
+      <div
+        v-if="resumePending"
+        class="flex flex-1 items-center justify-center text-sm text-dimmed"
+      >
+        Loading chat…
+      </div>
+
+      <div
+        v-else
+        class="flex flex-1"
+      >
         <UContainer class="flex flex-1 flex-col gap-4 sm:gap-6">
           <UChatMessages
             should-auto-scroll
@@ -122,7 +149,7 @@ function handleInputResponses(responses: Parameters<typeof sendInputResponses>[0
 
           <UChatPrompt
             v-model="input"
-            :error="error"
+            :error="chatError"
             variant="subtle"
             class="sticky bottom-0 z-10 [view-transition-name:chat-prompt] rounded-b-none"
             :ui="{ base: 'px-1.5' }"
@@ -136,6 +163,7 @@ function handleInputResponses(responses: Parameters<typeof sendInputResponses>[0
                 color="neutral"
                 size="sm"
                 @stop="stop()"
+                @reload="retry()"
               />
             </template>
           </UChatPrompt>

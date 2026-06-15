@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { agent } from "~~/shared/agent";
 import { startNewChat } from "~/composables/chat/navigation";
+import { useThreadList } from "~/composables/chat/useThreads";
 
 const sidebarOpen = ref(false);
 const searchOpen = ref(false);
+
+const { threads, pending, refresh } = useThreadList();
 
 const searchGroups = computed(() => [
   {
@@ -19,6 +22,17 @@ const searchGroups = computed(() => [
       },
     ],
   },
+  ...(threads.value.length
+    ? [{
+        id: "threads",
+        label: "Recent chats",
+        items: threads.value.map(thread => ({
+          label: thread.title,
+          to: `/chat/${thread.id}`,
+          icon: "i-lucide-message-square",
+        })),
+      }]
+    : []),
 ]);
 
 defineShortcuts({
@@ -91,17 +105,13 @@ defineShortcuts({
           </template>
         </UNavigationMenu>
 
-        <div
+        <ChatThreadList
           v-if="!collapsed"
-          class="mt-4 px-3"
-        >
-          <p class="mb-2 text-xs font-medium text-muted">
-            Recent
-          </p>
-          <p class="text-sm text-dimmed">
-            No conversations yet. Chat history is coming soon.
-          </p>
-        </div>
+          class="mt-4 min-h-0 flex-1"
+          :threads="threads"
+          :pending="pending"
+          @refresh="refresh()"
+        />
       </template>
 
       <template #footer />
@@ -109,7 +119,7 @@ defineShortcuts({
 
     <UDashboardSearch
       v-model:open="searchOpen"
-      placeholder="Search actions..."
+      placeholder="Search chats and actions..."
       :groups="searchGroups"
     />
 

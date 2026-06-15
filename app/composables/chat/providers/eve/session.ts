@@ -1,13 +1,36 @@
+import type { EveMessageData } from "eve/vue";
 import type { MaybeRefOrGetter } from "vue";
 import { computed, toValue } from "vue";
 import type { AgentInputResponse } from "~/components/AgentInputRequest.vue";
-import type { ChatSession } from "~/composables/chat/types";
+import type { ChatSession, ChatSessionOptions } from "~/composables/chat/types";
 import { toUIMessages } from "./adapter";
 import { getOrCreateEveAgent } from "./init";
 
-export function createEveChatSession(chatId: MaybeRefOrGetter<string>): ChatSession {
+function lastUserMessageText(data: EveMessageData) {
+  for (let index = data.messages.length - 1; index >= 0; index -= 1) {
+    const message = data.messages[index];
+    if (message?.role !== "user") continue;
+
+    const text = message.parts
+      .filter(part => part.type === "text")
+      .map(part => part.text)
+      .join("\n")
+      .trim();
+
+    if (text) return text;
+  }
+}
+
+export function createEveChatSession(
+  chatId: MaybeRefOrGetter<string>,
+  options?: MaybeRefOrGetter<ChatSessionOptions | undefined>,
+): ChatSession {
   const id = computed(() => toValue(chatId));
-  const agent = computed(() => getOrCreateEveAgent(id.value));
+  const resolvedOptions = computed(() => toValue(options));
+  const agent = computed(() => getOrCreateEveAgent(id.value, {
+    initialSession: resolvedOptions.value?.initialSession,
+    initialEvents: resolvedOptions.value?.initialEvents,
+  }));
 
   const messages = computed(() => toUIMessages(agent.value.data.value.messages));
 
@@ -36,6 +59,15 @@ export function createEveChatSession(chatId: MaybeRefOrGetter<string>): ChatSess
     agent.value.reset();
   }
 
+  async function retry() {
+    if (isBusy.value) return;
+
+    const text = lastUserMessageText(agent.value.data.value);
+    if (!text) return;
+
+    await agent.value.send({ message: text });
+  }
+
   return {
     messages,
     status,
@@ -45,5 +77,6 @@ export function createEveChatSession(chatId: MaybeRefOrGetter<string>): ChatSess
     sendInputResponses,
     stop,
     reset,
+    retry,
   };
 }

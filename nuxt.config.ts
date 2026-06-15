@@ -2,9 +2,6 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui", "@comark/nuxt", "eve/nuxt", "@nuxthub/core"],
   css: ["~/assets/css/main.css"],
   devtools: { enabled: true },
-  experimental: {
-    viewTransition: true,
-  },
   compatibilityDate: "latest",
   hub: {
     db: "sqlite",

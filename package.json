@@ -11,10 +11,12 @@
     "dev": "node scripts/ensure-eve-dev.mjs && nuxt dev",
     "start": "nuxt preview",
     "typecheck": "nuxt typecheck",
-    "auth:migrate": "npx @better-auth/cli migrate --config ./server/utils/auth.ts"
+    "db:generate": "nuxt db generate",
+    "db:migrate": "nuxt db migrate"
   },
   "dependencies": {
     "@comark/nuxt": "^0.4.0",
+    "@libsql/client": "^0.17.3",
     "@nuxt/ui": "^4.8.2",
     "@nuxthub/core": "^0.10.7",
     "@shikijs/langs": "^4.2.0",

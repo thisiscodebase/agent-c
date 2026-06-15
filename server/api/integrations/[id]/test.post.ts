@@ -1,17 +1,11 @@
 import { getConnector } from "~~/server/connectors";
+import { connectorIdParamsSchema } from "~~/server/schemas/integrations";
 import { mintUserToken, probeStatus } from "~~/server/utils/connect";
 import { throwConnectError } from "~~/server/utils/errors";
 import { requireSessionUserId } from "~~/server/utils/session";
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, "id");
-
-  if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Missing connector id",
-    });
-  }
+  const { id } = await getValidatedRouterParams(event, connectorIdParamsSchema.parse);
 
   const connector = getConnector(id);
   const userId = await requireSessionUserId(event);

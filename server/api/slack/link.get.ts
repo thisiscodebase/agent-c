@@ -1,11 +1,11 @@
-import { getPendingSlackLinkCode } from "~~/lib/slack-link-codes";
-import { getSlackLinkForAppUser, toSlackLinkSummary } from "~~/lib/slack-links";
+import { getPendingSlackLinkCode } from "~~/server/utils/slack-link-codes";
+import { getSlackLinkForAppUser, toSlackLinkSummary } from "~~/server/utils/slack-links";
 import { requireSessionUserId } from "~~/server/utils/session";
 
 export default defineEventHandler(async (event) => {
   const appUserId = await requireSessionUserId(event);
-  const link = getSlackLinkForAppUser(appUserId);
-  const pending = getPendingSlackLinkCode(appUserId);
+  const link = await getSlackLinkForAppUser(appUserId);
+  const pending = await getPendingSlackLinkCode(appUserId);
 
   return {
     ...toSlackLinkSummary(link),

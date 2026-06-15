@@ -8,19 +8,21 @@
   },
   "scripts": {
     "build": "nuxt build",
-    "dev": "node scripts/ensure-auth-db.mjs && node scripts/ensure-eve-dev.mjs && nuxt dev",
+    "dev": "node scripts/ensure-eve-dev.mjs && nuxt dev",
     "start": "nuxt preview",
     "typecheck": "nuxt typecheck",
-    "auth:migrate": "npx @better-auth/cli migrate --config ./auth.ts"
+    "auth:migrate": "npx @better-auth/cli migrate --config ./server/utils/auth.ts"
   },
   "dependencies": {
     "@comark/nuxt": "^0.4.0",
     "@nuxt/ui": "^4.8.2",
+    "@nuxthub/core": "^0.10.7",
     "@shikijs/langs": "^4.2.0",
     "@vercel/connect": "0.2.3",
     "ai": "7.0.0-canary.165",
     "better-auth": "^1.6.18",
-    "better-sqlite3": "^12.10.0",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "eve": "beta",
     "nuxt": "^4.4.8",
     "shiki": "^4.2.0",
@@ -29,14 +31,8 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "25.9.1",
     "typescript": "^5.9.3",
     "vue-tsc": "^2.2.12"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "better-sqlite3"
-    ]
   }
 }

@@ -6,8 +6,12 @@ import {
   type SlackContext,
   type SlackMessage,
 } from "eve/channels/slack";
-import { resolveSlackInboundAuth } from "../../lib/slack-app-auth";
-import { consumeSlackLinkCode, parseSlackLinkCommand } from "../../lib/slack-link-codes";
+import { buildAppSessionAuth } from "../../shared/slack-auth";
+import {
+  consumeSlackLinkCodeRemote,
+  fetchSlackLinkForMember,
+  parseSlackLinkCommand,
+} from "../lib/slack-internal";
 
 async function slackUserProfile(ctx: SlackContext, userId: string) {
   const res = await ctx.slack.request("users.info", { user: userId });
@@ -51,7 +55,7 @@ async function tryHandleSlackLinkCommand(
   }
 
   const profile = await slackUserProfile(ctx, userId);
-  const result = consumeSlackLinkCode({
+  const result = await consumeSlackLinkCodeRemote({
     code,
     slackTeamId: teamId,
     slackUserId: userId,
@@ -73,6 +77,35 @@ async function tryHandleSlackLinkCommand(
 
   await ctx.thread.post(reason);
   return true;
+}
+
+async function resolveSlackInboundAuth(
+  slackAuth: ReturnType<typeof defaultSlackAuth>,
+  member: {
+    teamId?: string | null;
+    userId: string;
+    userName?: string;
+    displayName?: string;
+    email?: string;
+  },
+) {
+  if (!member.teamId) {
+    return slackAuth;
+  }
+
+  const link = await fetchSlackLinkForMember(member.teamId, member.userId);
+  if (!link) {
+    return slackAuth;
+  }
+
+  return buildAppSessionAuth(link.appUserId, {
+    email: member.email ?? link.slackEmail,
+    name: member.displayName ?? link.slackDisplayName,
+    slack_team_id: member.teamId,
+    slack_user_id: member.userId,
+    slack_user_name: member.userName ?? link.slackUserName,
+    linked: "true",
+  });
 }
 
 async function buildSlackTurn(ctx: SlackContext, message: SlackMessage) {
@@ -118,7 +151,7 @@ async function buildSlackTurn(ctx: SlackContext, message: SlackMessage) {
     return null;
   }
 
-  const auth = resolveSlackInboundAuth(slackAuth, {
+  const auth = await resolveSlackInboundAuth(slackAuth, {
     teamId: message.teamId,
     userId,
     userName: profile?.userName ?? message.author?.userName,

@@ -1,8 +1,8 @@
-import { deleteSlackLinkForAppUser } from "~~/lib/slack-links";
+import { deleteSlackLinkForAppUser } from "~~/server/utils/slack-links";
 import { requireSessionUserId } from "~~/server/utils/session";
 
 export default defineEventHandler(async (event) => {
   const appUserId = await requireSessionUserId(event);
-  const removed = deleteSlackLinkForAppUser(appUserId);
+  const removed = await deleteSlackLinkForAppUser(appUserId);
   return { removed };
 });

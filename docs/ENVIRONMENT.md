@@ -115,13 +115,17 @@ On Vercel, Eve handles provider configuration through the platform. For local de
 
 ## Vercel Connect (optional)
 
-Integrations use [Vercel Connect](https://vercel.com/docs/connect) — no extra env vars in this repo, but you must:
+Integrations use [Vercel Connect](https://vercel.com/docs/connect) — no extra env vars in this repo for Linear or GitHub OAuth, but you must:
 
-1. Create Connect resources (Linear MCP, Slack) in your Vercel team
-2. Update the Slack slug in [`agent/channels/slack.ts`](../agent/channels/slack.ts) (default: `slack/v`)
+1. Create Connect resources (GitHub, Linear MCP, Slack) in your Vercel team
+2. Update connector UIDs in [`shared/connect.ts`](../shared/connect.ts) (GitHub) or [`agent/channels/slack.ts`](../agent/channels/slack.ts) (Slack, default: `slack/v`)
 3. Connect clients in **Settings → Integrations** in the app
 
 See [Customization](./CUSTOMIZATION.md#integrations) for setup steps.
+
+## GitHub (optional)
+
+GitHub tools use per-user OAuth via Vercel Connect. Connect in **Settings → Integrations**, then start a new chat session so GitHub tools load at `session.started`.
 
 ## Local-only files
 
@@ -138,13 +142,4 @@ Reset the local database:
 
 ```bash
 rm -rf .data/db && pnpm db:migrate
-```
-
-### Eve dev timeout
-
-If `pnpm dev` fails with `Timed out waiting for Eve to print its server URL`, clear stale Eve artifacts and retry:
-
-```bash
-rm -rf .eve node_modules/.cache/eve
-pnpm dev
 ```

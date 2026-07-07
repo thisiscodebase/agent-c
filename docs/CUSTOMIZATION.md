@@ -89,6 +89,21 @@ Skills are markdown files in [`agent/skills/`](../agent/skills/). See [`daily-su
 
 ## 6. Integrations
 
+### GitHub
+
+Uses Vercel Connect OAuth and [@github-tools/sdk/eve](https://github-tools.com/frameworks/eve). Connector UID: [`shared/connect.ts`](../shared/connect.ts) (`GITHUB_CONNECTOR`), registry: [`server/connectors.ts`](../server/connectors.ts), tools: [`agent/tools/github.ts`](../agent/tools/github.ts).
+
+1. Create a GitHub connector in Vercel Connect:
+
+   ```bash
+   vercel connect create github --name personal-agent
+   vercel connect attach github/personal-agent
+   ```
+
+2. Update `GITHUB_CONNECTOR` in [`shared/connect.ts`](../shared/connect.ts) if it differs from `vercel connect list`
+3. Open **Settings → Integrations** and connect
+4. Ask about repos, PRs, or issues in chat
+
 ### Linear
 
 Uses Vercel Connect MCP (`mcp.linear.app/linear`). Connection logic: [`agent/connections/linear.ts`](../agent/connections/linear.ts).

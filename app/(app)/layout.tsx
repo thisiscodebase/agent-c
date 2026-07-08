@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "~~/auth";
+import { AppShell } from "~/components/app-shell";
 
 export default async function AuthenticatedLayout({
   children,
@@ -11,5 +12,5 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  return children;
+  return <AppShell>{children}</AppShell>;
 }

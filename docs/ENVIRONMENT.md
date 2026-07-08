@@ -20,30 +20,32 @@ Vercel Connect–verified webhook. There is no reason to duplicate these onto
 
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
-- Domain-restriction parameter (`hd`) for CodeBase's Workspace domain —
-  confirm whether this is an env var or a config value in `auth.ts`; either
-  way it belongs alongside the above.
+- `GOOGLE_WORKSPACE_DOMAIN` — CodeBase's Workspace domain. Resolved: this is
+  a plain env var, read directly into the `hd` option of Better Auth's
+  Google provider config in `server/utils/auth.ts` (not a Better Auth
+  built-in env var name — just app config sourced from the environment).
 
 ## Changed — persistence (`web`, and `eve` if it holds its own DB client)
 
 NuxtHub's SQLite/D1 connection variables are replaced with a Postgres
 connection string against Supabase:
 
-- `DATABASE_URL` — Supabase Postgres connection string (direct connection or
-  pooled via Supavisor/PgBouncer, depending on whether `eve` needs a
-  persistent connection or transaction-style pooling — confirm which mode
-  Drizzle should target), replacing whatever NuxtHub-specific variable
-  upstream uses for its SQLite binding.
-- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` (or `SUPABASE_ANON_KEY`, if
-  any client-side Supabase SDK usage is added beyond Drizzle-over-Postgres)
-  — only needed if something beyond raw Postgres access is used, e.g.
-  Supabase Storage for artifact exports or the Supabase client for
-  RLS-aware queries. If Drizzle talks to Supabase purely as a Postgres
-  connection string, these may not be required at all — confirm during
-  implementation.
-- `pgvector` is enabled per-project via the Supabase dashboard/CLI
-  (`create extension vector`), not something to gate behind a separate
-  migration flag.
+- `DATABASE_URL` — Supabase Postgres connection string. **Resolved: pooled,
+  via Supavisor in transaction mode** (port `6543` on a hosted project;
+  `127.0.0.1:54322` for local `supabase start`) — Vercel Functions are
+  serverless and would otherwise exhaust Postgres's direct connection limit.
+  The driver is configured with `{ prepare: false }` since transaction-mode
+  pooling doesn't support prepared statements.
+- `DIRECT_URL` — the unpooled connection, used only by `drizzle-kit`
+  migrations (`drizzle.config.ts`).
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — **not currently used.**
+  Drizzle talks to Supabase purely as a Postgres connection string via
+  `postgres-js` (`server/db/client.ts`); add these only if something beyond
+  raw Postgres access is introduced later (e.g. Supabase Storage for
+  artifact exports).
+- `pgvector` is enabled via a Drizzle-generated migration
+  (`create extension if not exists vector;`) rather than the Supabase
+  dashboard, so it's tracked the same way as the rest of the schema.
 
 ## Added — connectors (`eve`)
 
@@ -67,13 +69,14 @@ Beyond the Slack connector variables already present upstream:
 ## Unchanged from upstream
 
 - Slack connector/channel variables (the surface itself is retained as-is).
-- The internal bearer-token variable used for `web` → `eve` calls.
+- The internal bearer-token variable used for `web` → `eve` calls
+  (`INTERNAL_API_SECRET`).
 - Model/provider API key(s) for the Eve agent runtime.
 
 ## Action item
 
-This file should be treated as provisional until someone actually runs
-`vercel connect` provisioning for the Drive and HubSpot connectors and sets
-up the Supabase project — replace the descriptive bullets above with the
-real variable names once that's done, the same way upstream's
-`ENVIRONMENT.md` lists exact names rather than descriptions.
+Google auth and Postgres/Supabase variables above are now concrete (Phase 0-2
+implemented). The Drive and HubSpot connector variable names in the section
+above remain provisional until Phase 3's `vercel connect` provisioning
+(Drive) and HubSpot MCP server setup actually happen — replace those
+descriptive bullets with real variable names at that point.

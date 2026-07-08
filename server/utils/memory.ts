@@ -1,5 +1,5 @@
 import { and, asc, eq } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db, schema } from "~~/server/db/client";
 import {
   MEMORY_CATEGORIES,
   type MemoryByCategory,
@@ -8,6 +8,7 @@ import {
   type MemorySource,
 } from "#shared/types/memory";
 import { normalizeMemoryContent, parseMemoryImport } from "~~/server/utils/memory-import";
+import { createError } from "~~/server/utils/http-error";
 
 function emptyByCategory(): MemoryByCategory {
   return {

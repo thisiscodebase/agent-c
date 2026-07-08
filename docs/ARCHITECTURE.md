@@ -48,17 +48,17 @@ nothing in our requirements pushes toward collapsing it.
 
 ## Framework: web service
 
-The upstream template ships Nuxt for `web`. Nothing else in the architecture
-is Nuxt-specific — the `agent/` service, the Drizzle schema, and Better
-Auth's core logic are all framework-agnostic (Better Auth ships adapters for
-both Nuxt and Next.js; Vercel Connect ships adapters for both Better Auth and
-Auth.js). If the team has a stronger React preference, swapping `web` to
-Next.js or TanStack Start is a frontend + thin server-route rewrite, not an
-architecture change, and is cheaper to do now (Phase 0) than after
-case-study UI has been built out on top of Nuxt. This repo's `web/`
-implementation should note which framework was ultimately chosen and treat
-the other two as the rejected alternatives, not as an open question left
-unresolved.
+**Resolved: Next.js (App Router).** The upstream template ships Nuxt for
+`web`; nothing else in the architecture was Nuxt-specific, so the swap was a
+frontend + route-handler rewrite, not an architecture change. Confirmed via
+`eve/next`'s own docs that its deploy topology (single Vercel project, `eve`
+mounted behind the main app on the same origin via `withEve()`) matches
+`eve/nuxt`'s — the existing two-service `vercel.json` (`experimentalServices.web`
++ `.eve`) carried over unchanged, just with `web.framework` switched from
+`"nuxtjs"` to `"nextjs"`. TanStack Start was the rejected alternative; the
+Next.js ecosystem's maturity (shadcn/ui, Vercel AI Elements for the chat
+surface) was the deciding factor. Better Auth and Drizzle needed no
+architectural change — both already had first-class Next.js support.
 
 ## Auth
 
@@ -88,13 +88,26 @@ the template's original single-user use case.
 Supabase over a plain hosted Postgres option mainly for two reasons:
 `pgvector` is supported natively, so no separate decision is needed for the
 semantic-search work in the *Search* section below; and Row Level Security
-is a genuine fit for the artifact visibility problem described under *Data
-model* — draft-vs-published, and per-source-permission gating, can be
-enforced as Postgres policies rather than purely in application code. Worth
-deciding during implementation whether RLS is actually used for that gating
-or whether it stays application-level for simplicity — either is workable,
-but Supabase makes RLS available as a direct option in a way a plain
-Postgres host wouldn't.
+was a candidate fit for the artifact visibility problem described under
+*Data model* — draft-vs-published, and per-source-permission gating.
+
+**Resolved: application-level enforcement, not RLS.** Drizzle connects via a
+single service-role Postgres connection from the server layer (`server/db/client.ts`),
+not per-user browser sessions with anon keys and propagated JWT claims — RLS
+would need that plumbing added with no clear benefit, given the codebase
+already does all per-user authorization in application code (e.g.
+`requireSessionUserId`, which already scopes every query by `userId`). This
+applies once the artifact tables land in Phase 4; no RLS policies are
+planned.
+
+**Resolved: pooled connection, via Supabase's Supavisor in transaction
+mode**, not a direct connection. Vercel Functions are serverless and open
+many short-lived connections per invocation, which would exhaust Postgres's
+direct connection limit at 20-100-user scale. `DATABASE_URL` points at the
+pooler (transaction mode, port 6543 on a hosted project); `DIRECT_URL` is the
+unpooled connection, used only by `drizzle-kit` migrations. Transaction-mode
+pooling doesn't support prepared statements, so the Postgres client is
+configured with `{ prepare: false }`.
 
 ## Data model: generic artifacts, not case-study-specific tables
 
@@ -152,9 +165,9 @@ Two different retrieval problems, handled differently:
 | Source | Mechanism | Auth model | Notes |
 |---|---|---|---|
 | Slack (surface) | Native Vercel Connect Slack connector | App-level | Already solved upstream — receiving/replying to messages |
-| Slack (search) | Same connector, used for search rather than receipt | Per-user preferred | Confirm whether the SDK needs a separate connection object |
+| Slack (search) | **Resolved: same connection/app object as the surface channel**, expanded scopes | Per-user preferred | Slack's 2026 Real-time Search API (`assistant.search.context`, granular `search:read.public`/`search:read.private`), not the legacy `search:read` scope (which exposes DMs with no filtering) |
 | Google Drive | Vercel Connect generic OAuth connector | **Per-user** | No dedicated Drive connector yet. Per-user is required: Drive's fine-grained folder sharing is the actual access boundary, and a service-account/app-level credential would let the agent (and therefore anyone who can talk to it) bypass that boundary. See "Auth model for connectors" below. |
-| HubSpot | Generic OAuth connector or third-party HubSpot MCP (e.g. Composio) | App-level (default) | No dedicated connector either. CRM visibility is typically uniform across a company; revisit as per-user if HubSpot access at CodeBase turns out to be team-restricted. |
+| HubSpot | **Resolved: HubSpot's own official first-party MCP server** (shipped 2026) | App-level (default) | Not Vercel Connect (no native HubSpot connector exists) and not a third-party router like Composio. CRM visibility is typically uniform across a company; revisit as per-user if HubSpot access at CodeBase turns out to be team-restricted. |
 
 ### Auth model for connectors
 
@@ -178,7 +191,9 @@ actually restricts each system.
 ## Removed surfaces / example scaffolding
 
 - **Sendblue/iMessage channel** — not a requirement, removed entirely rather
-  than left dormant.
+  than left dormant. The phone-linking feature (`phone_links` table, profile
+  phone field, link UI) existed solely to support this channel and was
+  removed with it — no other consumer touched it.
 - **`weather.ts` example tool** — removed; it was upstream's placeholder tool
   example.
 - **Linear connection** — removed; not a CodeBase data source.

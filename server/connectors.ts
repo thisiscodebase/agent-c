@@ -1,5 +1,6 @@
 import type { ConnectorDef } from "#shared/types/connector";
 import { GITHUB_CONNECTOR } from "#shared/connect";
+import { createError } from "~~/server/utils/http-error";
 
 export const connectors: ConnectorDef[] = [
   {

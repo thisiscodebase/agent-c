@@ -1,26 +1,16 @@
 import { and, desc, eq } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db, schema } from "~~/server/db/client";
 import type { ThreadRecord, ThreadState, ThreadSummary } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
+import { createError } from "~~/server/utils/http-error";
 
 const LIST_LIMIT = 50;
 
-function parseThreadState(value: string | null): ThreadState | null {
-  if (!value) return null;
-  try {
-    const parsed = JSON.parse(value) as ThreadState;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.events)) {
-      return null;
-    }
-    return parsed;
-  }
-  catch {
+function parseThreadState(value: ThreadState | null | undefined): ThreadState | null {
+  if (!value || typeof value !== "object" || !Array.isArray(value.events)) {
     return null;
   }
-}
-
-function serializeThreadState(state: ThreadState | undefined) {
-  return state ? JSON.stringify(state) : null;
+  return value;
 }
 
 function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): ThreadState {
@@ -116,7 +106,7 @@ export async function updateThreadForUser(
       updatedAt: new Date(),
       ...(patch.title !== undefined ? { title: truncateThreadTitle(patch.title) } : {}),
       ...(patch.state !== undefined
-        ? { state: serializeThreadState(mergeThreadState(existing.state, patch.state)) }
+        ? { state: mergeThreadState(existing.state, patch.state) }
         : {}),
     })
     .where(and(

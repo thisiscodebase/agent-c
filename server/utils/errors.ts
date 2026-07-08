@@ -4,6 +4,7 @@ import {
   NoValidTokenError,
   UserAuthorizationRequiredError,
 } from "@vercel/connect";
+import { createError } from "~~/server/utils/http-error";
 
 export function throwConnectError(error: unknown): never {
   if (error instanceof UserAuthorizationRequiredError) {

@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db, schema } from "~~/server/db/client";
 import { upsertSlackLink } from "~~/server/utils/slack-links";
 
 const CODE_TTL_MS = 15 * 60 * 1000;
@@ -10,7 +10,7 @@ export async function createSlackLinkCode(appUserId: string) {
     .where(eq(schema.slackLinkCodes.appUserId, appUserId));
 
   const code = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
-  const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString();
+  const expiresAt = new Date(Date.now() + CODE_TTL_MS);
 
   await db.insert(schema.slackLinkCodes).values({
     code,
@@ -18,7 +18,7 @@ export async function createSlackLinkCode(appUserId: string) {
     expiresAt,
   });
 
-  return { code, expiresAt };
+  return { code, expiresAt: expiresAt.toISOString() };
 }
 
 export async function getPendingSlackLinkCode(appUserId: string) {
@@ -35,13 +35,13 @@ export async function getPendingSlackLinkCode(appUserId: string) {
     return undefined;
   }
 
-  if (new Date(row.expiresAt).getTime() < Date.now()) {
+  if (row.expiresAt.getTime() < Date.now()) {
     await db.delete(schema.slackLinkCodes)
       .where(eq(schema.slackLinkCodes.code, row.code));
     return undefined;
   }
 
-  return { code: row.code, expiresAt: row.expiresAt };
+  return { code: row.code, expiresAt: row.expiresAt.toISOString() };
 }
 
 export async function consumeSlackLinkCode(input: {
@@ -67,7 +67,7 @@ export async function consumeSlackLinkCode(input: {
     return { ok: false as const, reason: "invalid" as const };
   }
 
-  if (new Date(row.expiresAt).getTime() < Date.now()) {
+  if (row.expiresAt.getTime() < Date.now()) {
     await db.delete(schema.slackLinkCodes)
       .where(eq(schema.slackLinkCodes.code, normalized));
     return { ok: false as const, reason: "expired" as const };

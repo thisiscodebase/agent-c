@@ -1,6 +1,5 @@
-import type { H3Event } from "h3";
 import { and, eq } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db, schema } from "~~/server/db/client";
 import type { SlackLinkRecord, SlackLinkSummary } from "#shared/types/slack-link";
 
 export interface UpsertSlackLinkInput {
@@ -20,7 +19,7 @@ function rowToRecord(row: typeof schema.slackLinks.$inferSelect): SlackLinkRecor
     slackUserName: row.slackUserName ?? undefined,
     slackDisplayName: row.slackDisplayName ?? undefined,
     slackEmail: row.slackEmail ?? undefined,
-    linkedAt: row.linkedAt,
+    linkedAt: row.linkedAt.toISOString(),
   };
 }
 

@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { db, schema } from "@nuxthub/db";
+import { db, schema } from "~~/server/db/client";
 import type { UserProfile, UserProfilePatch, UserProfileWithUser } from "#shared/types/profile";
+import { createError } from "~~/server/utils/http-error";
 
 function rowToProfile(row: typeof schema.userProfiles.$inferSelect): UserProfile {
   return {

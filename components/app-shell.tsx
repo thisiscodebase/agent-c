@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, ToolCaseIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -47,10 +47,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         style={{ width: sidebarWidth }}
       >
         <div className="flex flex-col gap-1.5 p-3">
-          <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/")}>
-            <PlusIcon className="size-4" />
-            New chat
-          </Button>
+          <div className="flex gap-1.5">
+            <Button className="flex-1 justify-start" variant="outline" onClick={() => navigate("/")}>
+              <PlusIcon className="size-4" />
+              New
+            </Button>
+            <Button className="flex-1 justify-start" type="button" variant="outline">
+              <ToolCaseIcon className="size-4" />
+              Files
+            </Button>
+          </div>
           <Button className="w-full justify-between" variant="ghost" onClick={() => setPaletteOpen(true)}>
             <span className="flex items-center gap-2">
               <SearchIcon className="size-4" />
@@ -60,24 +66,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 px-3">
-          <nav className="flex flex-col gap-4 pb-3">
+        <ScrollArea className="min-w-0 flex-1 px-3">
+          <nav className="flex min-w-0 flex-col gap-4 pb-3">
             {groups.map((group) => (
               <div key={group.id}>
                 <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
-                <div className="flex flex-col gap-0.5">
+                <div className="flex min-w-0 flex-col gap-0.5">
                   {group.items.map((thread) => (
-                    <div key={thread.id} className="group flex items-center gap-1">
+                    <div key={thread.id} className="group relative flex min-w-0 items-center">
                       <Link
-                        className="min-w-0 flex-1 truncate rounded-md px-2 py-1.5 text-sm hover:bg-accent"
+                        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 pr-2 text-sm group-hover:pr-8 hover:bg-accent"
                         data-active={thread.id === activeChatId}
                         href={`/chat/${thread.id}`}
                       >
-                        {thread.title}
-                        <span className="ml-2 text-xs text-muted-foreground">{formatThreadTime(thread.updatedAt)}</span>
+                        <span className="min-w-0 truncate">{thread.title}</span>
+                        <span className="shrink-0 text-xs text-muted-foreground group-hover:hidden">
+                          {formatThreadTime(thread.updatedAt)}
+                        </span>
                       </Link>
                       <Button
-                        className="hidden shrink-0 group-hover:inline-flex"
+                        className="absolute right-0 hidden shrink-0 group-hover:inline-flex"
                         size="icon-sm"
                         variant="ghost"
                         onClick={() => void deleteThread(thread.id, activeChatId)}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { EveMessage } from "eve/react";
+import { cn } from "~/lib/utils";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -9,20 +10,23 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "~/components/ui/message-scroller";
+import { chatFooterSpacerClass, chatScrollButtonClass } from "./chat-layout";
 import { ChatMessage } from "./chat-message";
 
 export function MessageList({
   messages,
   onRespond,
+  className,
 }: {
   messages: readonly EveMessage[];
   onRespond: (requestId: string, optionId: string) => void;
+  className?: string;
 }) {
   return (
     <MessageScrollerProvider autoScroll>
-      <MessageScroller className="flex-1">
+      <MessageScroller className={cn("h-full", className)}>
         <MessageScrollerViewport>
-          <MessageScrollerContent>
+          <MessageScrollerContent className={chatFooterSpacerClass}>
             {messages.length === 0 ? (
               <div className="flex size-full flex-col items-center justify-center gap-3 p-8 text-center">
                 <div className="space-y-1">
@@ -39,7 +43,7 @@ export function MessageList({
             )}
           </MessageScrollerContent>
         </MessageScrollerViewport>
-        <MessageScrollerButton />
+        <MessageScrollerButton className={chatScrollButtonClass} />
       </MessageScroller>
     </MessageScrollerProvider>
   );

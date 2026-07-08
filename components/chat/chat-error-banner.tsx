@@ -4,6 +4,7 @@ import { AlertTriangleIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
+import { chatContentClass } from "./chat-layout";
 
 export function ChatErrorBanner({ error }: { error: Error | undefined }) {
   const [dismissedError, setDismissedError] = useState<Error | undefined>(undefined);
@@ -11,8 +12,9 @@ export function ChatErrorBanner({ error }: { error: Error | undefined }) {
   if (!error || error === dismissedError) return null;
 
   return (
-    <div className="border-t bg-background p-3">
-      <Alert variant="destructive">
+    <div className="pb-2">
+      <div className={chatContentClass}>
+        <Alert variant="destructive">
         <AlertTriangleIcon />
         <AlertTitle>Something went wrong</AlertTitle>
         <AlertDescription>{error.message}</AlertDescription>
@@ -22,6 +24,7 @@ export function ChatErrorBanner({ error }: { error: Error | undefined }) {
           </Button>
         </AlertAction>
       </Alert>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,12 @@ import {
   PromptInputTools,
 } from "~/components/ai-elements/prompt-input";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
+import {
+  chatContentClass,
+  chatFloatingFooterClass,
+  chatFooterFadeClass,
+  chatFooterInputAreaClass,
+} from "./chat-layout";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { MessageList } from "./message-list";
 
@@ -21,25 +27,31 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative h-full">
       <MessageList messages={agent.data.messages} onRespond={respondToInput} />
 
-      <ChatErrorBanner error={agent.error} />
+      <div className={chatFloatingFooterClass}>
+        <div aria-hidden className={chatFooterFadeClass} />
 
-      <div className="border-t p-4">
-        <PromptInput
-          onSubmit={(message) => {
-            if (message.text.trim()) void agent.send({ message: message.text });
-          }}
-        >
-          <PromptInputBody>
-            <PromptInputTextarea disabled={isBusy} />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <PromptInputTools />
-            <PromptInputSubmit status={agent.status} onStop={agent.stop} />
-          </PromptInputFooter>
-        </PromptInput>
+        <div className={chatFooterInputAreaClass}>
+          <ChatErrorBanner error={agent.error} />
+
+          <div className={chatContentClass}>
+            <PromptInput
+              onSubmit={(message) => {
+                if (message.text.trim()) void agent.send({ message: message.text });
+              }}
+            >
+              <PromptInputBody>
+                <PromptInputTextarea disabled={isBusy} />
+              </PromptInputBody>
+              <PromptInputFooter>
+                <PromptInputTools />
+                <PromptInputSubmit status={agent.status} onStop={agent.stop} />
+              </PromptInputFooter>
+            </PromptInput>
+          </div>
+        </div>
       </div>
     </div>
   );

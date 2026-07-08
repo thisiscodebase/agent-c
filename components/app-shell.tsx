@@ -1,8 +1,10 @@
 "use client";
 
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CommandPalette } from "~/components/command-palette";
 import { Button } from "~/components/ui/button";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
@@ -17,13 +19,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const groups = useThreadGroups(threads);
   const { navigate, deleteThread } = useChatNavigation();
 
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   return (
     <div className="flex h-dvh">
+      <CommandPalette onOpenChange={setPaletteOpen} open={paletteOpen} />
+
       <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/30">
-        <div className="p-3">
+        <div className="flex flex-col gap-1.5 p-3">
           <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/")}>
             <PlusIcon className="size-4" />
             New chat
+          </Button>
+          <Button className="w-full justify-between" variant="ghost" onClick={() => setPaletteOpen(true)}>
+            <span className="flex items-center gap-2">
+              <SearchIcon className="size-4" />
+              Search
+            </span>
+            <kbd className="text-xs text-muted-foreground">⌘K</kbd>
           </Button>
         </div>
 

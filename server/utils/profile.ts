@@ -1,11 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "@nuxthub/db";
 import type { UserProfile, UserProfilePatch, UserProfileWithUser } from "#shared/types/profile";
-import {
-  deletePhoneLinkForAppUser,
-  getPhoneLinkForAppUser,
-  upsertPhoneLinkForAppUser,
-} from "~~/server/utils/phone-links";
 
 function rowToProfile(row: typeof schema.userProfiles.$inferSelect): UserProfile {
   return {
@@ -63,13 +58,10 @@ export async function getProfileWithUser(userId: string): Promise<UserProfileWit
     ? rowToProfile(row.profile)
     : await getOrCreateProfileForUser(userId);
 
-  const phoneLink = await getPhoneLinkForAppUser(userId);
-
   return {
     ...profile,
     name: row.user.name,
     email: row.user.email,
-    phoneNumber: phoneLink?.phoneNumber,
   };
 }
 
@@ -89,16 +81,6 @@ export async function updateProfileForUser(userId: string, patch: UserProfilePat
       ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
     })
     .where(eq(schema.userProfiles.userId, userId));
-
-  if (patch.phoneNumber !== undefined) {
-    const phone = patch.phoneNumber?.trim() ?? "";
-    if (phone) {
-      await upsertPhoneLinkForAppUser(userId, phone);
-    }
-    else {
-      await deletePhoneLinkForAppUser(userId);
-    }
-  }
 
   return getProfileWithUser(userId);
 }

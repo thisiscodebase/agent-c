@@ -1,9 +1,5 @@
 import type { ConnectorDef } from "#shared/types/connector";
 import { GITHUB_CONNECTOR } from "#shared/connect";
-import {
-  fetchLinearIssuesViaGraphql,
-  fetchLinearIssuesViaMcp,
-} from "~~/server/utils/linear-mcp";
 
 export const connectors: ConnectorDef[] = [
   {
@@ -21,7 +17,7 @@ export const connectors: ConnectorDef[] = [
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/vnd.github+json",
-            "User-Agent": "personal-agent-template",
+            "User-Agent": "codebase-agent",
           },
         });
 
@@ -31,31 +27,6 @@ export const connectors: ConnectorDef[] = [
 
         const repos = await res.json() as Array<{ full_name: string }>;
         return repos.map(repo => repo.full_name);
-      },
-    },
-  },
-  {
-    id: "linear",
-    name: "Linear",
-    description: "Issues, projects, cycles, and comments in your Linear workspace.",
-    connector: "mcp.linear.app/linear",
-    connectionName: "linear",
-    icon: "i-simple-icons-linear",
-    scopes: [],
-    test: {
-      label: "List my issues",
-      run: async (token) => {
-        const mcpResult = await fetchLinearIssuesViaMcp(token);
-        if (mcpResult.ok) {
-          return mcpResult.results;
-        }
-
-        const graphqlResult = await fetchLinearIssuesViaGraphql(token);
-        if (graphqlResult.ok) {
-          return graphqlResult.results;
-        }
-
-        throw new Error(mcpResult.error ?? graphqlResult.error ?? "Linear test failed");
       },
     },
   },

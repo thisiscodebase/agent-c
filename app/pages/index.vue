@@ -39,9 +39,9 @@ const quickChats = [
     action: () => createChat("What can you help me with?"),
   },
   {
-    label: "What is the weather in Paris?",
-    icon: "i-lucide-sun",
-    action: () => createChat("What is the weather in Paris?"),
+    label: "What have we done for [customer]?",
+    icon: "i-lucide-search",
+    action: () => createChat("What have we done for [customer]?"),
   },
   {
     label: "Summarize my day",
@@ -69,7 +69,7 @@ const quickChats = [
               {{ greeting }}
             </h1>
             <p class="text-sm text-muted sm:text-base">
-              V — your personal agent
+              CodeBase Agent
             </p>
           </div>
 

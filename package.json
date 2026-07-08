@@ -1,15 +1,14 @@
 {
-  "name": "personal-agent-template",
+  "name": "agent-c",
   "version": "0.0.0",
-  "description": "A durable personal AI assistant template built with Eve, Nuxt 4, and Better Auth",
+  "description": "CodeBase Agent — an internal lookup-and-synthesis assistant for CodeBase, built with Eve, Next.js, and Better Auth",
   "license": "MIT",
-  "author": "Hugo Richard",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vercel-labs/personal-agent-template"
+    "url": "https://github.com/thisiscodebase/agent-c"
   },
   "bugs": {
-    "url": "https://github.com/vercel-labs/personal-agent-template/issues"
+    "url": "https://github.com/thisiscodebase/agent-c/issues"
   },
   "engines": {
     "node": ">=24"
@@ -39,7 +38,6 @@
     "ai": "^7.0.16",
     "better-auth": "^1.6.23",
     "chat": "^4.32.0",
-    "chat-adapter-sendblue": "^0.2.0",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "eve": "^0.20.0",

@@ -47,9 +47,6 @@ export function parseTestResult(line: string): ParsedTestResult {
 }
 
 export function testResultsHeading(connectorId: string) {
-  if (connectorId === "linear") {
-    return "Issues";
-  }
   if (connectorId === "github") {
     return "Repositories";
   }
@@ -57,7 +54,6 @@ export function testResultsHeading(connectorId: string) {
 }
 
 const CONNECTION_ICONS: Record<string, string> = {
-  linear: "i-simple-icons-linear",
   github: "i-simple-icons-github",
   slack: "i-simple-icons-slack",
 };

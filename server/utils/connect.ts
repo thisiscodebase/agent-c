@@ -44,11 +44,7 @@ function isMissingGrantError(error: unknown) {
 }
 
 function connectCreateCommand(def: ConnectorDef) {
-  if (def.id === "github") {
-    return "vercel connect create github --name personal-agent";
-  }
-
-  return "vercel connect create mcp.linear.app --name linear";
+  return `vercel connect create ${def.id} --name codebase-agent`;
 }
 
 function formatSetupHint(def: ConnectorDef, reason: "missing" | "not_linked") {

@@ -1,6 +1,6 @@
-# Personal Agent Template
+# CodeBase Agent
 
-Durable personal AI assistant built with Eve and Nuxt.
+Internal lookup-and-synthesis assistant for CodeBase, built with Eve and Nuxt (migrating to Next.js — see `docs/ROADMAP.md`).
 
 ## Quick Reference
 
@@ -16,9 +16,9 @@ Durable personal AI assistant built with Eve and Nuxt.
 ## Structure
 
 ```
-personal-agent-template/
+agent-c/
 ├── agent/          # Eve agent (channels, tools, skills, connections)
-├── app/            # Nuxt UI (pages, components, composables)
+├── app/            # Nuxt UI (pages, components, composables) — migrating to Next.js
 ├── server/         # Nitro API, Drizzle schema, server utils
 ├── shared/         # Cross-layer types and helpers
 └── docs/           # Architecture, environment, customization
@@ -33,7 +33,7 @@ personal-agent-template/
 
 ## Eve Framework
 
-This project uses Eve with a Nuxt frontend (`eve/nuxt` module). Before writing agent code, read the relevant guide in `node_modules/eve/dist/docs/public/`.
+This project uses Eve with a Nuxt frontend (`eve/nuxt` module), migrating to Next.js (`eve/next`, `withEve()`). Before writing agent code, read the relevant guide in `node_modules/eve/docs/`.
 
 ## Internal API Pattern
 

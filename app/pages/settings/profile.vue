@@ -6,7 +6,6 @@ const { memory, pending: memoryPending } = useMemory();
 
 const form = reactive({
   name: "",
-  phoneNumber: "",
   timezone: "UTC",
   locale: "en",
   bio: "",
@@ -18,7 +17,6 @@ const toast = useToast();
 const isDirty = computed(() => {
   if (!profile.value) return false;
   return form.name !== profile.value.name
-    || form.phoneNumber !== (profile.value.phoneNumber ?? "")
     || form.timezone !== profile.value.timezone
     || form.locale !== profile.value.locale
     || form.bio !== profile.value.bio;
@@ -27,7 +25,6 @@ const isDirty = computed(() => {
 watch(profile, (value) => {
   if (!value) return;
   form.name = value.name;
-  form.phoneNumber = value.phoneNumber ?? "";
   form.timezone = value.timezone;
   form.locale = value.locale;
   form.bio = value.bio;
@@ -40,7 +37,6 @@ async function handleSave() {
   try {
     await saveProfile({
       name: form.name.trim(),
-      phoneNumber: form.phoneNumber.trim() || null,
       timezone: form.timezone,
       locale: form.locale,
       bio: form.bio,
@@ -59,7 +55,6 @@ async function handleSave() {
 function resetForm() {
   if (!profile.value) return;
   form.name = profile.value.name;
-  form.phoneNumber = profile.value.phoneNumber ?? "";
   form.timezone = profile.value.timezone;
   form.locale = profile.value.locale;
   form.bio = profile.value.bio;
@@ -105,7 +100,7 @@ function resetForm() {
         >
           <SettingsSection
             title="Profile"
-            description="How V identifies you across web, Slack, and iMessage."
+            description="How CodeBase Agent identifies you across web and Slack."
           >
             <SettingsRow
               label="Name"
@@ -125,16 +120,6 @@ function resetForm() {
               <p class="text-sm text-toned">
                 {{ profile?.email }}
               </p>
-            </SettingsRow>
-
-            <SettingsRow
-              label="Phone"
-              description="Your E.164 number for iMessage linking via Sendblue."
-            >
-              <ProfilePhoneInput
-                v-model="form.phoneNumber"
-                :default-country="form.locale === 'fr' ? 'FR' : 'US'"
-              />
             </SettingsRow>
 
             <SettingsRow

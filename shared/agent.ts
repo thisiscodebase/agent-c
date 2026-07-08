@@ -1,10 +1,10 @@
 // Customize agent branding here (name, slug, tagline, avatar).
 export const agent = {
-  name: "V",
-  slug: "v",
-  tagline: "What do you need?",
+  name: "CodeBase Agent",
+  slug: "codebase-agent",
+  tagline: "Ask across Drive, HubSpot, and Slack.",
   description:
-    "Remembers your context across conversations and channels.",
+    "Looks up information across CodeBase's Drive, HubSpot, and Slack, and turns it into case studies and reports.",
   avatar: {
     icon: "i-lucide-bot",
   },

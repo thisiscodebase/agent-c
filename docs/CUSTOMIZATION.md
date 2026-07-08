@@ -1,158 +1,100 @@
-# Customization Guide
+# Customization
 
-> Back to [README](../README.md) | See also: [Environment](./ENVIRONMENT.md), [Architecture](./ARCHITECTURE.md)
+Concrete diff from upstream `vercel-labs/personal-agent-template`, organized
+the way the upstream `CUSTOMIZATION.md` walkthrough is (rebrand → persona →
+tools → connections → skills), plus the schema and UI work that has no
+upstream equivalent.
 
-Personal Agent Template ships with **V** as the example persona. This guide covers how to fork and make it yours.
+## 1. Rebrand
 
-## 1. Rename your agent
+- `shared/agent.ts`, `app/app.config.ts`, `package.json` — renamed from the
+  template's example persona to CodeBase Agent.
+- `agent/lib/base-instructions.ts` — rewritten system prompt: an internal
+  lookup-and-synthesis assistant for CodeBase, not a personal assistant.
+  Should state plainly what it's for (case studies, reports, cross-source
+  lookup) and what it isn't (not a coding agent, not a replacement for
+  Drive/HubSpot/Slack's own search).
 
-### Branding metadata
+## 2. Deleted
 
-Edit [`shared/agent.ts`](../shared/agent.ts):
+Removed rather than left dormant, to avoid anyone building on stale example
+code:
 
-```typescript
-export const agent = {
-  name: "My Agent",
-  slug: "my-agent",
-  tagline: "Your personal AI assistant",
-  description: "Remembers your context across conversations and channels.",
-  avatar: {
-    icon: "i-lucide-bot", // or any Lucide icon
-  },
-} as const;
-```
+- `agent/channels/sendblue.ts` (iMessage) — not a requirement.
+- `agent/tools/weather.ts` — upstream's placeholder example tool.
+- `agent/connections/linear.ts` — not a CodeBase data source.
 
-Also update site metadata in [`app/app.config.ts`](../app/app.config.ts) (`site.name`, `site.title`, `site.description`, `site.tagline`).
+## 3. Kept and repurposed
 
-Replace branding assets in [`public/`](../public/):
+- `agent/skills/daily-summary.md` — kept, rewritten as the case-study-
+  relevant activity digest described in `ARCHITECTURE.md`. This is the one
+  piece of upstream example content judged good enough to build on directly
+  rather than replace.
 
-| File | Purpose |
-|------|---------|
-| `banner.png` | README hero banner |
-| `og.png` | Open Graph / Twitter card preview |
-| `favicon.ico` | Browser tab icon |
+## 4. New tools (`agent/tools/`)
 
-Use your own design files when ready — keep them in `public/` and update `site.ogImage` in [`app/app.config.ts`](../app/app.config.ts) if the path changes.
+- `search_artifacts.ts` — hybrid (keyword + semantic) search over the
+  `artifacts` store, with a `type` filter (`case_study`, `daily_summary`,
+  `report`, `note`, ...) rather than a case-study-only search tool.
+- `generate_report.ts` — synthesizes an artifact's `content_markdown` into
+  an exportable file (Google Doc via Drive API, or `.docx`/`.pdf`/`.xlsx`
+  via file-creation), a distinct action from saving/updating the artifact
+  itself.
+- `search_drive.ts`, `search_hubspot.ts` (or folded into the connection
+  files directly, TBD during implementation) — live queries against each
+  connector's native search, per `ARCHITECTURE.md`'s search section.
 
-This name appears in the navbar, settings, and integration cards.
+## 5. New connections (`agent/connections/`)
 
-### Persona and behavior
+- `drive.ts` — Vercel Connect generic OAuth connector, per-user token
+  subject.
+- `hubspot.ts` — generic OAuth connector or a third-party HubSpot MCP,
+  app-level token subject by default.
+- Slack connection retained from upstream; confirm whether search usage
+  needs a distinct connection object from the channel-receiving one.
 
-Edit [`agent/lib/base-instructions.ts`](../agent/lib/base-instructions.ts) — system prompt, tone, tool usage rules, memory behavior.
+## 6. Schema (`server/db/schema/`)
 
-Search the codebase for `V` to update remaining UI copy in Vue components.
+New, in addition to what's carried over from the Postgres migration:
 
-### Package metadata
+- `artifacts`
+- `artifact_sources`
+- `artifact_chunks` (requires the `pgvector` extension, enabled on the
+  Supabase project)
 
-Update [`package.json`](../package.json) `name`, `description`, and `repository` if you publish your fork.
+Upstream's `user_memory` table is retained as-is for personal preferences;
+it is deliberately *not* extended or repurposed to hold case-study content.
 
-## 2. Change the AI model
+## 7. UI (`app/`)
 
-Edit [`agent/agent.ts`](../agent/agent.ts):
+- `app/pages/case-studies/` — new. Browse, review, and publish artifacts.
+  This is also where the governance step lives: an artifact synthesized from
+  a Drive/HubSpot source doesn't auto-publish to the shared store without a
+  review pass, since per-user Drive access controls what the agent can
+  *read*, not what should become company-wide visible content once
+  synthesized.
+- `app/components/chat/tool/` — new components for `search_artifacts` and
+  `generate_report` tool-call rendering, alongside whatever upstream tool UI
+  components are kept.
+- `app/pages/{chat,settings,login}.vue` (or React/TanStack equivalents,
+  depending on the framework decision in `ARCHITECTURE.md`) — restyled for
+  the CodeBase persona; login updated for Google OAuth.
 
-```typescript
-export default defineAgent({
-  model: "anthropic/claude-sonnet-4.6", // change provider/model
-  // ...
-});
-```
+## 8. Auth (`server/utils/auth.ts`)
 
-See Eve docs for supported models and provider options.
+Better Auth's email/password provider replaced with the Google provider,
+domain-restricted (`hd` parameter) to CodeBase's Google Workspace domain.
+Slack continues to use upstream's account-linking flow rather than becoming
+a second login provider.
 
-## 3. Memory categories
+## Open decisions to close out during implementation
 
-Categories are defined in [`shared/types/memory.ts`](../shared/types/memory.ts):
-
-- `MEMORY_CATEGORIES` — enum values
-- `MEMORY_CATEGORY_LABELS` — UI labels
-- `MEMORY_CATEGORY_HEADERS` — import parser aliases
-
-If you add or rename categories, also update:
-
-- [`shared/memory/export-prompt.ts`](../shared/memory/export-prompt.ts) — ChatGPT export prompt
-- [`agent/tools/save_memory.ts`](../agent/tools/save_memory.ts) — imports categories from shared types
-
-Each category stores **one prose block**. Saves replace the entire block, not partial deltas.
-
-## 4. Add a tool
-
-1. Create `agent/tools/my-tool.ts` using Eve's `defineTool`
-2. Register it in Eve's tool discovery (auto-loaded from `agent/tools/` by convention — verify in Eve docs)
-3. Add a UI component in `app/components/chat/tool/` if the tool needs custom rendering
-4. Wire the component in [`app/components/chat/message/MessageContentEve.vue`](../app/components/chat/message/MessageContentEve.vue)
-
-See existing tools: [`agent/tools/weather.ts`](../agent/tools/weather.ts), [`agent/tools/save_memory.ts`](../agent/tools/save_memory.ts).
-
-## 5. Add a skill
-
-Skills are markdown files in [`agent/skills/`](../agent/skills/). See [`daily-summary.md`](../agent/skills/daily-summary.md) for an example. Reference skills from home quick actions in [`app/pages/index.vue`](../app/pages/index.vue).
-
-## 6. Integrations
-
-### GitHub
-
-Uses Vercel Connect OAuth and [@github-tools/sdk/eve](https://github-tools.com/frameworks/eve). Connector UID: [`shared/connect.ts`](../shared/connect.ts) (`GITHUB_CONNECTOR`), registry: [`server/connectors.ts`](../server/connectors.ts), tools: [`agent/tools/github.ts`](../agent/tools/github.ts).
-
-1. Create a GitHub connector in Vercel Connect:
-
-   ```bash
-   vercel connect create github --name personal-agent
-   vercel connect attach github/personal-agent
-   ```
-
-2. Update `GITHUB_CONNECTOR` in [`shared/connect.ts`](../shared/connect.ts) if it differs from `vercel connect list`
-3. Open **Settings → Integrations** and connect
-4. Ask about repos, PRs, or issues in chat
-
-### Linear
-
-Uses Vercel Connect MCP (`mcp.linear.app/linear`). Connection logic: [`agent/connections/linear.ts`](../agent/connections/linear.ts).
-
-1. Create a Linear MCP connector in Vercel Connect
-2. Open **Settings → Integrations** and connect
-3. Ask about issues in chat
-
-### Slack
-
-1. Create a Slack connector in Vercel Connect
-2. Replace the slug in [`agent/channels/slack.ts`](../agent/channels/slack.ts):
-
-```typescript
-credentials: connectSlackCredentials("slack/your-slug"),
-```
-
-3. Connect in **Settings → Integrations**
-4. Link accounts: generate a code in the app, then DM `link <code>` to the bot
-
-Slack linking uses the internal API — `INTERNAL_API_SECRET` must be set.
-
-### Sendblue (iMessage)
-
-Reach the agent over iMessage via [Sendblue](https://chat-sdk.dev/adapters/vendor-official/sendblue). Channel logic: [`agent/channels/sendblue.ts`](../agent/channels/sendblue.ts).
-
-1. Create a Sendblue account and copy API credentials + assigned number from the [dashboard](https://dashboard.sendblue.com) (or `@sendblue/cli`: `sendblue setup`, `sendblue show-keys`, `sendblue lines`)
-2. Set `SENDBLUE_*` env vars on the **eve** service — see [Environment](./ENVIRONMENT.md#sendblue-imessage-optional)
-3. Point the Sendblue receive webhook at `https://<your-domain>/_eve_internal/eve/eve/v1/sendblue/webhook`
-4. Users add their E.164 phone number in **Settings → Profile**, then message the Sendblue number from that phone
-
-Phone linking uses the internal API (`GET /api/internal/phone/link`) — `INTERNAL_API_SECRET` must be set.
-
-Tool approvals (`save_memory`) and OAuth prompts are delivered as plain-text iMessage with a link to the web chat — there is no button UI on iMessage.
-
-### Phone number (profile)
-
-Users add an E.164 number on **Profile**. Required for Sendblue/iMessage auth — the inbound sender number must match the linked profile phone.
-
-## 7. Theme the UI
-
-- Global styles: [`app/assets/css/main.css`](../app/assets/css/main.css)
-- Nuxt UI config: [`app/app.config.ts`](../app/app.config.ts)
-- Layout and navigation: [`app/layouts/default.vue`](../app/layouts/default.vue), [`app/components/Navbar.vue`](../app/components/Navbar.vue)
-
-## 8. Deploy your fork
-
-See [Deploy on Vercel](../README.md#deploy-on-vercel) in the README. Remember:
-
-- Dual services: `web` + `eve` ([`vercel.json`](../vercel.json))
-- Same env vars on both services
-- Run migrations for production database
+- **Framework for `web`**: Nuxt (upstream default) vs. Next.js vs. TanStack
+  Start. See `ARCHITECTURE.md` — decide in Phase 0, before case-study UI is
+  built, since the cost of switching only grows from here.
+- **Slack search vs. Slack channel**: confirm in the Eve/Vercel Connect docs
+  whether these need separate connection objects or can share one.
+- **HubSpot connector mechanism**: generic OAuth connector vs. a third-party
+  MCP server (e.g. Composio) — depends on how much of HubSpot's object model
+  (deals, companies, custom properties) the generic connector exposes versus
+  what a dedicated MCP server would.

@@ -1,7 +1,14 @@
 "use client";
 
 import type { EveMessage } from "eve/react";
-import { Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton } from "~/components/ai-elements/conversation";
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "~/components/ui/message-scroller";
 import { ChatMessage } from "./chat-message";
 
 export function MessageList({
@@ -12,15 +19,28 @@ export function MessageList({
   onRespond: (requestId: string, optionId: string) => void;
 }) {
   return (
-    <Conversation>
-      <ConversationContent>
-        {messages.length === 0 ? (
-          <ConversationEmptyState description="Send a message to get started" title="No messages yet" />
-        ) : (
-          messages.map((message) => <ChatMessage key={message.id} message={message} onRespond={onRespond} />)
-        )}
-      </ConversationContent>
-      <ConversationScrollButton />
-    </Conversation>
+    <MessageScrollerProvider autoScroll>
+      <MessageScroller className="flex-1">
+        <MessageScrollerViewport>
+          <MessageScrollerContent>
+            {messages.length === 0 ? (
+              <div className="flex size-full flex-col items-center justify-center gap-3 p-8 text-center">
+                <div className="space-y-1">
+                  <h3 className="font-medium text-sm">No messages yet</h3>
+                  <p className="text-muted-foreground text-sm">Send a message to get started</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
+                  <ChatMessage message={message} onRespond={onRespond} />
+                </MessageScrollerItem>
+              ))
+            )}
+          </MessageScrollerContent>
+        </MessageScrollerViewport>
+        <MessageScrollerButton />
+      </MessageScroller>
+    </MessageScrollerProvider>
   );
 }

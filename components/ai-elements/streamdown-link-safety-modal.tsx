@@ -2,10 +2,13 @@
 
 import type { LinkSafetyModalProps } from "streamdown";
 import { CheckIcon, CopyIcon, ExternalLinkIcon, XIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Streamdown's default link-safety modal renders inline next to the link.
@@ -20,6 +23,9 @@ export function StreamdownLinkSafetyModal({
 }: LinkSafetyModalProps) {
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -30,14 +36,57 @@ export function StreamdownLinkSafetyModal({
       return;
     }
 
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const frame = window.requestAnimationFrame(() => {
+      closeButtonRef.current?.focus();
+    });
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        event.preventDefault();
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) {
+        return;
+      }
+
+      const focusable = [
+        ...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+      ].filter((el) => !el.hasAttribute("disabled") && el.tabIndex !== -1);
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+
+      if (event.shiftKey) {
+        if (document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
 
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    };
   }, [isOpen, onClose]);
 
   const copyUrl = useCallback(async () => {
@@ -65,22 +114,18 @@ export function StreamdownLinkSafetyModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-sm"
       data-streamdown="link-safety-modal"
       onClick={onClose}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          onClose();
-        }
-      }}
       role="presentation"
     >
       <div
+        ref={dialogRef}
         aria-labelledby="streamdown-link-safety-title"
         aria-modal="true"
         className="relative mx-4 flex w-full max-w-md flex-col gap-4 rounded-xl border bg-background p-6 shadow-lg"
         onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
         role="dialog"
       >
         <Button
+          ref={closeButtonRef}
           aria-label="Close"
           className="absolute top-4 right-4"
           size="icon-sm"

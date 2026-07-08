@@ -6,8 +6,10 @@ import { withRoute } from "~~/server/utils/route-handler";
 
 export const GET = withRoute(async (request: Request) => {
   const appUserId = await requireSessionUserId(request.headers);
-  const link = await getSlackLinkForAppUser(appUserId);
-  const pending = await getPendingSlackLinkCode(appUserId);
+  const [link, pending] = await Promise.all([
+    getSlackLinkForAppUser(appUserId),
+    getPendingSlackLinkCode(appUserId),
+  ]);
 
   return NextResponse.json({
     ...toSlackLinkSummary(link),

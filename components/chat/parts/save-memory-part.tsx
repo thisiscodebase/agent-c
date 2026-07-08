@@ -39,8 +39,8 @@ export function SaveMemoryPart({
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         {input?.reason ? <p className="text-muted-foreground">{input.reason}</p> : null}
-        {(input?.updates ?? []).map((update, index) => (
-          <div className="rounded-md border p-3" key={index}>
+        {(input?.updates ?? []).map((update) => (
+          <div className="rounded-md border p-3" key={update.category}>
             <p className="font-medium">{MEMORY_CATEGORY_LABELS[update.category]}</p>
             <p className="whitespace-pre-wrap text-muted-foreground">{update.content}</p>
           </div>

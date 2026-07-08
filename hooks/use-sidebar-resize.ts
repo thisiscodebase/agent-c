@@ -6,6 +6,7 @@ const STORAGE_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 256;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 480;
+const KEYBOARD_STEP = 8;
 
 function clampWidth(width: number) {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width));
@@ -23,6 +24,10 @@ function readStoredWidth() {
 
   const parsed = Number.parseInt(stored, 10);
   return Number.isNaN(parsed) ? DEFAULT_WIDTH : clampWidth(parsed);
+}
+
+function persistWidth(width: number) {
+  window.localStorage.setItem(STORAGE_KEY, String(width));
 }
 
 export function useSidebarResize() {
@@ -54,7 +59,7 @@ export function useSidebarResize() {
       document.removeEventListener("mouseup", onMouseUp);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
-      window.localStorage.setItem(STORAGE_KEY, String(widthRef.current));
+      persistWidth(widthRef.current);
     }
 
     document.body.style.cursor = "col-resize";
@@ -63,5 +68,24 @@ export function useSidebarResize() {
     document.addEventListener("mouseup", onMouseUp);
   }, []);
 
-  return { width, startResize, minWidth: MIN_WIDTH, maxWidth: MAX_WIDTH };
+  const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
+
+    event.preventDefault();
+    const delta = event.key === "ArrowRight" ? KEYBOARD_STEP : -KEYBOARD_STEP;
+    const nextWidth = clampWidth(widthRef.current + delta);
+    widthRef.current = nextWidth;
+    setWidth(nextWidth);
+    persistWidth(nextWidth);
+  }, []);
+
+  return {
+    width,
+    startResize,
+    onKeyDown,
+    minWidth: MIN_WIDTH,
+    maxWidth: MAX_WIDTH,
+  };
 }

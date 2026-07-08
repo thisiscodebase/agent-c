@@ -22,9 +22,11 @@ export function useThreadList() {
   };
 }
 
+const THREAD_TIME = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+
 export function formatThreadTime(timestamp: number) {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(timestamp));
+  return THREAD_TIME.format(new Date(timestamp));
 }

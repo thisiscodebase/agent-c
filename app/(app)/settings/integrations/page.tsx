@@ -42,8 +42,8 @@ function ConnectorRow({ connector }: { connector: ConnectorSummary }) {
           <div className="text-sm">
             <p className="font-medium">{c.resultsHeading}</p>
             <ul className="list-inside list-disc">
-              {c.parsedResults.map((result, index) => (
-                <li key={index}>{result.title}</li>
+              {c.parsedResults.map((result) => (
+                <li key={result.id ?? result.tag ?? result.title}>{result.title}</li>
               ))}
             </ul>
           </div>

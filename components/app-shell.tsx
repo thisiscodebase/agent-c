@@ -38,7 +38,8 @@ export function AppShell({
   const { navigate, deleteThread } = useChatNavigation();
 
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const { width: sidebarWidth, startResize, minWidth, maxWidth } = useSidebarResize();
+  const { width: sidebarWidth, startResize, onKeyDown: onResizeKeyDown, minWidth, maxWidth } =
+    useSidebarResize();
   const { data: session } = authClient.useSession();
   const user = session?.user ?? serverUser;
 
@@ -148,13 +149,16 @@ export function AppShell({
         </div>
 
         <div
+          aria-label="Resize sidebar"
           aria-orientation="vertical"
           aria-valuemax={maxWidth}
           aria-valuemin={minWidth}
           aria-valuenow={sidebarWidth}
           className="absolute top-0 right-0 z-10 h-full w-1 translate-x-1/2 cursor-col-resize touch-none hover:bg-border/60 active:bg-border"
+          onKeyDown={onResizeKeyDown}
           onMouseDown={startResize}
           role="separator"
+          tabIndex={0}
         />
       </aside>
 

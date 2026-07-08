@@ -1,13 +1,14 @@
 # CodeBase Agent
 
-Internal lookup-and-synthesis assistant for CodeBase, built with Eve and Nuxt (migrating to Next.js — see `docs/ROADMAP.md`).
+Internal lookup-and-synthesis assistant for CodeBase, built with Eve and
+Next.js (see `docs/ROADMAP.md` / `docs/PROGRESS.md`).
 
 ## Quick Reference
 
 | Command | Description |
 |---------|-------------|
 | `pnpm install` | Install dependencies |
-| `pnpm dev` | Start Nuxt + Eve dev server |
+| `pnpm dev` | Start Next.js + Eve dev server |
 | `pnpm build` | Production build |
 | `pnpm typecheck` | TypeScript check |
 | `pnpm db:generate` | Generate Drizzle migrations |
@@ -18,32 +19,51 @@ Internal lookup-and-synthesis assistant for CodeBase, built with Eve and Nuxt (m
 ```
 agent-c/
 ├── agent/          # Eve agent (channels, tools, skills, connections)
-├── app/            # Nuxt UI (pages, components, composables) — migrating to Next.js
-├── server/         # Nitro API, Drizzle schema, server utils
-├── shared/         # Cross-layer types and helpers
-└── docs/           # Architecture, environment, customization
+├── app/            # Next.js App Router UI
+├── components/     # React UI (chat, shadcn, AI Elements)
+├── server/         # Auth, db, connectors registry, internal API
+├── shared/         # Cross-layer types and config
+└── docs/           # Architecture, environment, customization, progress
 ```
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) — System design, request flows, internal API
-- [Environment](docs/ENVIRONMENT.md) — Environment variables
-- [Customization](docs/CUSTOMIZATION.md) — Rename agent, add tools, integrations
+- [Architecture](docs/ARCHITECTURE.md) — System design, connectors, search
+- [Connect](docs/CONNECT.md) — Vercel Connect vs DIY, pricing, demo setup
+- [Environment](docs/ENVIRONMENT.md) — Env vars + Connect provisioning
+- [Customization](docs/CUSTOMIZATION.md) — Diff from upstream template
+- [Progress](docs/PROGRESS.md) — Phase status
 - [README](README.md) — Quick start and feature overview
 
 ## Eve Framework
 
-This project uses Eve with a Nuxt frontend (`eve/nuxt` module), migrating to Next.js (`eve/next`, `withEve()`). Before writing agent code, read the relevant guide in `node_modules/eve/docs/`.
+This project uses Eve with Next.js (`eve/next`, `withEve()`). Before writing
+agent code, read the relevant guide in `node_modules/eve/docs/`.
+
+## Connectors (Phase 3)
+
+Live lookup sources (MCP / search tools), registered in
+[`server/connectors.ts`](server/connectors.ts) and
+[`agent/connections/`](agent/connections/):
+
+- Drive — `drivemcp.googleapis.com` (per-user)
+- HubSpot — `mcp.hubspot.com` (app-scoped default)
+- Notion — `mcp.notion.com/mcp` (per-user)
+- Slack search — `agent/tools/search_slack.ts` on Connect app `slack/v`
+
+UIDs: [`shared/connect.ts`](shared/connect.ts). Provision via
+`vercel connect` — see [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).
 
 ## Internal API Pattern
 
-The Eve agent calls Nuxt over HTTP:
+The Eve agent calls the web service over HTTP:
 
 ```
 agent/lib/*-internal.ts  →  /api/internal/*  →  server/utils/*
 ```
 
-Authenticated with `Authorization: Bearer <INTERNAL_API_SECRET>`. See [`server/utils/internal-api.ts`](server/utils/internal-api.ts).
+Authenticated with `Authorization: Bearer <INTERNAL_API_SECRET>`. See
+[`server/utils/internal-api.ts`](server/utils/internal-api.ts).
 
 ## Memory Flow
 
@@ -59,5 +79,6 @@ Categories: [`shared/types/memory.ts`](shared/types/memory.ts). One prose block 
 - [`agent/lib/base-instructions.ts`](agent/lib/base-instructions.ts) — persona
 - [`agent/channels/slack.ts`](agent/channels/slack.ts) — Slack Connect slug
 - [`agent/agent.ts`](agent/agent.ts) — AI model
+- [`shared/connect.ts`](shared/connect.ts) — connector UIDs
 
 See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for details.

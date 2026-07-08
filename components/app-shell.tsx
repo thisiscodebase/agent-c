@@ -3,7 +3,7 @@
 import { PlusIcon, SearchIcon, ToolCaseIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CommandPalette } from "~/components/command-palette";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
@@ -14,7 +14,22 @@ import { useThreadGroups } from "~/hooks/chat/use-thread-groups";
 import { useSidebarResize } from "~/hooks/use-sidebar-resize";
 import { authClient } from "~/lib/auth-client";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+type ShellUser = {
+  name?: string | null;
+  image?: string | null;
+};
+
+function userInitial(user: ShellUser | undefined) {
+  return user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
+}
+
+export function AppShell({
+  children,
+  user: serverUser,
+}: {
+  children: React.ReactNode;
+  user: ShellUser;
+}) {
   const params = useParams<{ id?: string }>();
   const activeChatId = typeof params.id === "string" ? params.id : undefined;
 
@@ -25,18 +40,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { width: sidebarWidth, startResize, minWidth, maxWidth } = useSidebarResize();
   const { data: session } = authClient.useSession();
-  const user = session?.user;
+  const user = session?.user ?? serverUser;
+
+  const startNewChat = useCallback(() => {
+    navigate("/");
+  }, [navigate]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
+      if (!(event.metaKey || event.ctrlKey)) {
+        return;
+      }
+
+      if (event.key === "k") {
         event.preventDefault();
         setPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      if (event.key === "n") {
+        event.preventDefault();
+        startNewChat();
       }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [startNewChat]);
 
   return (
     <div className="flex h-dvh">
@@ -48,9 +77,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="flex flex-col gap-1.5 p-3">
           <div className="flex gap-1.5">
-            <Button className="flex-1 justify-start" variant="outline" onClick={() => navigate("/")}>
-              <PlusIcon className="size-4" />
-              New
+            <Button className="flex-1 justify-between" variant="outline" onClick={startNewChat}>
+              <span className="flex items-center gap-1.5">
+                <PlusIcon className="size-4" />
+                New
+              </span>
+              <kbd className="text-xs text-muted-foreground">⌘N</kbd>
             </Button>
             <Button className="flex-1 justify-start" type="button" variant="outline">
               <ToolCaseIcon className="size-4" />
@@ -109,7 +141,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <Avatar size="sm">
               <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
-              <AvatarFallback>{user?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+              <AvatarFallback>{userInitial(user)}</AvatarFallback>
             </Avatar>
             Settings
           </Button>

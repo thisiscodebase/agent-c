@@ -122,10 +122,10 @@ they share one schema rather than one table per output type:
   `interventions[]`, `growth_metrics`) without requiring a dedicated table
   per type.
 - **`artifact_sources`** — `artifact_id, source_type (drive | hubspot |
-  slack), source_ref, source_url`. Provenance and audit trail: which
-  documents, deals, or threads a given artifact was synthesized from. This
-  is also the hook for a review gate — an artifact built from a
-  Drive/HubSpot source that turns out to be access-restricted shouldn't
+  notion | slack), source_ref, source_url`. Provenance and audit trail: which
+  documents, deals, pages, or threads a given artifact was synthesized from.
+  This is also the hook for a review gate — an artifact built from a
+  Drive/HubSpot/Notion source that turns out to be access-restricted shouldn't
   auto-publish to the whole-company store just because the source was
   readable by the agent.
 - **`artifact_chunks`** — `artifact_id, heading_path, content, embedding
@@ -142,11 +142,11 @@ multiple ways without the storage layer needing to know which one gets used.
 
 Two different retrieval problems, handled differently:
 
-- **External sources (Drive, HubSpot, Slack)** — queried live via MCP
-  connector tool calls against each service's own search API, not
-  pre-indexed by us. Building and maintaining a Notion-Enterprise-Search-style
-  indexing pipeline per external source is a large, ongoing engineering
-  investment that isn't justified for v1.
+- **External sources (Drive, HubSpot, Notion, Slack)** — queried live via MCP
+  connector tool calls (or a thin Slack search tool) against each service's
+  own search API, not pre-indexed by us. Building and maintaining a
+  federated indexing pipeline per external source is a large, ongoing
+  engineering investment that isn't justified for v1.
 - **Our own artifact store** — hybrid search, combining:
   - full-text keyword search (Postgres `tsvector` + GIN index) for exact
     terms — customer names, product terms, anything where literal wording
@@ -162,12 +162,17 @@ Two different retrieval problems, handled differently:
 
 ## Connectors
 
+Credential lifecycle (OAuth, per-user grants, token refresh) is handled by
+[Vercel Connect](CONNECT.md) — not by the MCP servers themselves. See that
+doc for provisioning, pricing, and DIY comparison.
+
 | Source | Mechanism | Auth model | Notes |
 |---|---|---|---|
-| Slack (surface) | Native Vercel Connect Slack connector | App-level | Already solved upstream — receiving/replying to messages |
-| Slack (search) | **Resolved: same connection/app object as the surface channel**, expanded scopes | Per-user preferred | Slack's 2026 Real-time Search API (`assistant.search.context`, granular `search:read.public`/`search:read.private`), not the legacy `search:read` scope (which exposes DMs with no filtering) |
-| Google Drive | Vercel Connect generic OAuth connector | **Per-user** | No dedicated Drive connector yet. Per-user is required: Drive's fine-grained folder sharing is the actual access boundary, and a service-account/app-level credential would let the agent (and therefore anyone who can talk to it) bypass that boundary. See "Auth model for connectors" below. |
-| HubSpot | **Resolved: HubSpot's own official first-party MCP server** (shipped 2026) | App-level (default) | Not Vercel Connect (no native HubSpot connector exists) and not a third-party router like Composio. CRM visibility is typically uniform across a company; revisit as per-user if HubSpot access at CodeBase turns out to be team-restricted. |
+| Slack (surface) | Native Vercel Connect Slack connector (`slack/v`) | App-level | Receiving/replying to messages via `agent/channels/slack.ts` |
+| Slack (search) | Same Connect app (`slack/v`), expanded scopes; `agent/tools/search_slack.ts` | **Per-user** | Slack Real-time Search API (`assistant.search.context`, granular `search:read.public`/`search:read.private`), not the legacy `search:read` scope |
+| Google Drive | Official Drive MCP (`https://drivemcp.googleapis.com/mcp/v1`) via Vercel Connect custom OAuth | **Per-user** | Google Workspace Developer Preview. Per-user is required: Drive folder ACLs are the security boundary. See `agent/connections/drive.ts`. |
+| HubSpot | Official HubSpot MCP (`https://mcp.hubspot.com`) via Vercel Connect | App-level (default) | Not a third-party router like Composio. CRM visibility is typically uniform; revisit as per-user if HubSpot access at CodeBase is team-restricted. See `agent/connections/hubspot.ts`. |
+| Notion | Official Notion MCP (`https://mcp.notion.com/mcp`) via Vercel Connect | **Per-user** | Hosted Notion MCP is OAuth-only (no bearer/integration token on this endpoint). See `agent/connections/notion.ts`. |
 
 ### Auth model for connectors
 
@@ -182,8 +187,8 @@ Two options per connector, and the choice isn't uniform across sources:
   the agent acts *as that user*, so the source system's own permissions
   apply for free, and actions are attributed to the real person.
 
-Drive uses per-user because its permission model is the actual security
-boundary for customer-confidential material. HubSpot defaults to app-level
+Drive and Notion use per-user because their permission models are the actual
+security boundary for confidential material. HubSpot defaults to app-level
 because CRM access is typically uniform — but this is a per-connector
 decision, not a global policy, and should be re-checked against how CodeBase
 actually restricts each system.
@@ -204,7 +209,7 @@ Upstream ships `daily-summary.md` as an example "meta-feature" skill — an
 agent-native output that only works because the agent has combined context
 across sources. Rather than deleting it as example scaffolding, it's kept
 and repurposed as a case-study-relevant activity digest (new HubSpot deal
-stages, Drive activity in tracked customer folders, Slack mentions of
+stages, Drive/Notion activity in tracked customer folders, Slack mentions of
 tracked accounts, surfaced as one periodic summary). This doubles as the
 clearest adoption lever for colleagues who haven't yet learned to ask the
 agent things directly.

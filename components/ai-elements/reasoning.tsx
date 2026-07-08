@@ -7,10 +7,8 @@ import {
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { cn } from "~/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
+import { streamdownAnimation, streamdownPlugins } from "./streamdown-config";
+import { streamdownLinkSafety } from "./streamdown-link-safety-modal";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import {
@@ -202,9 +200,6 @@ export type ReasoningContentProps = ComponentProps<
   children: string;
 };
 
-const streamdownPlugins = { cjk, code, math, mermaid };
-const streamdownAnimation = { animation: "blurIn" } as const;
-
 export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => {
     const { isStreaming } = useReasoning();
@@ -221,6 +216,7 @@ export const ReasoningContent = memo(
         <Streamdown
           animated={streamdownAnimation}
           isAnimating={isStreaming}
+          linkSafety={streamdownLinkSafety}
           plugins={streamdownPlugins}
         >
           {children}

@@ -10,14 +10,16 @@ doesn't re-explain the plan.
 
 **Chat works end-to-end** (real Google Workspace auth, real streamed AI
 responses via Vercel AI Gateway, Postgres-backed thread persistence,
-Next.js UI). That covers Phases 0-2 of the roadmap plus the Nuxt→Next.js
-framework migration. **Phases 3-5 — connectors beyond GitHub, the
-case-study/artifact data model, Slack polish — are not started.** The
-current app is a working generic chat shell; the product-specific pieces
-that make it "CodeBase Agent" per [`README.md`](../README.md) (Drive/HubSpot
-lookup, synthesis into reviewable case studies) don't exist yet.
+Next.js UI). **Phase 3 connectors are wired in code** (Drive / HubSpot /
+Notion MCP connections + Slack search tool + Integrations registry). They
+still need operator provisioning (`vercel connect create` / attach, GCP
+OAuth client for Drive, HubSpot MCP Auth App, Notion OAuth, Slack search
+scopes) before they work live — see [`docs/ENVIRONMENT.md`](ENVIRONMENT.md).
 
-All work through the UI-polish pass below is committed.
+**Phases 4–5 — artifact data model and Slack surface polish — are not
+started.** Synthesis into reviewable case studies still depends on Phase 4.
+
+All work through Phase 3 code below is ready to commit once verified.
 
 ## Shipped
 
@@ -27,40 +29,42 @@ All work through the UI-polish pass below is committed.
 | — Framework | Nuxt → Next.js | Not an original roadmap phase, but the framework decision landed on Next.js and the full app was ported (App Router, `eve/next`'s `withEve()`). Old Nuxt app kept at `app-nuxt-legacy/` as a reference — delete once Task 13 (below) is done. |
 | 1 — Auth | Done, verified live | Google Workspace OAuth (domain-restricted via `hd`), two-tier session check. Confirmed working with a real account. |
 | 2 — Persistence | Done | Postgres + Drizzle (`server/db/schema/*.ts`), pgvector enabled ahead of Phase 4, local `supabase start` verified. |
-| — Chat UI foundations | Done, verified live | Vue composables ported to React hooks (TanStack Query); Next.js UI (home, `/chat/[id]`, settings) on shadcn/AI Elements; message rendering split into reusable `components/chat/parts/*` (text via Streamdown markdown, reasoning collapse, authorization, dynamic-tool incl. a specialized `save_memory` approve/reject card); dismissable turn-error banner; Cmd+K command palette (new chat, settings, jump to any thread). Confirmed live end-to-end: new chat → streamed markdown response → thread persists → reload resumes. |
-| — Chat primitives | shadcn chat components | Adopted shadcn's June 2026 chat-components release: `MessageScroller` (`@shadcn/react`, turn-anchoring scroll with prepended-history preservation, replaces `Conversation`/`use-stick-to-bottom`), `Message`+`Bubble` (replaces the ad hoc `.is-user` CSS-group hack in `ai-elements/message.tsx`), `shimmer` CSS utility (replaces a `motion`-based `Shimmer` component — dropped the `motion` dependency). |
-| — UI primitives | Radix → Base UI | All 18 shadcn `components/ui/*` primitives migrated from `radix-ui` to `@base-ui/react`, one component per commit — see `.migration/*.md` for per-component notes and flagged behavior deltas. `components/ai-elements/*` (AI Elements) stays on Radix; see the gotcha below. |
+| — Chat UI foundations | Done, verified live | Vue composables ported to React hooks (TanStack Query); Next.js UI (home, `/chat/[id]`, settings) on shadcn/AI Elements; message rendering split into reusable `components/chat/parts/*`; dismissable turn-error banner; Cmd+K command palette. Confirmed live end-to-end. |
+| — Chat primitives | shadcn chat components | Adopted shadcn's June 2026 chat-components release: `MessageScroller`, `Message`+`Bubble`, `shimmer` CSS utility. |
+| — UI primitives | Radix → Base UI | All 18 shadcn `components/ui/*` primitives migrated from `radix-ui` to `@base-ui/react`. `components/ai-elements/*` stays on Radix. |
+| 3 — Connectors | Code done; provisioning pending | Drive MCP (`agent/connections/drive.ts`), HubSpot MCP (`hubspot.ts`), Notion MCP (`notion.ts`), Slack search tool (`agent/tools/search_slack.ts`) on same `slack/v` app. Integrations registry in `server/connectors.ts`. GitHub connector removed from product surface. |
 
 ## Remaining — original roadmap
 
-This is the actual gap between "chat works" and the product described in
-`README.md`.
+### Phase 3 — Connectors (code done; ops remaining)
 
-### Phase 3 — Connectors (not started)
+Operator steps before live verification:
 
-`agent/connections/` is empty. `server/connectors.ts` only registers
-**GitHub** — added in an earlier commit (`#8`), predates the CodeBase
-rebrand, and isn't part of the original Drive/HubSpot/Slack scope in
-`README.md`/`ROADMAP.md`. Decide whether to keep it as a bonus connector or
-drop it for scope clarity.
+1. Provision Connect connectors and update UIDs in `shared/connect.ts` if needed
+2. GCP: enable Drive + Drive MCP APIs, OAuth client for Drive (Developer Preview)
+3. HubSpot: MCP Auth App → Connect attach (app-scoped; fall back to user-scoped if needed)
+4. Notion: Connect attach for `mcp.notion.com`
+5. Slack: expand `slack/v` with Real-time Search scopes
+6. Settings → Integrations Connect / Test; chat lookup smoke tests
 
-Needed: a Drive connector (Vercel Connect generic OAuth, per-user) and a
-HubSpot connector (generic OAuth or third-party MCP). Slack's connection
-object question (search vs. channel) also still needs resolving, though the
-Slack *channel* itself (DM/`@mention` invocation) already works via
-`agent/channels/slack.ts`, reused from upstream.
+**Verification checklist (after provisioning):**
+
+- [ ] Settings → Integrations lists Drive, HubSpot, Notion, Slack search (no GitHub)
+- [ ] Drive Connect → Test lists recent files; chat can `search_files` / read content
+- [ ] HubSpot Connect/Test returns companies; chat CRM lookup works without inventing deals
+- [ ] Notion Connect → Test / chat search respects the authorizing user’s pages
+- [ ] Slack-linked user can run `search_slack` with expanded scopes
+- [ ] `pnpm typecheck` clean (already verified in Phase 3 implementation)
 
 ### Phase 4 — Artifact data model (not started)
 
 This is the core of the "Synthesis" half of the product and nothing for it
 exists yet: no `artifacts`/`artifact_sources`/`artifact_chunks` tables (see
-`ARCHITECTURE.md`'s "Data model: generic artifacts" section for the designed
-shape — one generic schema across case studies/summaries/reports, not a
-table per type), no `search_artifacts.ts` (hybrid keyword + semantic) or
-`generate_report.ts` (export to Drive/`.docx`/`.pdf`) tools, no case-study
-browser or review-before-publish UI. Blocks the daily/weekly digest
-meta-feature too — `agent/skills/daily-summary.md` was de-Linear'd in Phase 0
-but explicitly needs the fuller rework once this lands.
+`ARCHITECTURE.md`'s "Data model: generic artifacts" section — `source_type`
+includes `notion`), no `search_artifacts.ts` or `generate_report.ts` tools,
+no case-study browser or review-before-publish UI. Blocks the daily/weekly
+digest meta-feature too — `agent/skills/daily-summary.md` still needs the
+fuller rework once this lands.
 
 ### Phase 5 — Slack surface polish (not started)
 
@@ -68,10 +72,6 @@ Channel wiring works (reused from upstream), but the DM-vs-`@mention`
 invocation pattern still needs to be finalized as a config choice.
 
 ## Remaining — chat UI polish
-
-The chat shell's foundations (markdown, reasoning, tool-call, memory-approval,
-error, and command-palette patterns) are done and are the reusable base for
-future feature UI. Smaller cosmetic items still open, lower priority:
 
 - Quick-chat pill visual design (functional today via AI Elements
   `Suggestion`, just not art-directed)
@@ -82,7 +82,6 @@ future feature UI. Smaller cosmetic items still open, lower priority:
 
 - **Task 13**: once satisfied with a click-through, delete `app-nuxt-legacy/`
   and the now-unused `@iconify-json/*` devDependencies.
-- **Decide on the GitHub connector's fate** (see Phase 3 above).
 
 ## Environment
 
@@ -94,8 +93,8 @@ future feature UI. Smaller cosmetic items still open, lower priority:
 - Tailwind v4 under Turbopack needs `postcss.config.mjs` with
   `@tailwindcss/postcss` — this was missing (pre-dated this session) and
   produced a completely unstyled app; now fixed.
-- See `docs/ENVIRONMENT.md` for the full variable list; Drive/HubSpot
-  connector variable names are still provisional pending Phase 3.
+- See [`docs/ENVIRONMENT.md`](ENVIRONMENT.md) for connector provisioning
+  (Drive MCP is Google Developer Preview; HubSpot/Notion/Slack search).
 
 ## Gotchas (non-obvious, worth not re-discovering)
 
@@ -139,3 +138,8 @@ future feature UI. Smaller cosmetic items still open, lower priority:
   `CommandDialog` crashes at runtime (`Cannot read properties of undefined
   (reading 'subscribe')`) — always nest an explicit `<Command>` between
   `CommandDialog` and its content.
+- **Drive MCP is Google Developer Preview** — enable `drivemcp.googleapis.com`
+  in the GCP project; tool names and availability may change.
+- **HubSpot app-scoped Connect**: if Connect cannot mint an app token against
+  HubSpot's PKCE MCP Auth App, set `authMode: "user"` on the HubSpot entry in
+  `server/connectors.ts` and switch `hubspot.ts` to user-scoped `connect(...)`.

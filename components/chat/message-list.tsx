@@ -10,7 +10,7 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "~/components/ui/message-scroller";
-import { chatFooterSpacerClass, chatScrollButtonClass } from "./chat-layout";
+import { chatMessageColumnClass, chatFooterSpacerClass, chatScrollButtonClass } from "./chat-layout";
 import { ChatMessage } from "./chat-message";
 
 export function MessageList({
@@ -37,7 +37,9 @@ export function MessageList({
             ) : (
               messages.map((message) => (
                 <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
-                  <ChatMessage message={message} onRespond={onRespond} />
+                  <div className={chatMessageColumnClass}>
+                    <ChatMessage message={message} onRespond={onRespond} />
+                  </div>
                 </MessageScrollerItem>
               ))
             )}

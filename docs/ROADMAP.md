@@ -34,10 +34,11 @@ ordering reflects that.
 
 ## Phase 3 — Connectors
 
-- Drive: Vercel Connect generic OAuth connector, per-user.
-- HubSpot: generic OAuth connector or third-party MCP, app-level by default.
-- Slack: confirm search-vs-channel connection object question; reuse
-  upstream's channel wiring.
+- Drive: official Google Drive MCP via Vercel Connect custom OAuth, per-user.
+- HubSpot: official HubSpot MCP (`mcp.hubspot.com`), app-level by default.
+- Notion: official Notion MCP (`mcp.notion.com/mcp`), per-user OAuth.
+- Slack: same Connect app as the channel (`slack/v`), expanded Real-time
+  Search scopes; reuse upstream's channel wiring.
 
 ## Phase 4 — Artifact data model
 

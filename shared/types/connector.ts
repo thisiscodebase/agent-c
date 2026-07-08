@@ -1,5 +1,5 @@
 export type ConnectorStatus
-  = | { state: "connected"; installationId?: string; label?: string }
+  = { state: "connected"; installationId?: string; label?: string }
     | { state: "not_connected" }
     | { state: "installation_required" }
     | { state: "setup_required"; message: string; hint?: string }
@@ -31,6 +31,12 @@ export interface ConnectorDef {
   connectionName: string;
   icon: string;
   scopes: string[];
+  /**
+   * Token subject for status/test/connect flows.
+   * Defaults to `"user"` (interactive OAuth). Use `"app"` for shared
+   * non-interactive credentials (e.g. HubSpot when Connect can mint app tokens).
+   */
+  authMode?: "user" | "app";
   test: {
     label: string;
     run: (token: string) => Promise<string[]>;

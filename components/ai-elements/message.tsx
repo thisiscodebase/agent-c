@@ -12,10 +12,8 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { cn } from "~/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
+import { streamdownAnimation, streamdownPlugins } from "./streamdown-config";
+import { streamdownLinkSafety } from "./streamdown-link-safety-modal";
 import type { UIMessage } from "ai";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
@@ -39,7 +37,8 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
     data-slot="message"
     data-align={from === "user" ? "end" : "start"}
     className={cn(
-      "group/message relative flex w-full max-w-[95%] min-w-0 gap-2 text-sm data-[align=end]:flex-row-reverse",
+      "group/message relative flex w-full min-w-0 gap-2 text-sm",
+      from === "user" ? "max-w-[95%] flex-row-reverse data-[align=end]:ml-auto" : "data-[align=start]",
       className
     )}
     {...props}
@@ -321,9 +320,6 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
-const streamdownPlugins = { cjk, code, math, mermaid };
-const streamdownAnimation = { animation: "blurIn" } as const;
-
 export const MessageResponse = memo(
   ({ className, animated = streamdownAnimation, ...props }: MessageResponseProps) => (
     <Streamdown
@@ -332,6 +328,7 @@ export const MessageResponse = memo(
         "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
         className
       )}
+      linkSafety={streamdownLinkSafety}
       plugins={streamdownPlugins}
       {...props}
     />

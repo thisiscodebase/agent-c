@@ -1,33 +1,196 @@
 import type { ConnectorDef } from "#shared/types/connector";
-import { GITHUB_CONNECTOR } from "#shared/connect";
+import {
+  DRIVE_CONNECTOR,
+  HUBSPOT_CONNECTOR,
+  HUBSPOT_OAUTH_SCOPES,
+  NOTION_CONNECTOR,
+  SLACK_CONNECTOR,
+} from "#shared/connect";
 import { createError } from "~~/server/utils/http-error";
 
 export const connectors: ConnectorDef[] = [
   {
-    id: "github",
-    name: "GitHub",
-    description: "Repositories, issues, pull requests, and CI workflows.",
-    connector: GITHUB_CONNECTOR,
-    connectionName: "github",
-    icon: "i-simple-icons-github",
-    scopes: ["repo"],
+    id: "drive",
+    name: "Google Drive",
+    description: "Search and read Drive files you can access (case-study source material).",
+    connector: DRIVE_CONNECTOR,
+    connectionName: "drive",
+    icon: "i-simple-icons-googledrive",
+    scopes: [
+      "https://www.googleapis.com/auth/drive.readonly",
+    ],
     test: {
-      label: "List my repositories",
+      label: "List recent files",
       run: async (token) => {
-        const res = await fetch("https://api.github.com/user/repos?per_page=5", {
+        const res = await fetch(
+          "https://www.googleapis.com/drive/v3/files?pageSize=5&fields=files(id,name)&orderBy=modifiedTime desc",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!res.ok) {
+          throw new Error(`Drive API error: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json() as { files?: Array<{ name: string }> };
+        return (data.files ?? []).map((file) => file.name);
+      },
+    },
+  },
+  {
+    id: "hubspot",
+    name: "HubSpot",
+    description: "CRM companies, deals, and contacts for case-study lookup.",
+    connector: HUBSPOT_CONNECTOR,
+    connectionName: "hubspot",
+    icon: "i-simple-icons-hubspot",
+    scopes: [...HUBSPOT_OAUTH_SCOPES],
+    // HubSpot MCP Auth Apps also show an object-permission picker at install.
+    // User-scoped — HubSpot MCP requires OAuth 2.1 + PKCE per installing user.
+    authMode: "user",
+    test: {
+      label: "Check connection",
+      run: async (token) => {
+        // MCP Auth App tokens are for mcp.hubspot.com, not the CRM REST API.
+        // Validate via OAuth token metadata when HubSpot exposes it.
+        const res = await fetch(
+          `https://api.hubapi.com/oauth/v1/access-tokens/${encodeURIComponent(token)}`,
+        );
+
+        if (res.ok) {
+          const data = await res.json() as {
+            user?: string;
+            hub_domain?: string;
+            scopes?: string[];
+          };
+
+          const hub = data.hub_domain ?? "HubSpot portal";
+          const user = data.user ?? "connected user";
+          const scopes = data.scopes ?? [];
+          const missingCrm = HUBSPOT_OAUTH_SCOPES.filter((scope) => !scopes.includes(scope));
+
+          const lines = [
+            `${hub} — ${user}`,
+            scopes.length ? `Scopes: ${scopes.join(", ")}` : "MCP scopes active",
+          ];
+
+          if (missingCrm.length > 0) {
+            lines.push(
+              `Missing CRM scopes (${missingCrm.join(", ")}). Revoke HubSpot here, then reconnect and approve object permissions on the HubSpot consent screen.`,
+            );
+          }
+
+          return lines;
+        }
+
+        // Connect minted a token (probe passed) but metadata/CRM APIs may not
+        // accept MCP-scoped tokens — still a successful connection for chat tools.
+        return [
+          "HubSpot OAuth connected",
+          "Use chat to query CRM via MCP (hubspot__search_crm_objects, etc.)",
+        ];
+      },
+    },
+  },
+  {
+    id: "notion",
+    name: "Notion",
+    description: "Search and read Notion pages and databases you can access.",
+    connector: NOTION_CONNECTOR,
+    connectionName: "notion",
+    icon: "i-simple-icons-notion",
+    // Notion hosted MCP uses OAuth; scopes come from the MCP Auth metadata.
+    scopes: [],
+    test: {
+      label: "Search workspace",
+      run: async (token) => {
+        const res = await fetch("https://api.notion.com/v1/search", {
+          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-            "User-Agent": "codebase-agent",
+            "Content-Type": "application/json",
+            "Notion-Version": "2022-06-28",
           },
+          body: JSON.stringify({ page_size: 5 }),
         });
 
         if (!res.ok) {
-          throw new Error(`GitHub API error: ${res.status} ${res.statusText}`);
+          throw new Error(`Notion API error: ${res.status} ${res.statusText}`);
         }
 
-        const repos = await res.json() as Array<{ full_name: string }>;
-        return repos.map(repo => repo.full_name);
+        const data = await res.json() as {
+          results?: Array<{
+            object?: string;
+            id: string;
+            properties?: Record<string, { title?: Array<{ plain_text?: string }> }>;
+          }>;
+        };
+
+        return (data.results ?? []).map((row) => {
+          const titleProp = row.properties
+            ? Object.values(row.properties).find((prop) => Array.isArray(prop.title))
+            : undefined;
+          const title = titleProp?.title?.[0]?.plain_text;
+          return title || `${row.object ?? "item"} ${row.id}`;
+        });
+      },
+    },
+  },
+  {
+    id: "slack",
+    name: "Slack search",
+    description:
+      "Search Slack messages and files with your permissions (same app as the Slack channel).",
+    connector: SLACK_CONNECTOR,
+    connectionName: "search_slack",
+    icon: "i-simple-icons-slack",
+    scopes: [
+      "search:read.public",
+      "search:read.private",
+      "search:read.files",
+      "search:read.users",
+    ],
+    test: {
+      label: "Search recent messages",
+      run: async (token) => {
+        const res = await fetch("https://slack.com/api/assistant.search.context", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          body: JSON.stringify({
+            query: "case study",
+            channel_types: ["public_channel", "private_channel"],
+            content_types: ["messages"],
+            limit: 5,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Slack API error: ${res.status} ${res.statusText}`);
+        }
+
+        const data = await res.json() as {
+          ok: boolean;
+          error?: string;
+          results?: {
+            messages?: Array<{ content?: string; channel_name?: string }>;
+          };
+        };
+
+        if (!data.ok) {
+          throw new Error(`Slack search failed: ${data.error ?? "unknown_error"}`);
+        }
+
+        return (data.results?.messages ?? []).map((message) => {
+          const preview = (message.content ?? "").slice(0, 80);
+          const channel = message.channel_name ? `#${message.channel_name}` : "message";
+          return preview ? `${channel} — ${preview}` : channel;
+        });
       },
     },
   },

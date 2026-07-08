@@ -11,7 +11,7 @@ import {
 } from "~/components/ai-elements/prompt-input";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
 import {
-  chatContentClass,
+  chatInputColumnClass,
   chatFloatingFooterClass,
   chatFooterFadeClass,
   chatFooterInputAreaClass,
@@ -36,7 +36,7 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
         <div className={chatFooterInputAreaClass}>
           <ChatErrorBanner error={agent.error} />
 
-          <div className={chatContentClass}>
+          <div className={chatInputColumnClass}>
             <PromptInput
               onSubmit={(message) => {
                 if (message.text.trim()) void agent.send({ message: message.text });

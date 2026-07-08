@@ -4,13 +4,16 @@ import type { ConnectTokenSubject } from "@vercel/connect";
 import {
   ConnectError,
   ConnectorInstallationRequiredError,
-  getToken,
   getTokenResponse,
   NoValidTokenError,
   revokeToken,
   startAuthorization,
   UserAuthorizationRequiredError,
 } from "@vercel/connect";
+
+function authMode(def: ConnectorDef): "user" | "app" {
+  return def.authMode ?? "user";
+}
 
 function userSubjects(userId: string): ConnectTokenSubject[] {
   const subjects: ConnectTokenSubject[] = [
@@ -44,6 +47,18 @@ function isMissingGrantError(error: unknown) {
 }
 
 function connectCreateCommand(def: ConnectorDef) {
+  if (def.id === "drive") {
+    return `vercel connect create https://drivemcp.googleapis.com/mcp/v1 --name codebase-agent`;
+  }
+  if (def.id === "hubspot") {
+    return `vercel connect create mcp.hubspot.com --name codebase-agent`;
+  }
+  if (def.id === "notion") {
+    return `vercel connect create mcp.notion.com --name codebase-agent`;
+  }
+  if (def.id === "slack") {
+    return `vercel connect create slack --name v`;
+  }
   return `vercel connect create ${def.id} --name codebase-agent`;
 }
 
@@ -53,7 +68,7 @@ function formatSetupHint(def: ConnectorDef, reason: "missing" | "not_linked") {
       "Create the connector, then attach it to this project:",
       connectCreateCommand(def),
       `vercel connect attach ${def.connector}`,
-      "Update the connector UID in server/connectors.ts if it differs from `vercel connect list`.",
+      "Update the connector UID in shared/connect.ts if it differs from `vercel connect list`.",
     ].join("\n");
   }
 
@@ -99,6 +114,27 @@ function mapConnectError(error: unknown, def: ConnectorDef): ConnectorStatus {
       };
     }
 
+    if (
+      message.includes("dynamic client registration")
+      || message.includes("registration_endpoint")
+    ) {
+      const driveHint = def.id === "drive"
+        ? [
+            "Google Drive does not support dynamic client registration.",
+            "Create a GCP OAuth client (drive.readonly scope), then:",
+            connectCreateCommand(def),
+            `vercel connect attach ${def.connector}`,
+            "See docs/ENVIRONMENT.md for the full Drive MCP setup.",
+          ].join("\n")
+        : formatSetupHint(def, "missing");
+
+      return {
+        state: "setup_required",
+        message: `Connector "${def.connector}" needs provider OAuth credentials before users can connect.`,
+        hint: driveHint,
+      };
+    }
+
     return { state: "error", message: error.message };
   }
 
@@ -107,6 +143,16 @@ function mapConnectError(error: unknown, def: ConnectorDef): ConnectorStatus {
   }
 
   return { state: "error", message: "Unknown Connect error" };
+}
+
+async function withAppTokenResponse(
+  def: ConnectorDef,
+  installationId?: string,
+) {
+  return getTokenResponse(
+    def.connector,
+    tokenParams(def, { type: "app" }, installationId),
+  );
 }
 
 async function withUserTokenResponse(
@@ -134,9 +180,20 @@ async function withUserTokenResponse(
   throw lastError;
 }
 
+async function withTokenResponse(
+  def: ConnectorDef,
+  userId: string,
+  installationId?: string,
+) {
+  if (authMode(def) === "app") {
+    return withAppTokenResponse(def, installationId);
+  }
+  return withUserTokenResponse(def, userId, installationId);
+}
+
 export async function probeStatus(def: ConnectorDef, userId: string): Promise<ConnectorStatus> {
   try {
-    const response = await withUserTokenResponse(def, userId);
+    const response = await withTokenResponse(def, userId);
 
     return {
       state: "connected",
@@ -154,7 +211,7 @@ export async function mintUserToken(
   userId: string,
   installationId?: string,
 ): Promise<string> {
-  const response = await withUserTokenResponse(def, userId, installationId);
+  const response = await withTokenResponse(def, userId, installationId);
   return response.token;
 }
 
@@ -163,6 +220,17 @@ export async function startConnectFlow(
   userId: string,
   callbackUrl: string,
 ) {
+  if (authMode(def) === "app") {
+    // App-scoped connectors are non-interactive; probing/minting is enough.
+    // Still expose startAuthorization with an app subject so operators can
+    // complete any Connect install step the provider requires.
+    return startAuthorization(
+      def.connector,
+      tokenParams(def, { type: "app" }, undefined),
+      { callbackUrl },
+    );
+  }
+
   return startAuthorization(
     def.connector,
     tokenParams(def, userSubjects(userId)[0]!, undefined),
@@ -191,6 +259,14 @@ export async function revokeConnection(
   userId: string,
   installationId?: string,
 ): Promise<void> {
+  if (authMode(def) === "app") {
+    await revokeToken(def.connector, {
+      subject: { type: "app" },
+      ...(installationId ? { installationId } : {}),
+    });
+    return;
+  }
+
   let lastError: unknown;
 
   for (const subject of userSubjects(userId)) {

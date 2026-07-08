@@ -5,10 +5,10 @@ An internal knowledge and case-study assistant for CodeBase, forked from
 
 Where the upstream template is a single-user personal assistant, this fork is
 scoped as a shared, whole-company tool (~20-100 users). Its core job: let
-colleagues look up information across Google Drive, HubSpot, and Slack that
-they currently can't easily search, and turn that into structured outputs —
-principally customer case studies and other reports — without leaving chat or
-Slack.
+colleagues look up information across Google Drive, HubSpot, Notion, and Slack
+that they currently can't easily search, and turn that into structured
+outputs — principally customer case studies and other reports — without
+leaving chat or Slack.
 
 Full context on *why* this direction was chosen over alternatives (build vs.
 Notion AI, template comparison, connector auth model, search architecture,
@@ -18,7 +18,7 @@ framework choice) lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
 ## What this is for
 
 - **Lookup**: "What have we done for [customer]? Pull anything from Drive,
-  HubSpot, or Slack."
+  HubSpot, Notion, or Slack."
 - **Synthesis**: turn that lookup into a case study, report, or note —
   stored centrally, reviewed before publishing, exportable to Drive or as a
   file.
@@ -30,8 +30,8 @@ framework choice) lives in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
 
 ## What this is *not*, at least for v1
 
-- Not a replacement for Drive, HubSpot, or Slack's own search — it queries
-  them live via MCP connectors rather than re-indexing their content.
+- Not a replacement for Drive, HubSpot, Notion, or Slack's own search — it
+  queries them live via MCP connectors rather than re-indexing their content.
 - Not a coding agent — no code changes, no PRs. That's a deliberately
   separate future integration; see [`docs/ROADMAP.md`](docs/ROADMAP.md).
 - Not (yet) collaborative in the sense of multiple people co-present in one
@@ -71,7 +71,7 @@ docs/       # this documentation set
 
 ```bash
 pnpm install
-pnpm dev          # Nuxt + Eve dev server (migrating to Next.js + Eve — see docs/ROADMAP.md)
+pnpm dev          # Next.js + Eve dev server
 pnpm typecheck    # TypeScript check
 pnpm build        # Production build
 pnpm db:generate  # Generate Drizzle migrations
@@ -79,9 +79,10 @@ pnpm db:migrate   # Apply migrations
 ```
 
 See [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for required environment
-variables.
+variables and connector provisioning.
 
 ## Status
 
-Phase 0 (rebrand and cleanup) in progress. See
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased build plan.
+Phases 0–3 code complete (chat + connectors). Phase 4 (artifacts) and Phase 5
+(Slack polish) remain. See [`docs/PROGRESS.md`](docs/PROGRESS.md) and
+[`docs/ROADMAP.md`](docs/ROADMAP.md).

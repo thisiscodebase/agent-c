@@ -11,7 +11,7 @@ import { ArrowDownIcon } from "lucide-react"
 
 import { cn } from "~/lib/utils"
 import { Button } from "~/components/ui/button"
-import { chatContentClass } from "~/components/chat/chat-layout"
+import { chatScrollerContentClass } from "~/components/chat/chat-layout"
 
 function MessageScrollerProvider(
   props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>
@@ -58,7 +58,7 @@ function MessageScrollerContent({
   return (
     <MessageScrollerPrimitive.Content
       data-slot="message-scroller-content"
-      className={cn("flex h-max min-h-full flex-col gap-6 py-6", chatContentClass, className)}
+      className={cn(chatScrollerContentClass, className)}
       {...props}
     />
   )

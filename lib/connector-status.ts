@@ -10,8 +10,12 @@ export function connectorStatusLabel(state: ConnectorState) {
       return { label: "Setup required", variant: "secondary" as const };
     case "error":
       return { label: "Error", variant: "destructive" as const };
-    default:
+    case "not_connected":
       return { label: "Not connected", variant: "outline" as const };
+    default: {
+      const _exhaustive: never = state;
+      return _exhaustive;
+    }
   }
 }
 
@@ -30,8 +34,16 @@ export function parseTestResult(line: string): ParsedTestResult {
 }
 
 export function testResultsHeading(connectorId: string) {
-  if (connectorId === "github") {
-    return "Repositories";
+  switch (connectorId) {
+    case "drive":
+      return "Files";
+    case "hubspot":
+      return "Connection";
+    case "notion":
+      return "Pages";
+    case "slack":
+      return "Messages";
+    default:
+      return "Results";
   }
-  return "Results";
 }

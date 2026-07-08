@@ -106,14 +106,16 @@ function SlackLinkCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Slack</CardTitle>
+        <CardTitle>Slack account</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {isLinked ? (
-          <p className="text-sm text-muted-foreground">Your Slack account is linked.</p>
+          <p className="text-sm text-muted-foreground">
+            Your Slack account is linked. Search uses the Slack search connector above once authorized.
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Link your Slack account to chat with CodeBase Agent in Slack.
+            Link your Slack account to chat with CodeBase Agent in Slack (separate from Slack search OAuth).
           </p>
         )}
         {pendingCode ? (

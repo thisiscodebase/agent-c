@@ -93,14 +93,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </ScrollArea>
 
         <div className="p-3">
-          <Button asChild className="w-full justify-start gap-2" variant="ghost">
-            <Link href="/settings/profile">
-              <Avatar size="sm">
-                <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
-                <AvatarFallback>{user?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
-              </Avatar>
-              Settings
-            </Link>
+          <Button
+            className="w-full justify-start gap-2"
+            nativeButton={false}
+            render={<Link href="/settings/profile" />}
+            variant="ghost"
+          >
+            <Avatar size="sm">
+              <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
+              <AvatarFallback>{user?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+            </Avatar>
+            Settings
           </Button>
         </div>
 

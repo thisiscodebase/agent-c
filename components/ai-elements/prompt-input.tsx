@@ -1,5 +1,6 @@
 "use client";
 
+import type { BaseUIEvent } from "@base-ui/react/types";
 import {
   Command,
   CommandEmpty,
@@ -1236,7 +1237,7 @@ export const PromptInputSubmit = ({
   }
 
   const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (e: BaseUIEvent<React.MouseEvent<HTMLButtonElement>>) => {
       if (isGenerating && onStop) {
         e.preventDefault();
         onStop();

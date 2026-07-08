@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
+@import "streamdown/styles.css";
 
 @custom-variant dark (&:is(.dark *));
 

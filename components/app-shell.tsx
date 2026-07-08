@@ -1,15 +1,18 @@
 "use client";
 
-import { PlusIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { PlusIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CommandPalette } from "~/components/command-palette";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
 import { formatThreadTime, useThreadList } from "~/hooks/chat/use-threads";
 import { useThreadGroups } from "~/hooks/chat/use-thread-groups";
+import { useSidebarResize } from "~/hooks/use-sidebar-resize";
+import { authClient } from "~/lib/auth-client";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const params = useParams<{ id?: string }>();
@@ -20,6 +23,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { navigate, deleteThread } = useChatNavigation();
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const { width: sidebarWidth, startResize, minWidth, maxWidth } = useSidebarResize();
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -36,7 +42,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-dvh">
       <CommandPalette onOpenChange={setPaletteOpen} open={paletteOpen} />
 
-      <aside className="flex w-64 shrink-0 flex-col border-r bg-muted/30">
+      <aside
+        className="relative flex shrink-0 flex-col border-r bg-muted/30"
+        style={{ width: sidebarWidth }}
+      >
         <div className="flex flex-col gap-1.5 p-3">
           <Button className="w-full justify-start" variant="outline" onClick={() => navigate("/")}>
             <PlusIcon className="size-4" />
@@ -83,14 +92,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </ScrollArea>
 
-        <div className="border-t p-3">
-          <Button asChild className="w-full justify-start" variant="ghost">
+        <div className="p-3">
+          <Button asChild className="w-full justify-start gap-2" variant="ghost">
             <Link href="/settings/profile">
-              <SettingsIcon className="size-4" />
+              <Avatar size="sm">
+                <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
+                <AvatarFallback>{user?.name?.trim()?.[0]?.toUpperCase() ?? "?"}</AvatarFallback>
+              </Avatar>
               Settings
             </Link>
           </Button>
         </div>
+
+        <div
+          aria-orientation="vertical"
+          aria-valuemax={maxWidth}
+          aria-valuemin={minWidth}
+          aria-valuenow={sidebarWidth}
+          className="absolute top-0 right-0 z-10 h-full w-1 translate-x-1/2 cursor-col-resize touch-none hover:bg-border/60 active:bg-border"
+          onMouseDown={startResize}
+          role="separator"
+        />
       </aside>
 
       <main className="min-w-0 flex-1">{children}</main>

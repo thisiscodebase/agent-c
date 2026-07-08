@@ -28,6 +28,8 @@ All work through the UI-polish pass below is committed.
 | 1 — Auth | Done, verified live | Google Workspace OAuth (domain-restricted via `hd`), two-tier session check. Confirmed working with a real account. |
 | 2 — Persistence | Done | Postgres + Drizzle (`server/db/schema/*.ts`), pgvector enabled ahead of Phase 4, local `supabase start` verified. |
 | — Chat UI foundations | Done, verified live | Vue composables ported to React hooks (TanStack Query); Next.js UI (home, `/chat/[id]`, settings) on shadcn/AI Elements; message rendering split into reusable `components/chat/parts/*` (text via Streamdown markdown, reasoning collapse, authorization, dynamic-tool incl. a specialized `save_memory` approve/reject card); dismissable turn-error banner; Cmd+K command palette (new chat, settings, jump to any thread). Confirmed live end-to-end: new chat → streamed markdown response → thread persists → reload resumes. |
+| — Chat primitives | shadcn chat components | Adopted shadcn's June 2026 chat-components release: `MessageScroller` (`@shadcn/react`, turn-anchoring scroll with prepended-history preservation, replaces `Conversation`/`use-stick-to-bottom`), `Message`+`Bubble` (replaces the ad hoc `.is-user` CSS-group hack in `ai-elements/message.tsx`), `shimmer` CSS utility (replaces a `motion`-based `Shimmer` component — dropped the `motion` dependency). |
+| — UI primitives | Radix → Base UI | All 18 shadcn `components/ui/*` primitives migrated from `radix-ui` to `@base-ui/react`, one component per commit — see `.migration/*.md` for per-component notes and flagged behavior deltas. `components/ai-elements/*` (AI Elements) stays on Radix; see the gotcha below. |
 
 ## Remaining — original roadmap
 
@@ -100,9 +102,16 @@ future feature UI. Smaller cosmetic items still open, lower priority:
 - **Next.js 16's `proxy.ts` reads a `config` export, not `proxyConfig`**,
   despite some docs/skills claiming otherwise — verified directly against
   `node_modules/next/dist/build/analysis/get-page-static-info.js`.
-- **shadcn CLI defaults to Base UI now, not Radix** — AI Elements requires
-  Radix (`shadcn init -d --base radix -f`), otherwise Radix-wrapped
-  components fail type-check.
+- **`components.json` style must stay `radix-nova`, not `base-*`** —
+  `components/ai-elements/reasoning.tsx` imports
+  `@radix-ui/react-use-controllable-state` directly and Base UI has no
+  public equivalent hook, so a whole-project `shadcn init --base base-ui`
+  flip is a dead end here. Every other shadcn `components/ui/*` primitive
+  has already been migrated to `@base-ui/react` individually (progressive
+  mode, one component per commit); do the same for any new component
+  rather than attempting the whole-project flip. See `.migration/*.md` for
+  per-component notes, and `agent/skills/migrate-radix-to-base/` (installed
+  via `pnpm dlx skills add shadcn/ui`) for the migration reference tables.
 - **`eve/react`'s `useEveAgent` already handles resumable sessions, HITL, and
   authorization prompts natively** — don't hand-roll this (the old Vue app
   did, before the Next.js port). Read

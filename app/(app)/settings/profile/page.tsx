@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -10,6 +10,21 @@ import { useProfile } from "~/hooks/use-profile";
 
 export default function ProfilePage() {
   const { profile, isLoading, saveProfile, isSaving, saveError, timezones, locales } = useProfile();
+
+  const timezoneItems = useMemo(
+    () => [
+      { value: null, label: "Select a timezone" },
+      ...timezones.map((tz) => ({ value: tz.value, label: `${tz.label} — ${tz.description}` })),
+    ],
+    [timezones]
+  );
+  const localeItems = useMemo(
+    () => [
+      { value: null, label: "Select a locale" },
+      ...locales.map((l) => ({ value: l.value, label: l.label })),
+    ],
+    [locales]
+  );
 
   const [name, setName] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -46,9 +61,13 @@ export default function ProfilePage() {
 
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Timezone</span>
-          <Select value={timezone} onValueChange={setTimezone}>
+          <Select
+            items={timezoneItems}
+            value={timezone || null}
+            onValueChange={(value) => setTimezone(value ?? "")}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select a timezone" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {timezones.map((tz) => (
@@ -62,9 +81,13 @@ export default function ProfilePage() {
 
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Locale</span>
-          <Select value={locale} onValueChange={setLocale}>
+          <Select
+            items={localeItems}
+            value={locale || null}
+            onValueChange={(value) => setLocale(value ?? "")}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select a locale" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {locales.map((l) => (

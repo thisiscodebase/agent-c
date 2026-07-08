@@ -62,17 +62,13 @@ function ConnectorRow({ connector }: { connector: ConnectorSummary }) {
         ) : null}
         {c.isConnected ? (
           <Dialog open={c.showRevokeModal} onOpenChange={c.setShowRevokeModal}>
-            <DialogTrigger asChild>
-              <Button variant="ghost">Revoke</Button>
-            </DialogTrigger>
+            <DialogTrigger render={<Button variant="ghost">Revoke</Button>} />
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Revoke {connector.name}?</DialogTitle>
               </DialogHeader>
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
+                <DialogClose render={<Button variant="outline">Cancel</Button>} />
                 <Button disabled={c.revoking} variant="destructive" onClick={() => void c.revoke()}>
                   {c.revoking ? "Revoking…" : "Revoke"}
                 </Button>

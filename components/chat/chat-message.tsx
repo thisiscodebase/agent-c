@@ -20,7 +20,7 @@ export function ChatMessage({
         {message.parts.map((part, index) => {
           switch (part.type) {
             case "text":
-              return <TextPart key={index} part={part} />;
+              return <TextPart key={index} part={part} role={message.role} />;
             case "reasoning":
               return <ReasoningPart key={index} part={part} />;
             case "authorization":

@@ -77,6 +77,10 @@ vercel connect attach <hubspot-uid> --yes
 vercel connect create mcp.notion.com --name codebase-agent
 vercel connect attach <notion-uid> --yes
 
+# Tally hosted MCP (OAuth)
+vercel connect create https://api.tally.so/mcp --name agent-c
+vercel connect attach <tally-uid> --yes
+
 # Slack — reuse the existing channel app; expand scopes for Real-time Search
 # (search:read.public, search:read.private, search:read.files, search:read.users)
 # Channel credentials already use slack/v in agent/channels/slack.ts
@@ -86,7 +90,29 @@ vercel env pull
 
 Update UIDs in `shared/connect.ts` if `vercel connect list` returns different
 values than the placeholders (`oauth/drive-codebase-agent`,
-`mcp.hubspot.com/codebase-agent`, `mcp.notion.com/codebase-agent`, `slack/v`).
+`mcp.hubspot.com/agent-c`, `mcp.notion.com/agent-c`, `api.tally.so/agent-c`,
+`slack/v`).
+
+### CodeBase Platform MCP (`eve` + Platform)
+
+Not Vercel Connect — shared app-scoped bearer between Agent C and CodeBase
+Platform (`~/Developer/platform`).
+
+On **Platform** (Next.js):
+
+- `PLATFORM_MCP_TOKEN` — long random shared secret
+- `PLATFORM_WORKSPACE_ID` — single production workspace UUID
+- `PLATFORM_MCP_SERVICE_USER_ID` — optional audit attribution id
+- `PLATFORM_MCP_WRITES_ENABLED` — `1` to enable staff write tools (default off)
+
+On **Agent C Eve runtime**:
+
+- `PLATFORM_MCP_URL` — e.g. `https://<platform-host>/api/mcp` or
+  `http://localhost:3000/api/mcp` for local
+- `PLATFORM_MCP_TOKEN` — same value as Platform
+
+Connection file: `agent/connections/platform.ts`. Integrations UI shows
+status from env (no OAuth Connect/Revoke).
 
 ### Drive (GCP)
 
@@ -117,6 +143,12 @@ remove the old install under HubSpot → Development → MCP Auth Apps if needed
 Hosted Notion MCP at `https://mcp.notion.com/mcp` uses OAuth 2.0 + PKCE only
 (no bearer/integration token on this endpoint). Connect brokers the browser
 consent flow per user.
+
+### Tally
+
+Hosted Tally MCP at `https://api.tally.so/mcp` supports OAuth (recommended)
+or API key. Connect brokers per-user OAuth. See
+[Tally MCP docs](https://developers.tally.so/api-reference/mcp).
 
 ### Slack search
 

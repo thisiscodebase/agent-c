@@ -69,7 +69,7 @@ const quickChats = [
               {{ greeting }}
             </h1>
             <p class="text-sm text-muted sm:text-base">
-              CodeBase Agent
+              🍊 Agent C
             </p>
           </div>
 

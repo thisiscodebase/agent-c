@@ -21,6 +21,7 @@ export const GET = withRoute(async (request: Request) => {
         testLabel: connector.test.label,
         status,
         connectedAs: status.state === "connected" ? status.label : undefined,
+        authMode: connector.authMode ?? "user",
       };
     }),
   );

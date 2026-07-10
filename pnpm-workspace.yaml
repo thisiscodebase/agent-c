@@ -3,8 +3,12 @@ packages:
 
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 10080
+trustLockfile: true
 minimumReleaseAgeExclude:
   - eve
   - "@vercel/connect"
 allowBuilds:
+  better-sqlite3: true
+  esbuild: true
   sharp: false

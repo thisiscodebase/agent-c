@@ -23,6 +23,8 @@ function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): 
       streamIndex: session.streamIndex,
     },
     events: incoming.events,
+    // Preserve title metadata when clients only patch session/events.
+    titleMeta: incoming.titleMeta ?? existing?.titleMeta,
   };
 }
 

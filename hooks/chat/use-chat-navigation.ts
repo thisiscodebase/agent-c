@@ -6,6 +6,7 @@ import type { ThreadRecord, ThreadSummary } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
 import { queryKeys } from "~/lib/query-keys";
 import { setPendingMessage } from "./use-pending-message";
+import { requestThreadTitleGeneration } from "./use-thread-title";
 
 interface ThreadListResponse {
   threads: ThreadSummary[];
@@ -40,6 +41,14 @@ export function useChatNavigation() {
       threads: [thread, ...(old?.threads ?? []).filter((entry) => entry.id !== thread.id)],
     }));
     setPendingMessage(chatId, text);
+
+    // Fire-and-forget: replace truncated first-line title with a nano-model title.
+    void requestThreadTitleGeneration(
+      chatId,
+      { mode: "seed", seedText: text },
+      queryClient,
+    );
+
     await queryClient.invalidateQueries({ queryKey: queryKeys.threads });
     navigate(`/chat/${chatId}`);
   }

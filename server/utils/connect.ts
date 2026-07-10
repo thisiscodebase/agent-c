@@ -11,8 +11,20 @@ import {
   UserAuthorizationRequiredError,
 } from "@vercel/connect";
 
-function authMode(def: ConnectorDef): "user" | "app" {
+function authMode(def: ConnectorDef): "user" | "app" | "env" {
   return def.authMode ?? "user";
+}
+
+function envToken(def: ConnectorDef): string | null {
+  const key = def.staticTokenEnv ?? "PLATFORM_MCP_TOKEN";
+  const token = process.env[key]?.trim();
+  return token && token.length > 0 ? token : null;
+}
+
+function envMcpUrl(def: ConnectorDef): string | null {
+  const key = def.mcpUrlEnv ?? "PLATFORM_MCP_URL";
+  const url = process.env[key]?.trim();
+  return url && url.length > 0 ? url : null;
 }
 
 function userSubjects(userId: string): ConnectTokenSubject[] {
@@ -55,6 +67,9 @@ function connectCreateCommand(def: ConnectorDef) {
   }
   if (def.id === "notion") {
     return `vercel connect create mcp.notion.com --name codebase-agent`;
+  }
+  if (def.id === "tally") {
+    return `vercel connect create https://api.tally.so/mcp --name agent-c`;
   }
   if (def.id === "slack") {
     return `vercel connect create slack --name v`;
@@ -192,6 +207,25 @@ async function withTokenResponse(
 }
 
 export async function probeStatus(def: ConnectorDef, userId: string): Promise<ConnectorStatus> {
+  if (authMode(def) === "env") {
+    const token = envToken(def);
+    const url = envMcpUrl(def);
+    if (token && url) {
+      return {
+        state: "connected",
+        label: "Configured via env",
+      };
+    }
+    return {
+      state: "setup_required",
+      message: "Platform MCP is not configured",
+      hint: [
+        `Set ${def.staticTokenEnv ?? "PLATFORM_MCP_TOKEN"} and ${def.mcpUrlEnv ?? "PLATFORM_MCP_URL"} on the Eve runtime (and matching token on CodeBase Platform).`,
+        "No OAuth connect step — restart after updating env.",
+      ].join("\n"),
+    };
+  }
+
   try {
     const response = await withTokenResponse(def, userId);
 
@@ -211,6 +245,14 @@ export async function mintUserToken(
   userId: string,
   installationId?: string,
 ): Promise<string> {
+  if (authMode(def) === "env") {
+    const token = envToken(def);
+    if (!token) {
+      throw new Error(`${def.staticTokenEnv ?? "PLATFORM_MCP_TOKEN"} is not set`);
+    }
+    return token;
+  }
+
   const response = await withTokenResponse(def, userId, installationId);
   return response.token;
 }
@@ -220,6 +262,12 @@ export async function startConnectFlow(
   userId: string,
   callbackUrl: string,
 ) {
+  if (authMode(def) === "env") {
+    throw new Error(
+      "CodeBase Platform MCP is configured via env vars — there is no OAuth connect flow.",
+    );
+  }
+
   if (authMode(def) === "app") {
     // App-scoped connectors are non-interactive; probing/minting is enough.
     // Still expose startAuthorization with an app subject so operators can
@@ -259,6 +307,12 @@ export async function revokeConnection(
   userId: string,
   installationId?: string,
 ): Promise<void> {
+  if (authMode(def) === "env") {
+    throw new Error(
+      "CodeBase Platform MCP is configured via env vars — unset PLATFORM_MCP_TOKEN to disable.",
+    );
+  }
+
   if (authMode(def) === "app") {
     await revokeToken(def.connector, {
       subject: { type: "app" },

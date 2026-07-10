@@ -1,18 +1,18 @@
-# CodeBase Agent
+# 🍊 Agent C
 
-Internal lookup-and-synthesis assistant for CodeBase, built with Eve and
-Next.js (see `docs/ROADMAP.md` / `docs/PROGRESS.md`).
+Internal lookup-and-synthesis assistant for CodeBase, built with Eve and Next.js
+(see `docs/ROADMAP.md` / `docs/PROGRESS.md`).
 
 ## Quick Reference
 
-| Command | Description |
-|---------|-------------|
-| `pnpm install` | Install dependencies |
-| `pnpm dev` | Start Next.js + Eve dev server |
-| `pnpm build` | Production build |
-| `pnpm typecheck` | TypeScript check |
-| `pnpm db:generate` | Generate Drizzle migrations |
-| `pnpm db:migrate` | Apply migrations |
+| Command            | Description                    |
+| ------------------ | ------------------------------ |
+| `pnpm install`     | Install dependencies           |
+| `pnpm dev`         | Start Next.js + Eve dev server |
+| `pnpm build`       | Production build               |
+| `pnpm typecheck`   | TypeScript check               |
+| `pnpm db:generate` | Generate Drizzle migrations    |
+| `pnpm db:migrate`  | Apply migrations               |
 
 ## Structure
 
@@ -49,9 +49,12 @@ Live lookup sources (MCP / search tools), registered in
 - Drive — `drivemcp.googleapis.com` (per-user)
 - HubSpot — `mcp.hubspot.com` (app-scoped default)
 - Notion — `mcp.notion.com/mcp` (per-user)
+- Tally — `api.tally.so/mcp` (per-user)
 - Slack search — `agent/tools/search_slack.ts` on Connect app `slack/v`
+- CodeBase Platform — `PLATFORM_MCP_URL` + shared bearer (app-scoped env; see
+  [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md))
 
-UIDs: [`shared/connect.ts`](shared/connect.ts). Provision via
+UIDs: [`shared/connect.ts`](shared/connect.ts). Provision Connect connectors via
 `vercel connect` — see [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).
 
 ## Internal API Pattern
@@ -67,11 +70,14 @@ Authenticated with `Authorization: Bearer <INTERNAL_API_SECRET>`. See
 
 ## Memory Flow
 
-1. **Session injection** — [`agent/instructions.ts`](agent/instructions.ts) on `session.started`
-2. **Agent save** — [`agent/tools/save_memory.ts`](agent/tools/save_memory.ts) with web approval UI
+1. **Session injection** — [`agent/instructions.ts`](agent/instructions.ts) on
+   `session.started`
+2. **Agent save** — [`agent/tools/save_memory.ts`](agent/tools/save_memory.ts)
+   with web approval UI
 3. **Profile UI** — import, view, edit, delete on Settings → Profile
 
-Categories: [`shared/types/memory.ts`](shared/types/memory.ts). One prose block per category; saves replace the full block.
+Categories: [`shared/types/memory.ts`](shared/types/memory.ts). One prose block
+per category; saves replace the full block.
 
 ## Customization Checklist
 

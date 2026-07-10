@@ -1,55 +1,33 @@
 "use client";
 
-import { useState } from "react";
 import type { EveMessagePart } from "eve/react";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "~/components/ai-elements/tool";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
+import { InputRequestCard } from "~/components/ui/input-request-card";
+import {
+  getInputRequestResponseLabel,
+  isInputRequestPending,
+} from "~/lib/input-request-display";
 import { SaveMemoryPart } from "./save-memory-part";
 
 type DynamicToolPartData = Extract<EveMessagePart, { type: "dynamic-tool" }>;
 
-function InputRequestActions({
-  part,
-  onRespond,
-}: {
-  part: DynamicToolPartData;
-  onRespond: (requestId: string, optionId: string) => void;
-}) {
+function getInputRequestTitle(part: DynamicToolPartData): string {
   const request = part.toolMetadata?.eve?.inputRequest;
-  const [freeform, setFreeform] = useState("");
+  if (part.toolName === "ask_question") return "Quick question";
+  if (request?.display === "confirmation") return "Needs your approval";
+  return "Needs your input";
+}
 
-  if (!request) return null;
+function getInputRequestDescription(part: DynamicToolPartData): string | undefined {
+  const request = part.toolMetadata?.eve?.inputRequest;
+  if (!request) return undefined;
+  return request.prompt;
+}
 
-  return (
-    <div className="flex flex-col gap-2 border-t p-4">
-      <p className="text-sm">{request.prompt}</p>
-      <div className="flex flex-wrap gap-2">
-        {request.options?.map((option) => (
-          <Button
-            key={option.id}
-            size="sm"
-            variant={option.style === "danger" ? "destructive" : option.style === "primary" ? "default" : "outline"}
-            onClick={() => onRespond(request.requestId, option.id)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-      {request.allowFreeform ? (
-        <form
-          className="flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (freeform.trim()) onRespond(request.requestId, freeform.trim());
-          }}
-        >
-          <Input onChange={(e) => setFreeform(e.target.value)} placeholder="Type a response…" value={freeform} />
-          <Button size="sm" type="submit" variant="outline">Send</Button>
-        </form>
-      ) : null}
-    </div>
-  );
+function getInputRequestIconCategory(part: DynamicToolPartData): string {
+  const request = part.toolMetadata?.eve?.inputRequest;
+  if (request?.display === "confirmation") return "approval";
+  return "question";
 }
 
 export function ToolPart({
@@ -65,6 +43,28 @@ export function ToolPart({
 
   const request = part.toolMetadata?.eve?.inputRequest;
 
+  if (request) {
+    const isPending = isInputRequestPending(part);
+    const respondedWith = getInputRequestResponseLabel(part);
+
+    return (
+      <InputRequestCard
+        allowFreeform={request.allowFreeform}
+        description={getInputRequestDescription(part)}
+        iconCategory={getInputRequestIconCategory(part)}
+        isDenied={part.state === "output-denied"}
+        isPending={isPending}
+        onSelect={(optionId) => onRespond(request.requestId, optionId)}
+        options={request.options}
+        respondedWith={respondedWith}
+        statusLabel={
+          request.display === "confirmation" ? "Awaiting approval" : "Waiting for you"
+        }
+        title={getInputRequestTitle(part)}
+      />
+    );
+  }
+
   return (
     <Tool defaultOpen={part.state === "approval-requested" || part.state === "output-error"}>
       <ToolHeader state={part.state} toolName={part.toolName} type="dynamic-tool" />
@@ -74,7 +74,6 @@ export function ToolPart({
           <ToolOutput errorText={part.errorText} output={part.output} />
         ) : null}
       </ToolContent>
-      {request ? <InputRequestActions onRespond={onRespond} part={part} /> : null}
     </Tool>
   );
 }

@@ -18,6 +18,8 @@ export interface ConnectorSummary {
   testLabel: string;
   status: ConnectorStatus;
   connectedAs?: string;
+  /** How credentials are obtained. Env-managed connectors skip OAuth UI. */
+  authMode?: "user" | "app" | "env";
 }
 
 /** Server registry entry in `server/connectors.ts`. */
@@ -34,9 +36,14 @@ export interface ConnectorDef {
   /**
    * Token subject for status/test/connect flows.
    * Defaults to `"user"` (interactive OAuth). Use `"app"` for shared
-   * non-interactive credentials (e.g. HubSpot when Connect can mint app tokens).
+   * Connect credentials. Use `"env"` for a shared bearer from env vars
+   * (no Connect / no OAuth UI).
    */
-  authMode?: "user" | "app";
+  authMode?: "user" | "app" | "env";
+  /** Env var holding the shared bearer when `authMode` is `"env"`. */
+  staticTokenEnv?: string;
+  /** Env var holding the MCP URL when `authMode` is `"env"` (for test probes). */
+  mcpUrlEnv?: string;
   test: {
     label: string;
     run: (token: string) => Promise<string[]>;

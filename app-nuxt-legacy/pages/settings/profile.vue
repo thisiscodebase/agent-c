@@ -100,7 +100,7 @@ function resetForm() {
         >
           <SettingsSection
             title="Profile"
-            description="How CodeBase Agent identifies you across web and Slack."
+            description="How 🍊 Agent C identifies you across web and Slack."
           >
             <SettingsRow
               label="Name"

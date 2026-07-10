@@ -22,11 +22,20 @@ export function useThreadList() {
   };
 }
 
-const THREAD_TIME = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-});
-
 export function formatThreadTime(timestamp: number) {
-  return THREAD_TIME.format(new Date(timestamp));
+  const diffMs = Date.now() - timestamp;
+  const minutes = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(diffMs / 3_600_000);
+  const days = Math.floor(diffMs / 86_400_000);
+
+  if (minutes < 1) {
+    return "1m";
+  }
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+  return `${days}d`;
 }

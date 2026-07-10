@@ -11,9 +11,20 @@ export interface EveSessionCursor {
   streamIndex: number;
 }
 
+export type ThreadTitlePhase = "seed" | "refine";
+export type ThreadTitleSource = "truncated" | "generated";
+
+export interface ThreadTitleMeta {
+  /** User-message count when the title was last generated for `lastPhase`. */
+  lastUserCount: number;
+  lastPhase: ThreadTitlePhase;
+  source: ThreadTitleSource;
+}
+
 export interface ThreadState {
   session: EveSessionCursor;
   events: unknown[];
+  titleMeta?: ThreadTitleMeta;
 }
 
 export interface ThreadRecord extends ThreadSummary {
@@ -27,4 +38,26 @@ export function truncateThreadTitle(text: string, maxLength = 60): string {
   }
 
   return `${line.slice(0, maxLength - 1)}…`;
+}
+
+/** Whether refine title generation should run for this user-message count. */
+export function shouldRefineThreadTitle(
+  userCount: number,
+  titleMeta: ThreadTitleMeta | undefined,
+): boolean {
+  if (userCount < 1) {
+    return false;
+  }
+  if (userCount !== 1 && userCount % 4 !== 0) {
+    return false;
+  }
+  if (titleMeta?.lastPhase === "refine" && titleMeta.lastUserCount === userCount) {
+    return false;
+  }
+  return true;
+}
+
+/** Whether seed title generation should run for this thread. */
+export function shouldSeedThreadTitle(titleMeta: ThreadTitleMeta | undefined): boolean {
+  return !titleMeta || titleMeta.source === "truncated";
 }

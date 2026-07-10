@@ -1,26 +1,21 @@
 "use client";
 
 import type { ThreadRecord } from "#shared/types/thread";
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-} from "~/components/ai-elements/prompt-input";
+import { Composer } from "~/components/ui/composer";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
 import {
   chatInputColumnClass,
   chatFloatingFooterClass,
   chatFooterFadeClass,
   chatFooterInputAreaClass,
+  chatFooterInteractiveClass,
+  chatFooterSolidClass,
 } from "./chat-layout";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { MessageList } from "./message-list";
 
 export function ChatPageClient({ chatId, initialThread }: { chatId: string; initialThread: ThreadRecord }) {
-  const { agent, isBusy } = useChatSession(chatId, initialThread);
+  const { agent } = useChatSession(chatId, initialThread);
 
   function respondToInput(requestId: string, optionId: string) {
     void agent.send({ inputResponses: [{ requestId, optionId }] });
@@ -34,22 +29,19 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
         <div aria-hidden className={chatFooterFadeClass} />
 
         <div className={chatFooterInputAreaClass}>
-          <ChatErrorBanner error={agent.error} />
+          <div aria-hidden className={chatFooterSolidClass} />
+          <div className={chatFooterInteractiveClass}>
+            <ChatErrorBanner error={agent.error} />
 
-          <div className={chatInputColumnClass}>
-            <PromptInput
-              onSubmit={(message) => {
-                if (message.text.trim()) void agent.send({ message: message.text });
-              }}
-            >
-              <PromptInputBody>
-                <PromptInputTextarea disabled={isBusy} />
-              </PromptInputBody>
-              <PromptInputFooter>
-                <PromptInputTools />
-                <PromptInputSubmit status={agent.status} onStop={agent.stop} />
-              </PromptInputFooter>
-            </PromptInput>
+            <div className={`${chatInputColumnClass} relative`}>
+              <Composer
+                onStop={agent.stop}
+                onSubmit={(message) => {
+                  if (message.trim()) void agent.send({ message });
+                }}
+                status={agent.status}
+              />
+            </div>
           </div>
         </div>
       </div>

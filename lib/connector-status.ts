@@ -40,7 +40,11 @@ export function testResultsHeading(connectorId: string) {
     case "hubspot":
       return "Connection";
     case "notion":
-      return "Pages";
+      return "Connection";
+    case "tally":
+      return "Connection";
+    case "platform":
+      return "Connection";
     case "slack":
       return "Messages";
     default:

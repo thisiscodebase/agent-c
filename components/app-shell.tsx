@@ -1,14 +1,23 @@
 "use client";
 
-import { PlusIcon, SearchIcon, ToolCaseIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { PencilIcon, PlusIcon, SearchIcon, ToolCaseIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CommandPalette } from "~/components/command-palette";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "~/components/ui/context-menu";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
+import { requestThreadTitleGeneration } from "~/hooks/chat/use-thread-title";
 import { formatThreadTime, useThreadList } from "~/hooks/chat/use-threads";
 import { useThreadGroups } from "~/hooks/chat/use-thread-groups";
 import { useSidebarResize } from "~/hooks/use-sidebar-resize";
@@ -32,6 +41,7 @@ export function AppShell({
 }) {
   const params = useParams<{ id?: string }>();
   const activeChatId = typeof params.id === "string" ? params.id : undefined;
+  const queryClient = useQueryClient();
 
   const { threads } = useThreadList();
   const groups = useThreadGroups(threads);
@@ -46,6 +56,17 @@ export function AppShell({
   const startNewChat = useCallback(() => {
     navigate("/");
   }, [navigate]);
+
+  const renameThread = useCallback(
+    (threadId: string) => {
+      void requestThreadTitleGeneration(
+        threadId,
+        { mode: "refine", force: true },
+        queryClient,
+      );
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -73,7 +94,7 @@ export function AppShell({
       <CommandPalette onOpenChange={setPaletteOpen} open={paletteOpen} />
 
       <aside
-        className="relative flex shrink-0 flex-col border-r bg-muted/30"
+        className="app-sidebar-frost relative flex shrink-0 flex-col border-r border-black/[0.06]"
         style={{ width: sidebarWidth }}
       >
         <div className="flex flex-col gap-1.5 p-3">
@@ -106,26 +127,36 @@ export function AppShell({
                 <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
                 <div className="flex min-w-0 flex-col gap-0.5">
                   {group.items.map((thread) => (
-                    <div key={thread.id} className="group relative flex min-w-0 items-center">
-                      <Link
-                        className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 pr-2 text-sm group-hover:pr-8 hover:bg-accent"
-                        data-active={thread.id === activeChatId}
-                        href={`/chat/${thread.id}`}
-                      >
-                        <span className="min-w-0 truncate">{thread.title}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground group-hover:hidden">
-                          {formatThreadTime(thread.updatedAt)}
-                        </span>
-                      </Link>
-                      <Button
-                        className="absolute right-0 hidden shrink-0 group-hover:inline-flex"
-                        size="icon-sm"
-                        variant="ghost"
-                        onClick={() => void deleteThread(thread.id, activeChatId)}
-                      >
-                        &times;
-                      </Button>
-                    </div>
+                    <ContextMenu key={thread.id}>
+                      <ContextMenuTrigger className="group relative flex min-w-0 items-center">
+                        <Link
+                          className="group/link flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-2 py-1.5 pr-2 text-sm group-hover:pr-8 hover:bg-orange-500/8 dark:hover:bg-orange-500/12 data-[active=true]:bg-orange-500/15 data-[active=true]:font-medium data-[active=true]:text-orange-950 data-[active=true]:hover:bg-orange-500/20 dark:data-[active=true]:bg-orange-500/22 dark:data-[active=true]:text-orange-50 dark:data-[active=true]:hover:bg-orange-500/30"
+                          data-active={thread.id === activeChatId}
+                          href={`/chat/${thread.id}`}
+                        >
+                          <span className="min-w-0 truncate">{thread.title}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground group-hover:hidden group-data-[active=true]/link:text-orange-600 dark:group-data-[active=true]/link:text-orange-400">
+                            {formatThreadTime(thread.updatedAt)}
+                          </span>
+                        </Link>
+                        <Button
+                          className="absolute right-0 hidden shrink-0 group-hover:inline-flex"
+                          size="icon-sm"
+                          variant="ghost"
+                          onClick={() => void deleteThread(thread.id, activeChatId)}
+                        >
+                          &times;
+                        </Button>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className="w-40">
+                        <ContextMenuGroup>
+                          <ContextMenuItem onClick={() => renameThread(thread.id)}>
+                            <PencilIcon />
+                            Rename
+                          </ContextMenuItem>
+                        </ContextMenuGroup>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   ))}
                 </div>
               </div>
@@ -162,7 +193,7 @@ export function AppShell({
         />
       </aside>
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1 bg-background">{children}</main>
     </div>
   );
 }

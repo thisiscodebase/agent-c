@@ -23,8 +23,11 @@ export function useConnector(connector: ConnectorSummary) {
   const [actionError, setActionError] = useState<string | null>(null);
 
   const status = connectorStatusLabel(connector.status.state);
-  const canConnect = connector.status.state === "not_connected" || connector.status.state === "installation_required";
+  const canConnect
+    = connector.authMode !== "env"
+      && (connector.status.state === "not_connected" || connector.status.state === "installation_required");
   const isConnected = connector.status.state === "connected";
+  const canRevoke = isConnected && connector.authMode !== "env";
   const needsSetup = connector.status.state === "setup_required";
   const setupStatus = getSetupStatus(connector.status);
   const errorStatus = getErrorStatus(connector.status);
@@ -59,10 +62,14 @@ export function useConnector(connector: ConnectorSummary) {
     setTestResults(null);
     setShowTestResults(false);
     try {
-      const { results } = await fetch(`/api/integrations/${connector.id}/test`, {
+      const res = await fetch(`/api/integrations/${connector.id}/test`, {
         method: "POST",
-      }).then((r) => r.json() as Promise<{ results: string[] }>);
-      setTestResults(results);
+      });
+      const body = await res.json() as { results?: string[]; message?: string };
+      if (!res.ok) {
+        throw new Error(body.message ?? `Test failed (${res.status})`);
+      }
+      setTestResults(body.results ?? []);
       setShowTestResults(true);
       await refresh();
     }
@@ -101,6 +108,7 @@ export function useConnector(connector: ConnectorSummary) {
     status,
     canConnect,
     isConnected,
+    canRevoke,
     needsSetup,
     setupStatus,
     errorStatus,

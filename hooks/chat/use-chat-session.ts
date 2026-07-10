@@ -7,6 +7,7 @@ import type { ThreadRecord } from "#shared/types/thread";
 import { consumePendingMessage } from "./use-pending-message";
 import { recordStreamEvent } from "./use-stream-log";
 import { persistThreadState, resumeOptionsFromThread } from "./use-thread-state";
+import { requestThreadTitleGeneration } from "./use-thread-title";
 
 /**
  * Wraps `eve/react`'s `useEveAgent` for one chat thread.
@@ -24,7 +25,18 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
     initialSession: resumeOptions.initialSession,
     initialEvents: resumeOptions.initialEvents,
     onFinish: (snapshot) => {
-      void persistThreadState(chatId, snapshot, queryClient);
+      void (async () => {
+        await persistThreadState(chatId, snapshot, queryClient);
+
+        const userCount = snapshot.data.messages.filter(
+          (message) => message.role === "user" && !message.metadata?.optimistic,
+        ).length;
+
+        // Cadence only; server dedupes via titleMeta.
+        if (userCount === 1 || userCount % 4 === 0) {
+          void requestThreadTitleGeneration(chatId, { mode: "refine" }, queryClient);
+        }
+      })();
     },
     onEvent: (event) => {
       recordStreamEvent(event.type);

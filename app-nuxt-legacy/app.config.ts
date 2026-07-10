@@ -1,7 +1,7 @@
 export default defineAppConfig({
   site: {
-    name: "CodeBase Agent",
-    title: "CodeBase Agent",
+    name: "🍊 Agent C",
+    title: "🍊 Agent C",
     description:
       "Internal lookup-and-synthesis assistant for CodeBase. Chat on the web or Slack — look across Drive, HubSpot, and Slack, and turn it into case studies and reports.",
     tagline: "CodeBase × Eve",

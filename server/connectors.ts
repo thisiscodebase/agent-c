@@ -4,9 +4,13 @@ import {
   HUBSPOT_CONNECTOR,
   HUBSPOT_OAUTH_SCOPES,
   NOTION_CONNECTOR,
+  PLATFORM_CONNECTOR,
   SLACK_CONNECTOR,
+  TALLY_CONNECTOR,
 } from "#shared/connect";
 import { createError } from "~~/server/utils/http-error";
+import { testNotionMcpConnection } from "~~/server/utils/notion-mcp-test";
+import { testPlatformMcpConnection } from "~~/server/utils/platform-mcp-test";
 
 export const connectors: ConnectorDef[] = [
   {
@@ -105,38 +109,44 @@ export const connectors: ConnectorDef[] = [
     // Notion hosted MCP uses OAuth; scopes come from the MCP Auth metadata.
     scopes: [],
     test: {
-      label: "Search workspace",
-      run: async (token) => {
-        const res = await fetch("https://api.notion.com/v1/search", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Notion-Version": "2022-06-28",
-          },
-          body: JSON.stringify({ page_size: 5 }),
-        });
-
-        if (!res.ok) {
-          throw new Error(`Notion API error: ${res.status} ${res.statusText}`);
-        }
-
-        const data = await res.json() as {
-          results?: Array<{
-            object?: string;
-            id: string;
-            properties?: Record<string, { title?: Array<{ plain_text?: string }> }>;
-          }>;
-        };
-
-        return (data.results ?? []).map((row) => {
-          const titleProp = row.properties
-            ? Object.values(row.properties).find((prop) => Array.isArray(prop.title))
-            : undefined;
-          const title = titleProp?.title?.[0]?.plain_text;
-          return title || `${row.object ?? "item"} ${row.id}`;
-        });
-      },
+      // Connect mints MCP-audienced tokens; chat exercises MCP via Eve.
+      // Do not call api.notion.com — those tokens hang there and 502.
+      label: "Check connection",
+      run: async (token) => testNotionMcpConnection(token),
+    },
+  },
+  {
+    id: "tally",
+    name: "Tally",
+    description: "List forms and fetch submission data from your Tally workspace.",
+    connector: TALLY_CONNECTOR,
+    connectionName: "tally",
+    icon: "i-simple-icons-tally",
+    // Tally MCP OAuth scopes come from protected-resource metadata (`mcp`, etc.).
+    scopes: [],
+    test: {
+      label: "Check connection",
+      run: async () => [
+        "Tally OAuth connected",
+        "Use chat to list forms and submissions via MCP (tally__… tools)",
+      ],
+    },
+  },
+  {
+    id: "platform",
+    name: "CodeBase Platform",
+    description:
+      "Mentorship sessions, companies, programmes, mentors, and workspace users (shared service token).",
+    connector: PLATFORM_CONNECTOR,
+    connectionName: "platform",
+    icon: "i-lucide-building-2",
+    scopes: [],
+    authMode: "env",
+    staticTokenEnv: "PLATFORM_MCP_TOKEN",
+    mcpUrlEnv: "PLATFORM_MCP_URL",
+    test: {
+      label: "Check MCP",
+      run: async (token) => testPlatformMcpConnection(token),
     },
   },
   {

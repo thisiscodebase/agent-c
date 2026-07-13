@@ -142,7 +142,8 @@ function SlackLinkCard() {
         <div className="flex flex-col items-end gap-2">
           {pendingCode ? (
             <p className="text-right text-xs">
-              Send <code>{pendingCode}</code> to @V in Slack to finish linking.
+              Send <code>link {pendingCode}</code> in a DM to the Agent C Slack bot
+              (often shown as “Slack Connector”) to finish linking.
             </p>
           ) : null}
           {generateError ? (

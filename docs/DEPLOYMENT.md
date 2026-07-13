@@ -332,10 +332,11 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 
 1. Connect app `slack/agent-c` attached (see above).
 2. Slack app event URL / Eve webhook path must match Eve’s Slack channel
-   route under `/_eve_internal/eve/...` (see Eve Slack docs / channel file
-   [`agent/channels/slack.ts`](../agent/channels/slack.ts)).
+   route at `/eve/v1/slack` (Connect: `vercel connect attach slack/agent-c --triggers --trigger-path /eve/v1/slack`).
+   See [`agent/channels/slack.ts`](../agent/channels/slack.ts).
 3. Users link Slack in **Settings → Integrations** (uses
-   `INTERNAL_API_SECRET` + web session).
+   `INTERNAL_API_SECRET` + web session). Send `link <CODE>` in a **DM to the bot**
+   (not the bare code alone).
 4. Test `@mention` / DM; identity should map to the same Better Auth user as
    web for memory continuity.
 

@@ -32,7 +32,7 @@ All work through Phase 3 code below is ready to commit once verified.
 | — Chat UI foundations | Done, verified live             | Vue composables ported to React hooks (TanStack Query); Next.js UI (home, `/chat/[id]`, settings) on shadcn/AI Elements; message rendering split into reusable `components/chat/parts/*`; dismissable turn-error banner; Cmd+K command palette. Confirmed live end-to-end. |
 | — Chat primitives     | shadcn chat components          | Adopted shadcn's June 2026 chat-components release: `MessageScroller`, `Message`+`Bubble`, `shimmer` CSS utility.                                                                                                                                                          |
 | — UI primitives       | Radix → Base UI                 | All 18 shadcn `components/ui/*` primitives migrated from `radix-ui` to `@base-ui/react`. `components/ai-elements/*` stays on Radix.                                                                                                                                        |
-| 3 — Connectors        | Code done; provisioning pending | Drive MCP (`agent/connections/drive.ts`), HubSpot MCP (`hubspot.ts`), Notion MCP (`notion.ts`), Slack search tool (`agent/tools/search_slack.ts`) on same `slack/v` app. Integrations registry in `server/connectors.ts`. GitHub connector removed from product surface.   |
+| 3 — Connectors        | Code done; provisioning pending | Drive MCP (`agent/connections/drive.ts`), HubSpot MCP (`hubspot.ts`), Notion MCP (`notion.ts`), Slack search tool (`agent/tools/search_slack.ts`) on same `slack/agent-c` app. Integrations registry in `server/connectors.ts`. GitHub connector removed from product surface.   |
 
 ## Remaining — original roadmap
 
@@ -46,7 +46,7 @@ Operator steps before live verification:
 3. HubSpot: MCP Auth App → Connect attach (app-scoped; fall back to user-scoped
    if needed)
 4. Notion: Connect attach for `mcp.notion.com`
-5. Slack: expand `slack/v` with Real-time Search scopes
+5. Slack: expand `slack/agent-c` with Real-time Search scopes
 6. Settings → Integrations Connect / Test; chat lookup smoke tests
 
 **Verification checklist (after provisioning):**

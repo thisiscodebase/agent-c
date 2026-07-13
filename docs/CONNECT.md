@@ -54,7 +54,7 @@ Without something like Connect (or a DIY equivalent), you still need:
 | App-scoped shared token  | HubSpot default (`authMode: "app"` in `server/connectors.ts`)                   |
 | Eve connection auth      | `agent/connections/*.ts` — `auth: connect(...)`                                 |
 | Inline tool auth         | `agent/tools/search_slack.ts` — `ctx.getToken(connect(...))`                    |
-| Slack bot + webhooks     | `agent/channels/slack.ts` — `connectSlackCredentials("slack/v")`                |
+| Slack bot + webhooks     | `agent/channels/slack.ts` — `connectSlackCredentials("slack/agent-c")`                |
 | In-chat authorization UI | `components/chat/parts/authorization-part.tsx`                                  |
 | Connector registry       | `server/connectors.ts`, UIDs in `shared/connect.ts`                             |
 
@@ -96,7 +96,7 @@ vercel connect attach <notion-uid> --yes
 vercel connect create https://api.tally.so/mcp --name agent-c
 vercel connect attach <tally-uid> --yes
 
-# Slack — reuse existing slack/v; expand search scopes in dashboard
+# Slack — reuse existing slack/agent-c; expand search scopes in dashboard
 vercel connect list
 vercel env pull
 ```
@@ -112,7 +112,7 @@ placeholders.
 4. Chat: ask for Drive/Notion/HubSpot/Slack lookup — OAuth challenge appears in
    chat if not pre-connected.
 5. **Slack channel:** link account via link code (same Integrations page); bot
-   uses `slack/v` independently of search OAuth.
+   uses `slack/agent-c` independently of search OAuth.
 
 Official references:
 
@@ -234,7 +234,7 @@ HubSpot single-use refresh tokens).
 | Tier            | Scope                                                      | Tradeoff                                                  |
 | --------------- | ---------------------------------------------------------- | --------------------------------------------------------- |
 | **Minimal DIY** | HubSpot env token only; skip per-user Drive/Notion         | Not equivalent — breaks Drive ACLs and Notion OAuth       |
-| **Hybrid**      | DIY Drive + Notion; **keep Connect for Slack** (`slack/v`) | ~1.5–2 weeks; avoids bot/webhook pain                     |
+| **Hybrid**      | DIY Drive + Notion; **keep Connect for Slack** (`slack/agent-c`) | ~1.5–2 weeks; avoids bot/webhook pain                     |
 | **Full DIY**    | Everything including Slack channel                         | ~3–4 weeks; only worth it for compliance or platform exit |
 
 ---
@@ -246,7 +246,7 @@ HubSpot single-use refresh tokens).
 | **Upfront build**               | Done (Phase 3)                | ~2–4 engineer-weeks            |
 | **Run cost @ 20–100 users**     | ~$5–15/mo                     | $0 Connect fees + maintenance  |
 | **Per-user Drive/Notion**       | Built-in                      | Custom OAuth + DB              |
-| **Slack bot + search**          | One Connect app (`slack/v`)   | Bot credentials DIY is painful |
+| **Slack bot + search**          | One Connect app (`slack/agent-c`)   | Bot credentials DIY is painful |
 | **Security burden**             | Vercel-operated token vault   | You encrypt, rotate, audit     |
 | **Eve integration**             | `connect()` first-class       | Custom `auth` providers        |
 | **Worth it at CodeBase scale?** | **Yes** for demo + early prod | Only with non-cost drivers     |
@@ -276,7 +276,7 @@ HubSpot single-use refresh tokens).
 | **HubSpot**       | `https://mcp.hubspot.com`                | App-scoped default          | Possible: single `HUBSPOT_TOKEN` in env                   |
 | **Notion**        | `https://mcp.notion.com/mcp`             | Per-user OAuth only         | No — hosted MCP rejects bearer/integration tokens         |
 | **Tally**         | `https://api.tally.so/mcp`               | Per-user OAuth              | Possible: API key `tly-…` in env, but loses per-user ACLs |
-| **Slack search**  | `assistant.search.context` API           | Per-user token on `slack/v` | Possible but duplicates Slack app work                    |
+| **Slack search**  | `assistant.search.context` API           | Per-user token on `slack/agent-c` | Possible but duplicates Slack app work                    |
 | **Slack channel** | Events API (not MCP)                     | Bot token + webhook verify  | Env vars + manual signature verification                  |
 
 ---
@@ -293,7 +293,7 @@ agent/connections/hubspot.ts MCP + connect({ principalType: "app" })
 agent/connections/notion.ts  MCP + connect(NOTION_CONNECTOR)
 agent/connections/tally.ts   MCP + connect(TALLY_CONNECTOR)
 agent/tools/search_slack.ts  ctx.getToken(connect(SLACK_CONNECTOR))
-agent/channels/slack.ts      connectSlackCredentials("slack/v")
+agent/channels/slack.ts      connectSlackCredentials("slack/agent-c")
 components/chat/parts/authorization-part.tsx   In-chat OAuth link
 ```
 

@@ -52,7 +52,7 @@ Live lookup sources (MCP / search tools), registered in
 - HubSpot — `mcp.hubspot.com` (app-scoped default)
 - Notion — `mcp.notion.com/mcp` (per-user)
 - Tally — `api.tally.so/mcp` (per-user)
-- Slack search — `agent/tools/search_slack.ts` on Connect app `slack/v`
+- Slack search — `agent/tools/search_slack.ts` on Connect app `slack/agent-c`
 - CodeBase Platform — `PLATFORM_MCP_URL` + shared bearer (app-scoped env; see
   [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)). Read-only for internal release.
 

@@ -14,7 +14,7 @@ Related: [Environment](ENVIRONMENT.md), [Connect](CONNECT.md).
 | ----------- | ---------- | --------------- |
 | **Platform MCP** | Shared bearer (`PLATFORM_MCP_TOKEN`) — **not** Connect | CodeBase Platform (`/api/mcp`) |
 | **Drive / HubSpot / Notion / Tally** | Vercel Connect OAuth (per-user or app-scoped) | Provider MCP URLs |
-| **Slack search + Slack channel** | Connect app `slack/v` | Slack APIs |
+| **Slack search + Slack channel** | Connect app `slack/agent-c` | Slack APIs |
 
 Platform is app-scoped and read-only for internal release. Connectors that use
 Connect never put long-lived provider tokens in `.env` once attached —
@@ -146,7 +146,7 @@ Update placeholders in `shared/connect.ts` if list returns different UIDs.
 | **HubSpot** | App-scoped (default) | HubSpot → Development → MCP Auth Apps; on first connect approve contacts/companies/deals |
 | **Notion** | Per-user OAuth | Users connect in Settings → Integrations; no Notion bearer on hosted MCP |
 | **Tally** | Per-user OAuth | Users connect in Integrations |
-| **Slack search** | Same `slack/v` Connect app as channel | Expand search scopes; users may need Slack link in Settings |
+| **Slack search** | Same `slack/agent-c` Connect app as channel | Expand search scopes; users may need Slack link in Settings |
 
 ### E. Verify in production
 

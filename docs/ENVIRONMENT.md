@@ -83,7 +83,7 @@ vercel connect attach <tally-uid> --yes
 
 # Slack — reuse the existing channel app; expand scopes for Real-time Search
 # (search:read.public, search:read.private, search:read.files, search:read.users)
-# Channel credentials already use slack/v in agent/channels/slack.ts
+# Channel credentials already use slack/agent-c in agent/channels/slack.ts
 
 vercel env pull
 ```
@@ -91,7 +91,7 @@ vercel env pull
 Update UIDs in `shared/connect.ts` if `vercel connect list` returns different
 values than the placeholders (`oauth/drive-codebase-agent`,
 `mcp.hubspot.com/agent-c`, `mcp.notion.com/agent-c`, `api.tally.so/agent-c`,
-`slack/v`).
+`slack/agent-c`).
 
 ### CodeBase Platform MCP (`eve` + Platform)
 
@@ -158,7 +158,7 @@ or API key. Connect brokers per-user OAuth. See
 
 ### Slack search
 
-Same Connect app as the Slack channel (`slack/v`). Expand the app's user
+Same Connect app as the Slack channel (`slack/agent-c`). Expand the app's user
 scopes for Real-time Search; do **not** use legacy `search:read`. Account
 linking (Settings → Integrations → Slack link code) is unchanged and still
 requires `INTERNAL_API_SECRET`.

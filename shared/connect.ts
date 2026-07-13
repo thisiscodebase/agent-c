@@ -28,7 +28,7 @@ export const NOTION_CONNECTOR = "mcp.notion.com/agent-c";
 /** Tally hosted MCP (`https://api.tally.so/mcp`). Update after `vercel connect list` if needed. */
 export const TALLY_CONNECTOR = "api.tally.so/agent-c";
 /** Same Connect app as the Slack channel (`agent/channels/slack.ts`). */
-export const SLACK_CONNECTOR = "slack/v";
+export const SLACK_CONNECTOR = "slack/agent-c";
 
 /**
  * CodeBase Platform MCP — app-scoped shared bearer (not Vercel Connect).

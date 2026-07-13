@@ -17,7 +17,7 @@ const slackSearchAuth = connect({
 
 /**
  * Slack search via Real-time Search API on the same Connect app as the
- * Slack channel (`slack/v`). Per-user token so ACLs match the caller.
+ * Slack channel (`slack/agent-c`). Per-user token so ACLs match the caller.
  *
  * Expand the Connect Slack app with granular search scopes
  * (`search:read.public`, `search:read.private`, `search:read.files`,

@@ -36,7 +36,7 @@ code:
 ## 4. New tools (`agent/tools/`)
 
 - `search_slack.ts` — live Slack Real-time Search (`assistant.search.context`)
-  on the same Connect app as the Slack channel (`slack/v`), per-user token.
+  on the same Connect app as the Slack channel (`slack/agent-c`), per-user token.
 - Phase 4 (not yet): `search_artifacts.ts`, `generate_report.ts`.
 
 Live Drive / HubSpot / Notion lookup is folded into connection files
@@ -91,7 +91,7 @@ login provider.
 ## Resolved decisions
 
 - **Framework for `web`**: Next.js (`eve/next`, `withEve()`).
-- **Slack search vs. Slack channel**: same Connect app (`slack/v`), expanded
+- **Slack search vs. Slack channel**: same Connect app (`slack/agent-c`), expanded
   scopes; search tool is separate code but not a second bot.
 - **HubSpot connector mechanism**: HubSpot official first-party MCP
   (`mcp.hubspot.com`), not Composio or generic REST-only OAuth.

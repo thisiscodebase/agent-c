@@ -37,7 +37,7 @@ that.
 - Drive: official Google Drive MCP via Vercel Connect custom OAuth, per-user.
 - HubSpot: official HubSpot MCP (`mcp.hubspot.com`), app-level by default.
 - Notion: official Notion MCP (`mcp.notion.com/mcp`), per-user OAuth.
-- Slack: same Connect app as the channel (`slack/v`), expanded Real-time Search
+- Slack: same Connect app as the channel (`slack/agent-c`), expanded Real-time Search
   scopes; reuse upstream's channel wiring.
 
 ## Phase 4 — Artifact data model

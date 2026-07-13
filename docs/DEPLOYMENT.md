@@ -285,7 +285,7 @@ vercel env pull .env.local
 ```
 
 Update [`shared/connect.ts`](../shared/connect.ts) if UIDs differ from the
-placeholders. Slack channel + search reuse Connect app `slack/v` — expand Slack
+placeholders. Slack channel + search reuse Connect app `slack/agent-c` — expand Slack
 app scopes for Real-time Search (`search:read.public`, `search:read.private`,
 `search:read.files`, `search:read.users`). Do **not** use legacy `search:read`.
 
@@ -330,7 +330,7 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 
 ## 7. Slack channel
 
-1. Connect app `slack/v` attached (see above).
+1. Connect app `slack/agent-c` attached (see above).
 2. Slack app event URL / Eve webhook path must match Eve’s Slack channel
    route under `/_eve_internal/eve/...` (see Eve Slack docs / channel file
    [`agent/channels/slack.ts`](../agent/channels/slack.ts)).

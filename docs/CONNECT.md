@@ -10,6 +10,7 @@ only if compliance, platform, or pricing drivers change materially.
 Related docs:
 
 - [Environment](ENVIRONMENT.md) — provisioning commands and provider setup
+- [Platform interop](PLATFORM_INTEROP.md) — Platform MCP env matrix + production Connect/OIDC checklist
 - [Architecture](ARCHITECTURE.md) — connector auth model per source
 - [Progress](PROGRESS.md) — Phase 3 status and verification checklist
 

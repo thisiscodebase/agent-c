@@ -2,8 +2,12 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEveAgent } from "eve/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ThreadRecord } from "#shared/types/thread";
+import {
+  chatFailureFromEvent,
+  showChatErrorToast,
+} from "~/lib/show-chat-error-toast";
 import { consumePendingMessage } from "./use-pending-message";
 import { recordStreamEvent } from "./use-stream-log";
 import { persistThreadState, resumeOptionsFromThread } from "./use-thread-state";
@@ -20,6 +24,7 @@ import { requestThreadTitleGeneration } from "./use-thread-title";
 export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
   const queryClient = useQueryClient();
   const resumeOptions = initialThread ? resumeOptionsFromThread(initialThread) : {};
+  const [streamFailure, setStreamFailure] = useState<Error | undefined>(undefined);
 
   const agent = useEveAgent({
     initialSession: resumeOptions.initialSession,
@@ -38,10 +43,40 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
         }
       })();
     },
+    onError: (error) => {
+      setStreamFailure(error);
+      showChatErrorToast(error, chatId, { source: "agent.onError" });
+    },
     onEvent: (event) => {
       recordStreamEvent(event.type);
+
+      // Eve parks many model failures as turn.failed + session.waiting without
+      // setting agent.error (that only follows session.failed / thrown errors).
+      if (event.type === "turn.failed") {
+        const failure = chatFailureFromEvent({
+          code: event.data.code,
+          message: event.data.message,
+          details: event.data.details,
+          turnId: event.data.turnId,
+          source: event.type,
+        });
+        setStreamFailure(failure);
+        showChatErrorToast(failure, chatId, {
+          code: event.data.code,
+          details: event.data.details,
+          source: event.type,
+          turnId: event.data.turnId,
+        });
+      }
     },
   });
+
+  // Clear banner when a new turn starts.
+  useEffect(() => {
+    if (agent.status === "submitted" || agent.status === "streaming") {
+      setStreamFailure(undefined);
+    }
+  }, [agent.status]);
 
   const sentPendingRef = useRef(false);
   useEffect(() => {
@@ -53,6 +88,7 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
   }, [chatId]);
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
+  const error = streamFailure ?? agent.error;
 
-  return { agent, isBusy };
+  return { agent, error, isBusy };
 }

@@ -18,11 +18,17 @@ function emit() {
 }
 
 export function recordStreamEvent(type: string) {
-  if (process.env.NODE_ENV !== "development") return;
-
   streamLog = [{ type, at: Date.now() }, ...streamLog].slice(0, STREAM_LOG_MAX);
   turnEventCounts = { ...turnEventCounts, [type]: (turnEventCounts[type] ?? 0) + 1 };
   emit();
+}
+
+/** Snapshot for error reports (clipboard / toast). */
+export function getStreamLogSnapshot() {
+  return {
+    streamLog: streamLog.slice(),
+    turnEventCounts: { ...turnEventCounts },
+  };
 }
 
 export function resetTurnEventCounts() {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, PlusIcon, PodiumIcon, SearchIcon, SettingsIcon, ToolCaseIcon } from "lucide-react";
+import { PencilIcon, PlusIcon, PodiumIcon, SearchIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -104,19 +104,13 @@ export function AppShell({
         style={{ width: sidebarWidth }}
       >
         <div className="flex flex-col gap-1.5 p-3">
-          <div className="flex gap-1.5">
-            <Button className="flex-1 justify-between" variant="outline" onClick={startNewChat}>
-              <span className="flex items-center gap-1.5">
-                <PlusIcon className="size-4" />
-                New
-              </span>
-              <kbd className="text-xs text-muted-foreground">⌘N</kbd>
-            </Button>
-            <Button className="flex-1 justify-start" type="button" variant="outline">
-              <ToolCaseIcon className="size-4" />
-              Files
-            </Button>
-          </div>
+          <Button className="w-full justify-between" variant="outline" onClick={startNewChat}>
+            <span className="flex items-center gap-1.5">
+              <PlusIcon className="size-4" />
+              New
+            </span>
+            <kbd className="text-xs text-muted-foreground">⌘N</kbd>
+          </Button>
           <Button className="w-full justify-between" variant="ghost" onClick={() => setPaletteOpen(true)}>
             <span className="flex items-center gap-2">
               <SearchIcon className="size-4" />

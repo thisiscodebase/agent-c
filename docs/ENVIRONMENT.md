@@ -103,16 +103,22 @@ On **Platform** (Next.js):
 - `PLATFORM_MCP_TOKEN` — long random shared secret
 - `PLATFORM_WORKSPACE_ID` — single production workspace UUID
 - `PLATFORM_MCP_SERVICE_USER_ID` — optional audit attribution id
-- `PLATFORM_MCP_WRITES_ENABLED` — `1` to enable staff write tools (default off)
+- `PLATFORM_MCP_WRITES_ENABLED` — leave unset/`0` for internal release (write
+  tools are not registered). Set `1` only when re-enabling staff writes.
+- `PLATFORM_MCP_PUBLIC_ORIGIN` — absolute origin for MCP permalinks **including
+  the workspace subdomain**, e.g. `https://techscaler.<platform-host>` or
+  local `http://techscaler.localhost:3001`. If unset, Platform derives
+  `{workspaceSlug}.{NEXT_PUBLIC_ROOT_DOMAIN}`.
 
 On **Agent C Eve runtime**:
 
 - `PLATFORM_MCP_URL` — e.g. `https://<platform-host>/api/mcp` or
-  `http://localhost:3000/api/mcp` for local
+  `http://localhost:3001/api/mcp` for local (Platform on :3001 when Agent C
+  occupies :3000)
 - `PLATFORM_MCP_TOKEN` — same value as Platform
 
-Connection file: `agent/connections/platform.ts`. Integrations UI shows
-status from env (no OAuth Connect/Revoke).
+Connection file: `agent/connections/platform.ts` (read-only tool allow-list).
+Integrations UI shows status from env (no OAuth Connect/Revoke).
 
 ### Drive (GCP)
 

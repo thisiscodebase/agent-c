@@ -48,12 +48,14 @@ MCP tools via `connection_search`.
 - `drive.ts` — Google Drive official MCP
   (`https://drivemcp.googleapis.com/mcp/v1`), Vercel Connect custom OAuth,
   per-user. Read tools allow-listed.
-- `hubspot.ts` — HubSpot official MCP (`https://mcp.hubspot.com`), Connect
+  - `hubspot.ts` — HubSpot official MCP (`https://mcp.hubspot.com`), Connect
   app-scoped by default. Read/search tools allow-listed; writes blocked for v1.
 - `notion.ts` — Notion hosted MCP (`https://mcp.notion.com/mcp`), Connect
   per-user OAuth (hosted Notion MCP does not support bearer tokens).
 - `tally.ts` — Tally hosted MCP (`https://api.tally.so/mcp`), Connect per-user
   OAuth (API key also supported by Tally; we use OAuth).
+- `platform.ts` — CodeBase Platform MCP (env bearer). **Read-only** tool
+  allow-list for internal release; write tools omitted until re-enabled.
 - Slack channel retained from upstream (`agent/channels/slack.ts`); search uses
   the **same** Connect app with expanded scopes via `search_slack.ts`.
 

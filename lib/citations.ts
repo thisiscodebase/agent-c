@@ -74,6 +74,15 @@ const CONNECTOR_HOST_PATTERNS: Array<{
     source: "tally",
     test: (h) => h === "tally.so" || h.endsWith(".tally.so"),
   },
+  {
+    source: "platform",
+    test: (h) =>
+      // Workspace subdomain local (`techscaler.localhost`) and hosted Platform.
+      h.endsWith(".localhost")
+      || h.endsWith(".thisiscodebase.com")
+      || h === "platform-env-staging-thisiscodebase.vercel.app"
+      || (h.includes("platform") && h.endsWith(".vercel.app")),
+  },
 ];
 
 function isHttpUrl(value: string): boolean {

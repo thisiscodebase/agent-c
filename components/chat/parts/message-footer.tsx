@@ -19,14 +19,19 @@ import {
 } from "~/lib/citations";
 import { cn } from "~/lib/utils";
 import { CitationIcon } from "./citation-icon";
+import { ThreadHighlightButton } from "./thread-highlight-button";
 
 export function MessageFooter({
   markdown,
   citations,
+  threadId,
+  messageId,
   className,
 }: {
   markdown: string;
   citations: readonly Citation[];
+  threadId?: string;
+  messageId?: string;
   className?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -45,7 +50,7 @@ export function MessageFooter({
   const stack = citations.slice(0, 3);
 
   return (
-    <MessageToolbar className={cn("mt-2 gap-2", className)}>
+    <MessageToolbar className={cn("mt-2 justify-start gap-1", className)}>
       <MessageActions>
         <MessageAction
           disabled={!markdown}
@@ -55,58 +60,60 @@ export function MessageFooter({
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
         </MessageAction>
-      </MessageActions>
 
-      {citations.length > 0 ? (
-        <Popover>
-          <PopoverTrigger
-            className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            type="button"
-          >
-            <span className="flex items-center">
-              {stack.map((citation, index) => (
-                <span
-                  className={cn(index > 0 && "-ml-1.5")}
-                  key={citation.url}
-                  style={{ zIndex: stack.length - index }}
-                >
-                  <CitationIcon citation={citation} size={12} stacked />
-                </span>
-              ))}
-            </span>
-            <span className="font-medium">Sources</span>
-          </PopoverTrigger>
-          <PopoverContent align="end" className="w-80 p-2" side="top">
-            <div className="mb-1.5 px-1.5 text-xs font-medium text-muted-foreground">
-              {citations.length} source{citations.length === 1 ? "" : "s"}
-            </div>
-            <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
-              {citations.map((citation) => (
-                <li key={citation.url}>
-                  <a
-                    className="flex items-start gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-muted"
-                    href={citation.url}
-                    rel="noreferrer"
-                    target="_blank"
+        {citations.length > 0 ? (
+          <Popover>
+            <PopoverTrigger
+              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              type="button"
+            >
+              <span className="flex items-center">
+                {stack.map((citation, index) => (
+                  <span
+                    className={cn(index > 0 && "-ml-1.5")}
+                    key={citation.url}
+                    style={{ zIndex: stack.length - index }}
                   >
-                    <CitationIcon citation={citation} size={14} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-medium text-foreground">
-                        {getCitationTitle(citation)}
+                    <CitationIcon citation={citation} size={12} stacked />
+                  </span>
+                ))}
+              </span>
+              <span className="font-medium">Sources</span>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 p-2" side="top">
+              <div className="mb-1.5 px-1.5 text-xs font-medium text-muted-foreground">
+                {citations.length} source{citations.length === 1 ? "" : "s"}
+              </div>
+              <ul className="flex max-h-72 flex-col gap-0.5 overflow-y-auto">
+                {citations.map((citation) => (
+                  <li key={citation.url}>
+                    <a
+                      className="flex items-start gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-muted"
+                      href={citation.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <CitationIcon citation={citation} size={14} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-medium text-foreground">
+                          {getCitationTitle(citation)}
+                        </span>
+                        <span className="block truncate text-[11px] text-muted-foreground">
+                          {getDomain(citation.url)}
+                        </span>
                       </span>
-                      <span className="block truncate text-[11px] text-muted-foreground">
-                        {getDomain(citation.url)}
-                      </span>
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </PopoverContent>
-        </Popover>
-      ) : (
-        <span />
-      )}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+        ) : null}
+
+        {threadId ? (
+          <ThreadHighlightButton messageId={messageId} threadId={threadId} />
+        ) : null}
+      </MessageActions>
     </MessageToolbar>
   );
 }

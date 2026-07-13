@@ -54,9 +54,11 @@ function segmentParts(parts: readonly EveMessagePart[]): RenderSegment[] {
 export function ChatMessage({
   message,
   onRespond,
+  threadId,
 }: {
   message: EveMessage;
   onRespond: (requestId: string, optionId: string) => void;
+  threadId?: string;
 }) {
   const segments = segmentParts(message.parts);
   const citations = useMemo(
@@ -105,7 +107,12 @@ export function ChatMessage({
           }
         })}
         {showFooter ? (
-          <MessageFooter citations={citations} markdown={markdown} />
+          <MessageFooter
+            citations={citations}
+            markdown={markdown}
+            messageId={message.id}
+            threadId={threadId}
+          />
         ) : null}
       </MessageContent>
     </Message>

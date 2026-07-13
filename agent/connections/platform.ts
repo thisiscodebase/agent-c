@@ -1,27 +1,18 @@
 import { defineMcpClientConnection } from "eve/connections";
 
-const WRITE_TOOLS = [
-  "book_session",
-  "cancel_session",
-  "reschedule_session",
-  "grant_credits",
-  "create_pairing",
-  "update_pairing",
-] as const;
-
 /**
- * CodeBase Platform MCP — mentorship, programmes, companies, users.
+ * CodeBase Platform MCP — mentorship, programmes, companies, users (read-only).
  * App-scoped shared bearer (`PLATFORM_MCP_TOKEN`) against `PLATFORM_MCP_URL`.
  *
- * Write tools also require `PLATFORM_MCP_WRITES_ENABLED=1` on Platform and
- * human approval in chat (first use per session).
+ * Write tools are intentionally omitted for internal release. Re-enable on
+ * Platform with PLATFORM_MCP_WRITES_ENABLED and re-add to `tools.allow` later.
  */
 export default defineMcpClientConnection({
   url:
     process.env.PLATFORM_MCP_URL?.trim()
     || "http://localhost:3000/api/mcp",
   description:
-    "CodeBase Platform: search and manage mentorship sessions, mentors, companies, programmes, signups, credits, and workspace users. Prefer this for live programme/ops data over guessing.",
+    "CodeBase Platform (read-only): search mentorship sessions, mentors, companies, programmes, signups, credits, and workspace users. Prefer this for live programme/ops data. Results include absolute `url` permalinks when Platform is configured — cite those; never invent links.",
   auth: {
     getToken: async () => {
       const token = process.env.PLATFORM_MCP_TOKEN?.trim();
@@ -44,13 +35,6 @@ export default defineMcpClientConnection({
       "search_programmes",
       "list_signups",
       "search_users",
-      ...WRITE_TOOLS,
     ],
-  },
-  approval: ({ toolName }) => {
-    if (WRITE_TOOLS.some((name) => toolName.endsWith(`__${name}`) || toolName === name)) {
-      return "user-approval";
-    }
-    return "not-applicable";
   },
 });

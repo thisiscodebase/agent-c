@@ -15,7 +15,7 @@ import { ChatErrorBanner } from "./chat-error-banner";
 import { MessageList } from "./message-list";
 
 export function ChatPageClient({ chatId, initialThread }: { chatId: string; initialThread: ThreadRecord }) {
-  const { agent } = useChatSession(chatId, initialThread);
+  const { agent, error } = useChatSession(chatId, initialThread);
 
   function respondToInput(requestId: string, optionId: string) {
     void agent.send({ inputResponses: [{ requestId, optionId }] });
@@ -23,7 +23,7 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
 
   return (
     <div className="relative h-full">
-      <MessageList messages={agent.data.messages} onRespond={respondToInput} />
+      <MessageList messages={agent.data.messages} onRespond={respondToInput} threadId={chatId} />
 
       <div className={chatFloatingFooterClass}>
         <div aria-hidden className={chatFooterFadeClass} />
@@ -31,7 +31,7 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
         <div className={chatFooterInputAreaClass}>
           <div aria-hidden className={chatFooterSolidClass} />
           <div className={chatFooterInteractiveClass}>
-            <ChatErrorBanner error={agent.error} />
+            <ChatErrorBanner error={error} threadId={chatId} />
 
             <div className={`${chatInputColumnClass} relative`}>
               <Composer

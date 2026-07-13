@@ -16,10 +16,12 @@ import { ChatMessage } from "./chat-message";
 export function MessageList({
   messages,
   onRespond,
+  threadId,
   className,
 }: {
   messages: readonly EveMessage[];
   onRespond: (requestId: string, optionId: string) => void;
+  threadId?: string;
   className?: string;
 }) {
   return (
@@ -38,7 +40,7 @@ export function MessageList({
               messages.map((message) => (
                 <MessageScrollerItem key={message.id} messageId={message.id} scrollAnchor={message.role === "user"}>
                   <div className={chatMessageColumnClass}>
-                    <ChatMessage message={message} onRespond={onRespond} />
+                    <ChatMessage message={message} onRespond={onRespond} threadId={threadId} />
                   </div>
                 </MessageScrollerItem>
               ))

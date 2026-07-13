@@ -38,3 +38,9 @@ export const generateTitleBodySchema = z.object({
   /** Bypass cadence/dedupe gates (e.g. manual Rename from the sidebar). */
   force: z.boolean().optional(),
 });
+
+export const threadFeedbackBodySchema = z.object({
+  rating: z.enum(["good", "bad"]),
+  comment: z.string().trim().max(2000).optional(),
+  messageId: z.string().trim().min(1).max(200).optional(),
+});

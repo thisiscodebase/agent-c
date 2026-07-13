@@ -30,6 +30,7 @@ agent-c/
 
 - [Architecture](docs/ARCHITECTURE.md) — System design, connectors, search
 - [Connect](docs/CONNECT.md) — Vercel Connect vs DIY, pricing, demo setup
+- [Platform interop](docs/PLATFORM_INTEROP.md) — Platform MCP env + Connect/OIDC production checklist
 - [Environment](docs/ENVIRONMENT.md) — Env vars + Connect provisioning
 - [Customization](docs/CUSTOMIZATION.md) — Diff from upstream template
 - [Progress](docs/PROGRESS.md) — Phase status
@@ -52,7 +53,7 @@ Live lookup sources (MCP / search tools), registered in
 - Tally — `api.tally.so/mcp` (per-user)
 - Slack search — `agent/tools/search_slack.ts` on Connect app `slack/v`
 - CodeBase Platform — `PLATFORM_MCP_URL` + shared bearer (app-scoped env; see
-  [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md))
+  [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)). Read-only for internal release.
 
 UIDs: [`shared/connect.ts`](shared/connect.ts). Provision Connect connectors via
 `vercel connect` — see [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).

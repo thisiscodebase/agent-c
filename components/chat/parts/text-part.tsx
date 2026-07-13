@@ -14,6 +14,7 @@ import {
   transformCitationMarkdown,
   type Citation,
 } from "~/lib/citations";
+import { unwrapUnsafeMarkdownLinks } from "~/lib/unwrap-unsafe-markdown-links";
 import { cn } from "~/lib/utils";
 import { createCitationComponents } from "./inline-citation";
 
@@ -34,13 +35,12 @@ export function TextPart({
     [citations, isAssistant],
   );
 
-  const markdown = useMemo(
-    () =>
-      isAssistant
-        ? transformCitationMarkdown(part.text, citations)
-        : part.text,
-    [citations, isAssistant, part.text],
-  );
+  const markdown = useMemo(() => {
+    if (!isAssistant) return part.text;
+    return unwrapUnsafeMarkdownLinks(
+      transformCitationMarkdown(part.text, citations),
+    );
+  }, [citations, isAssistant, part.text]);
 
   if (!isAssistant) {
     return (

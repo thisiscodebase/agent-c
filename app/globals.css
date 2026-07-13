@@ -45,6 +45,7 @@
   /* Slightly grey so the floating composer card can pop */
   --background: oklch(0.97 0 0);
   --foreground: oklch(0.145 0 0);
+  --heatmap-zero: rgb(221, 221, 221);
 }
 
 * {
@@ -145,6 +146,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-heatmap-zero: var(--heatmap-zero);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -217,6 +219,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --heatmap-zero: rgb(51, 51, 51);
 }
 
 @layer base {

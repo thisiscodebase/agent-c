@@ -1,6 +1,8 @@
 "use client";
 
-import { PlusIcon, SettingsIcon, MessageSquareIcon, PlugIcon } from "lucide-react";
+import { PlusIcon, SettingsIcon, MessageSquareIcon, PlugIcon, UserIcon, PodiumIcon } from "lucide-react";
+import { useMemo } from "react";
+import { profilePathForEmail } from "#shared/user-handle";
 import {
   Command,
   CommandDialog,
@@ -14,10 +16,16 @@ import {
 } from "~/components/ui/command";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
 import { useThreadList } from "~/hooks/chat/use-threads";
+import { authClient } from "~/lib/auth-client";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { threads } = useThreadList();
   const { navigate } = useChatNavigation();
+  const { data: session } = authClient.useSession();
+  const profileHref = useMemo(
+    () => profilePathForEmail(session?.user?.email) ?? "/settings",
+    [session?.user?.email],
+  );
 
   function go(to: string) {
     onOpenChange(false);
@@ -35,9 +43,17 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               <PlusIcon />
               New chat
             </CommandItem>
-            <CommandItem onSelect={() => go("/settings/profile")}>
+            <CommandItem onSelect={() => go(profileHref)}>
+              <UserIcon />
+              Profile
+            </CommandItem>
+            <CommandItem onSelect={() => go("/leaderboard")}>
+              <PodiumIcon />
+              Leaderboard
+            </CommandItem>
+            <CommandItem onSelect={() => go("/settings")}>
               <SettingsIcon />
-              Profile settings
+              Settings
             </CommandItem>
             <CommandItem onSelect={() => go("/settings/integrations")}>
               <PlugIcon />

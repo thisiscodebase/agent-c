@@ -1,10 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, PlusIcon, SearchIcon, ToolCaseIcon } from "lucide-react";
+import { PencilIcon, PlusIcon, PodiumIcon, SearchIcon, SettingsIcon, ToolCaseIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { profilePathForEmail } from "#shared/user-handle";
 import { CommandPalette } from "~/components/command-palette";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
@@ -26,6 +27,7 @@ import { authClient } from "~/lib/auth-client";
 type ShellUser = {
   name?: string | null;
   image?: string | null;
+  email?: string | null;
 };
 
 function userInitial(user: ShellUser | undefined) {
@@ -52,6 +54,10 @@ export function AppShell({
     useSidebarResize();
   const { data: session } = authClient.useSession();
   const user = session?.user ?? serverUser;
+  const profileHref = useMemo(
+    () => profilePathForEmail(user?.email) ?? "/settings",
+    [user?.email],
+  );
 
   const startNewChat = useCallback(() => {
     navigate("/");
@@ -164,18 +170,40 @@ export function AppShell({
           </nav>
         </ScrollArea>
 
-        <div className="p-3">
+        <div className="flex items-center gap-1 p-3">
           <Button
-            className="w-full justify-start gap-2"
+            className="h-10 min-w-0 flex-1 justify-start gap-2.5 px-2"
             nativeButton={false}
-            render={<Link href="/settings/profile" />}
+            render={<Link href={profileHref} />}
             variant="ghost"
           >
-            <Avatar size="sm">
+            <Avatar>
               <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
               <AvatarFallback>{userInitial(user)}</AvatarFallback>
             </Avatar>
-            Settings
+            <span className="min-w-0 truncate text-left font-medium">
+              {user?.name?.trim() || "Profile"}
+            </span>
+          </Button>
+          <Button
+            aria-label="Leaderboard"
+            className="shrink-0 text-muted-foreground"
+            nativeButton={false}
+            render={<Link href="/leaderboard" />}
+            size="icon"
+            variant="ghost"
+          >
+            <PodiumIcon className="size-4" />
+          </Button>
+          <Button
+            aria-label="Settings"
+            className="shrink-0 text-muted-foreground"
+            nativeButton={false}
+            render={<Link href="/settings" />}
+            size="icon"
+            variant="ghost"
+          >
+            <SettingsIcon className="size-4" />
           </Button>
         </div>
 

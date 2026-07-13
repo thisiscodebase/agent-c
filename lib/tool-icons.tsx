@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BrainIcon,
-  Building2Icon,
   Code2Icon,
   GlobeIcon,
   InfoIcon,
@@ -147,10 +146,10 @@ const iconConfigs: Record<string, IconConfig> = {
     imgClass: "dark:invert",
   },
   platform: {
-    kind: "lucide",
-    icon: Building2Icon,
+    kind: "image",
+    src: "/icons/codebase.jpeg",
     bgClass: "bg-emerald-500/15",
-    iconClass: "text-emerald-700 dark:text-emerald-400",
+    alt: "CodeBase Platform",
   },
 };
 

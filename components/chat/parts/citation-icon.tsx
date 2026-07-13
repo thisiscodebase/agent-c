@@ -15,6 +15,7 @@ const BRAND_ICONS: Partial<
   slack: { src: "/icons/slack.svg", alt: "Slack" },
   drive: { src: "/icons/drive.svg", alt: "Google Drive" },
   tally: { src: "/icons/tally.svg", alt: "Tally" },
+  platform: { src: "/icons/codebase.jpeg", alt: "CodeBase Platform" },
 };
 
 export function CitationIcon({

@@ -1,6 +1,6 @@
 import { generateText } from "ai";
-import { NANO_MODEL } from "#shared/models";
 import { truncateThreadTitle } from "#shared/types/thread";
+import { resolveNanoModelSelection } from "~~/server/utils/model-routing";
 import {
   formatTitleTurnsForPrompt,
   type TitleTurn,
@@ -32,18 +32,23 @@ function cleanGeneratedTitle(raw: string): string | undefined {
 
 export async function generateThreadTitleFromTurns(
   turns: readonly TitleTurn[],
+  options?: { userId?: string },
 ): Promise<string | undefined> {
   if (turns.length === 0) {
     return undefined;
   }
 
+  const selection = await resolveNanoModelSelection(options?.userId);
   const transcript = formatTitleTurnsForPrompt(turns);
   const { text } = await generateText({
-    model: NANO_MODEL,
+    model: selection.model,
     system: TITLE_SYSTEM,
     prompt: `Conversation:\n${transcript}\n\nTitle:`,
     maxOutputTokens: 40,
     temperature: 0.3,
+    providerOptions: {
+      gateway: selection.gateway,
+    },
   });
 
   return cleanGeneratedTitle(text);
@@ -51,8 +56,10 @@ export async function generateThreadTitleFromTurns(
 
 export async function generateThreadTitleFromSeed(
   seedText: string,
+  options?: { userId?: string },
 ): Promise<string | undefined> {
-  return generateThreadTitleFromTurns([
-    { role: "user", text: seedText.trim().slice(0, 400) },
-  ]);
+  return generateThreadTitleFromTurns(
+    [{ role: "user", text: seedText.trim().slice(0, 400) }],
+    options,
+  );
 }

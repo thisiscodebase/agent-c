@@ -177,3 +177,32 @@ requires `INTERNAL_API_SECRET`.
   (`INTERNAL_API_SECRET`).
 - Model/provider API key(s) for the Eve agent runtime (`AI_GATEWAY_API_KEY`
   or `VERCEL_OIDC_TOKEN` via `vercel link`).
+
+## Added — Vercel Flags (model routing)
+
+Flags control which agent tier is active and which Gateway model each tier
+uses. Definitions live in [`flags.ts`](../flags.ts); catalog defaults and
+privacy helpers in [`shared/models.ts`](../shared/models.ts).
+
+On **web** (and anywhere Flags SDK evaluates):
+
+- `FLAGS_SECRET` — required by the Flags SDK (32 random bytes, base64url).
+  Generate with
+  `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`.
+  Use a distinct value per environment.
+
+Discovery for Flags Explorer: `GET /.well-known/vercel/flags`.
+
+Defaults when Flags are unset or evaluation fails:
+
+| Flag | Default |
+|------|---------|
+| `agent-tier` | `chat` |
+| `agent-nano-model` | `openai/gpt-5.4-nano` |
+| `agent-chat-model` | `openai/gpt-5.6-luna` |
+| `agent-premium-model` | `anthropic/claude-sonnet-5` |
+| `agent-extreme-model` | `openai/gpt-5.6-sol` |
+
+Premium allowlist also includes `xai/grok-4.5` and `openai/gpt-5.6-terra`.
+Selecting Grok disables per-request ZDR automatically (keeps no prompt
+training). Chat / premium / extreme agent calls use reasoning effort `high`.

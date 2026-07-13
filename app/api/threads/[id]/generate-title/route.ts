@@ -61,7 +61,7 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
 
     let title: string | undefined;
     try {
-      title = await generateThreadTitleFromSeed(seedText);
+      title = await generateThreadTitleFromSeed(seedText, { userId });
     }
     catch (error) {
       console.error("[generate-title] seed failed", { threadId: id, error });
@@ -94,11 +94,11 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
   let title: string | undefined;
   try {
     if (turns.length > 0) {
-      title = await generateThreadTitleFromTurns(turns);
+      title = await generateThreadTitleFromTurns(turns, { userId });
     }
     else if (body.force) {
       // Manual rename before any messages: re-title from the current label.
-      title = await generateThreadTitleFromSeed(thread.title);
+      title = await generateThreadTitleFromSeed(thread.title, { userId });
     }
   }
   catch (error) {

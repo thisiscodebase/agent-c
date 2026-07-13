@@ -28,6 +28,7 @@ agent-c/
 
 ## Documentation
 
+- [Deployment](docs/DEPLOYMENT.md) — Local + production configuration
 - [Architecture](docs/ARCHITECTURE.md) — System design, connectors, search
 - [Connect](docs/CONNECT.md) — Vercel Connect vs DIY, pricing, demo setup
 - [Platform interop](docs/PLATFORM_INTEROP.md) — Platform MCP env + Connect/OIDC production checklist
@@ -85,7 +86,26 @@ per category; saves replace the full block.
 - [`shared/agent.ts`](shared/agent.ts) — branding
 - [`agent/lib/base-instructions.ts`](agent/lib/base-instructions.ts) — persona
 - [`agent/channels/slack.ts`](agent/channels/slack.ts) — Slack Connect slug
-- [`agent/agent.ts`](agent/agent.ts) — AI model
+- [`shared/models.ts`](shared/models.ts) + [`flags.ts`](flags.ts) — model tiers / Flags
 - [`shared/connect.ts`](shared/connect.ts) — connector UIDs
 
 See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) for details.
+
+## Model routing (Flags)
+
+Agent and nano models are selected via Vercel Flags (see [`flags.ts`](flags.ts)
+and [`shared/models.ts`](shared/models.ts)):
+
+| Flag | Default |
+|------|---------|
+| `agent-tier` | `chat` |
+| `agent-nano-model` | `openai/gpt-5.4-nano` |
+| `agent-chat-model` | `openai/gpt-5.6-luna` |
+| `agent-premium-model` | `anthropic/claude-sonnet-5` |
+| `agent-extreme-model` | `openai/gpt-5.6-sol` |
+
+Eve resolves the agent model on `session.started` via
+`/api/internal/model-routing`. Requests set Gateway
+`disallowPromptTraining: true` and `zeroDataRetention: true`, except
+`xai/grok-4.5` which omits ZDR (no ZDR provider) while keeping no-training.
+Agent tiers use `reasoning: "high"`.

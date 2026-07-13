@@ -58,11 +58,12 @@ docs/       # this documentation set
 
 ## Getting started
 
-1. Read [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for required environment
-   variables per service.
-2. Read [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) for what's changed from
+1. Read [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for local + production setup.
+2. Read [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for environment variable
+   details per service.
+3. Read [`docs/CUSTOMIZATION.md`](docs/CUSTOMIZATION.md) for what's changed from
    the upstream template and why.
-3. Read [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased build plan and an
+4. Read [`docs/ROADMAP.md`](docs/ROADMAP.md) for the phased build plan and an
    honest scope/difficulty assessment of the stretch goals.
 
 ## Development
@@ -76,8 +77,9 @@ pnpm db:generate  # Generate Drizzle migrations
 pnpm db:migrate   # Apply migrations
 ```
 
-See [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for required environment
-variables and connector provisioning.
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full local and production
+setup guide, and [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md) for required
+environment variables and connector provisioning.
 
 ## Status
 

@@ -1,5 +1,5 @@
 import type { EveMessage, EveMessagePart } from "eve/react";
-import { getBrandTintClass } from "~/lib/tool-icons";
+import { getBrandTextClass, getBrandTintClass } from "~/lib/tool-icons";
 
 export type CitationSource =
   | "web"
@@ -202,6 +202,26 @@ export function getCitationTintClass(source: CitationSource): string {
       return "bg-sky-500/15";
     case "unknown":
       return "bg-muted";
+    default: {
+      const _exhaustive: never = source;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Foreground for text on citation highlights / source chips. */
+export function getCitationTextClass(source: CitationSource): string {
+  switch (source) {
+    case "hubspot":
+    case "notion":
+    case "slack":
+    case "drive":
+    case "tally":
+    case "platform":
+      return getBrandTextClass(source);
+    case "web":
+    case "unknown":
+      return "text-foreground";
     default: {
       const _exhaustive: never = source;
       return _exhaustive;

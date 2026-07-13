@@ -24,6 +24,8 @@ type LucideIconConfig = {
   icon: LucideIcon;
   bgClass: string;
   iconClass: string;
+  /** Foreground for text drawn on the brand tint (highlights / chips). */
+  textClass?: string;
 };
 
 type ImageIconConfig = {
@@ -36,6 +38,8 @@ type ImageIconConfig = {
    * dark-mode treatment (e.g. `dark:invert`) instead of a separate asset.
    */
   imgClass?: string;
+  /** Foreground for text drawn on the brand tint (highlights / chips). */
+  textClass?: string;
 };
 
 type IconConfig = LucideIconConfig | ImageIconConfig;
@@ -129,6 +133,7 @@ const iconConfigs: Record<string, IconConfig> = {
     kind: "image",
     src: "/icons/slack.svg",
     bgClass: "bg-[#4A154B]/75",
+    textClass: "text-white",
     alt: "Slack",
   },
   drive: {
@@ -159,6 +164,15 @@ export function getBrandTintClass(category: string): string {
   if (config?.kind === "image") return config.bgClass;
   if (config?.kind === "lucide") return config.bgClass;
   return "bg-muted";
+}
+
+/**
+ * Text color for labels drawn on a brand tint. Dark brand shells (e.g. Slack)
+ * need white; lighter tints keep the default foreground.
+ */
+export function getBrandTextClass(category: string): string {
+  const config = iconConfigs[normalizeCategory(category)];
+  return config?.textClass ?? "text-foreground";
 }
 
 /** Optional `<img>` classes for brand marks (e.g. dark:invert). */

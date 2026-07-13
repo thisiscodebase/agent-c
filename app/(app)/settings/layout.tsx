@@ -16,7 +16,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     <div className="mx-auto flex h-full max-w-3xl flex-col gap-6 overflow-y-auto p-6">
       <h1 className="text-xl font-semibold">Settings</h1>
 
-      <nav className="flex w-fit gap-1 rounded-lg bg-muted p-1 text-sm">
+      <nav className="flex w-fit gap-1 rounded-lg border border-border bg-muted/80 p-1 text-sm dark:bg-muted">
         {TABS.map((tab) => {
           const active = tab.exact
             ? pathname === tab.href
@@ -26,10 +26,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
             <Link
               key={tab.href}
               className={cn(
-                "rounded-md px-3 py-1.5 font-medium",
+                "rounded-md px-3 py-1.5 font-medium transition-colors",
                 active
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:bg-background/70 hover:text-foreground",
               )}
               href={tab.href}
             >

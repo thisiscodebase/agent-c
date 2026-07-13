@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
 
 export function SettingsGroup({
   children,
   className,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -17,12 +18,15 @@ export function SettingsGroup({
 export function SettingsRow({
   title,
   description,
+  leading,
   children,
   className,
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  /** Icon or mark shown before the title. */
+  leading?: ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   return (
@@ -32,11 +36,18 @@ export function SettingsRow({
         className,
       )}
     >
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{title}</p>
-        {description ? (
-          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        {leading ? (
+          <span className="mt-0.5 inline-flex shrink-0 items-center justify-center">
+            {leading}
+          </span>
         ) : null}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{title}</p>
+          {description ? (
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
       </div>
       <div className="flex shrink-0 items-center justify-end sm:max-w-[16rem] sm:min-w-[10rem]">
         {children}

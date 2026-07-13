@@ -1,37 +1,38 @@
 "use client";
 
 import { Button } from "~/components/ui/button";
-import {
-  ScrollArea,
-  ScrollBar,
-} from "~/components/ui/scroll-area";
 import { cn } from "~/lib/utils";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useCallback } from "react";
 
-export type SuggestionsProps = ComponentProps<typeof ScrollArea>;
+export type SuggestionsProps = ComponentProps<"div">;
 
 export const Suggestions = ({
   className,
   children,
   ...props
 }: SuggestionsProps) => (
-  <ScrollArea className="w-full overflow-x-auto whitespace-nowrap" {...props}>
-    <div className={cn("flex w-max flex-nowrap items-center gap-2", className)}>
-      {children}
-    </div>
-    <ScrollBar className="hidden" orientation="horizontal" />
-  </ScrollArea>
+  <div
+    className={cn(
+      "flex w-full flex-wrap items-center justify-center gap-2",
+      className,
+    )}
+    {...props}
+  >
+    {children}
+  </div>
 );
 
 export type SuggestionProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
   suggestion: string;
   onClick?: (suggestion: string) => void;
+  icon?: ReactNode;
 };
 
 export const Suggestion = ({
   suggestion,
   onClick,
+  icon,
   className,
   variant = "outline",
   size = "sm",
@@ -44,14 +45,19 @@ export const Suggestion = ({
 
   return (
     <Button
-      className={cn("cursor-pointer rounded-full px-4", className)}
+      className={cn("h-auto cursor-pointer gap-2 rounded-full px-3.5 py-1.5", className)}
       onClick={handleClick}
       size={size}
       type="button"
       variant={variant}
       {...props}
     >
-      {children || suggestion}
+      {icon ? (
+        <span className="inline-flex shrink-0 items-center justify-center [&_img]:size-3.5">
+          {icon}
+        </span>
+      ) : null}
+      <span className="whitespace-normal text-left">{children || suggestion}</span>
     </Button>
   );
 };

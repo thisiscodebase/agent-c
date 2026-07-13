@@ -25,16 +25,14 @@ function ConnectorRow({ connector }: { connector: ConnectorSummary }) {
   return (
     <SettingsRow
       description={connector.description}
+      leading={getToolCategoryIcon(connector.id, {
+        size: 18,
+        showBackground: false,
+      })}
       title={connector.name}
     >
       <div className="flex flex-col items-end gap-2">
-        <div className="flex items-center gap-2">
-          {getToolCategoryIcon(connector.id, {
-            size: 16,
-            showBackground: false,
-          })}
-          <Badge variant={c.status.variant}>{c.status.label}</Badge>
-        </div>
+        <Badge variant={c.status.variant}>{c.status.label}</Badge>
         <div className="flex flex-wrap justify-end gap-1.5">
           {c.canConnect ? (
             <Button disabled={c.connecting} size="sm" onClick={() => void c.connect()}>
@@ -72,13 +70,6 @@ function ConnectorRow({ connector }: { connector: ConnectorSummary }) {
             </Dialog>
           ) : null}
         </div>
-        {c.hintLines.length > 0 ? (
-          <div className="max-w-xs text-right text-xs text-muted-foreground">
-            {c.hintLines.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </div>
-        ) : null}
         {c.errorStatus ? (
           <p className="max-w-xs text-right text-xs text-destructive">{c.errorStatus.message}</p>
         ) : null}
@@ -137,6 +128,10 @@ function SlackLinkCard() {
             ? "Your Slack account is linked. Search uses the Slack search connector above once authorized."
             : "Link your Slack account to chat with Agent C in Slack (separate from Slack search OAuth)."
         }
+        leading={getToolCategoryIcon("slack", {
+          size: 18,
+          showBackground: false,
+        })}
         title="Slack account"
       >
         <div className="flex flex-col items-end gap-2">

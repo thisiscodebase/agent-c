@@ -3,7 +3,6 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useState } from "react";
 import {
-  MessageAction,
   MessageActions,
   MessageToolbar,
 } from "~/components/ai-elements/message";
@@ -20,6 +19,9 @@ import {
 import { cn } from "~/lib/utils";
 import { CitationIcon } from "./citation-icon";
 import { ThreadHighlightButton } from "./thread-highlight-button";
+
+const footerActionClassName =
+  "inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50";
 
 export function MessageFooter({
   markdown,
@@ -52,19 +54,24 @@ export function MessageFooter({
   return (
     <MessageToolbar className={cn("mt-2 justify-start gap-1", className)}>
       <MessageActions>
-        <MessageAction
+        <button
+          className={footerActionClassName}
           disabled={!markdown}
-          label={copied ? "Copied" : "Copy response"}
-          tooltip={copied ? "Copied" : "Copy"}
+          type="button"
           onClick={() => void handleCopy()}
         >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </MessageAction>
+          {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+          <span className="font-medium">{copied ? "Copied" : "Copy"}</span>
+        </button>
+
+        {threadId ? (
+          <ThreadHighlightButton messageId={messageId} threadId={threadId} />
+        ) : null}
 
         {citations.length > 0 ? (
           <Popover>
             <PopoverTrigger
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className={footerActionClassName}
               type="button"
             >
               <span className="flex items-center">
@@ -108,10 +115,6 @@ export function MessageFooter({
               </ul>
             </PopoverContent>
           </Popover>
-        ) : null}
-
-        {threadId ? (
-          <ThreadHighlightButton messageId={messageId} threadId={threadId} />
         ) : null}
       </MessageActions>
     </MessageToolbar>

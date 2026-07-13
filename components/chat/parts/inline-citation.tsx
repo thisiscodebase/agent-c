@@ -4,6 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 import {
   findCitationForUrl,
   getCitationLabel,
+  getCitationTextClass,
   getCitationTintClass,
   getCitationTitle,
   getDomain,
@@ -72,12 +73,14 @@ export function CitationMark({
 }) {
   const tintSource = (source as CitationSource | undefined) ?? "unknown";
   const tint = getCitationTintClass(tintSource);
+  const fg = getCitationTextClass(tintSource);
 
   const mark = (
     <span
       className={cn(
-        "rounded-[0.2em] px-0.5 py-px text-foreground no-underline",
+        "rounded-[0.2em] px-0.5 py-px no-underline",
         tint,
+        fg,
         className,
       )}
     >
@@ -89,7 +92,7 @@ export function CitationMark({
 
   return (
     <a
-      className="text-foreground no-underline"
+      className={cn("no-underline", fg)}
       href={url}
       rel="noreferrer"
       target="_blank"
@@ -113,19 +116,23 @@ export function InlineCitationPill({
   const extra = citations.length - 1;
   const label = getCitationLabel(primary);
   const tint = getCitationTintClass(primary.source);
+  const fg = getCitationTextClass(primary.source);
+  const mutedFg = fg === "text-white" ? "text-white/60" : "text-foreground/60";
+  const pillFg = fg === "text-white" ? "text-white/90" : "text-foreground/80";
 
   const pill = (
     <span
       className={cn(
-        "ml-1 inline-flex max-w-[12rem] translate-y-[-1px] items-center gap-1 rounded-full px-1.5 py-0.5 align-middle text-[11px] leading-none text-foreground/80 no-underline transition-opacity hover:opacity-90",
+        "ml-1 inline-flex max-w-[12rem] translate-y-[-1px] items-center gap-1 rounded-full px-1.5 py-0.5 align-middle text-[11px] leading-none no-underline transition-opacity hover:opacity-90",
         tint,
+        pillFg,
         className,
       )}
     >
       <CitationIcon citation={primary} showBackground={false} size={12} />
       <span className="truncate font-medium">{label}</span>
       {extra > 0 ? (
-        <span className="shrink-0 text-foreground/60">+{extra}</span>
+        <span className={cn("shrink-0", mutedFg)}>+{extra}</span>
       ) : null}
     </span>
   );

@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { ConnectorSummary } from "#shared/types/connector";
-import { getErrorStatus, getSetupStatus } from "#shared/utils/status";
+import { getErrorStatus } from "#shared/utils/status";
 import { connectorStatusLabel, parseTestResult, testResultsHeading } from "~/lib/connector-status";
 import { getFetchErrorMessage } from "~/lib/fetch-error";
 import { queryKeys } from "~/lib/query-keys";
@@ -28,10 +28,7 @@ export function useConnector(connector: ConnectorSummary) {
       && (connector.status.state === "not_connected" || connector.status.state === "installation_required");
   const isConnected = connector.status.state === "connected";
   const canRevoke = isConnected && connector.authMode !== "env";
-  const needsSetup = connector.status.state === "setup_required";
-  const setupStatus = getSetupStatus(connector.status);
   const errorStatus = getErrorStatus(connector.status);
-  const hintLines = setupStatus?.hint?.split("\n").filter(Boolean) ?? [];
   const parsedResults = (testResults ?? []).map((line) => parseTestResult(line));
   const resultsHeading = testResultsHeading(connector.id);
 
@@ -109,10 +106,7 @@ export function useConnector(connector: ConnectorSummary) {
     canConnect,
     isConnected,
     canRevoke,
-    needsSetup,
-    setupStatus,
     errorStatus,
-    hintLines,
     connecting,
     testing,
     revoking,

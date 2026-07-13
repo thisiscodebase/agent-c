@@ -42,6 +42,22 @@ export function formatJoinedDaysAgo(createdAt: number, now = Date.now()): string
   return `Joined ${days} days ago`;
 }
 
+export function formatCostUsd(amount: number): string {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return "$0";
+  }
+  if (amount < 0.01) {
+    return `$${amount.toFixed(4)}`;
+  }
+  if (amount < 1) {
+    return `$${amount.toFixed(3)}`;
+  }
+  if (amount < 100) {
+    return `$${amount.toFixed(2)}`;
+  }
+  return `$${Math.round(amount).toLocaleString()}`;
+}
+
 export function formatChartDayLabel(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
   if (!y || !m || !d) {

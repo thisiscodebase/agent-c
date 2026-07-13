@@ -105,6 +105,24 @@ const iconConfigs: Record<string, IconConfig> = {
     bgClass: "bg-taupe-500/15",
     iconClass: "text-taupe-600 dark:text-taupe-400",
   },
+  connections: {
+    kind: "lucide",
+    icon: ToolCaseIcon,
+    bgClass: "bg-stone-500/15",
+    iconClass: "text-stone-600 dark:text-stone-400",
+  },
+  web: {
+    kind: "lucide",
+    icon: GlobeIcon,
+    bgClass: "bg-sky-500/15",
+    iconClass: "text-sky-600 dark:text-sky-400",
+  },
+  web_fetch: {
+    kind: "lucide",
+    icon: GlobeIcon,
+    bgClass: "bg-sky-500/15",
+    iconClass: "text-sky-600 dark:text-sky-400",
+  },
   general: {
     kind: "lucide",
     icon: InfoIcon,
@@ -157,6 +175,42 @@ const iconConfigs: Record<string, IconConfig> = {
     alt: "CodeBase Platform",
   },
 };
+
+/** Solid accent fill for progress bars / meters matching the tool brand. */
+export function getBrandAccentClass(category: string): string {
+  switch (normalizeCategory(category)) {
+    case "hubspot":
+      return "bg-orange-500";
+    case "slack":
+      return "bg-[#4A154B]";
+    case "notion":
+      return "bg-neutral-800 dark:bg-neutral-200";
+    case "drive":
+      return "bg-blue-500";
+    case "tally":
+      return "bg-[#D915C4]";
+    case "platform":
+      return "bg-emerald-500";
+    case "todos":
+      return "bg-amber-500";
+    case "development":
+      return "bg-cyan-500";
+    case "memory":
+      return "bg-indigo-500";
+    case "web":
+    case "web_search":
+    case "web_fetch":
+      return "bg-sky-500";
+    case "connections":
+      return "bg-stone-500";
+    case "question":
+      return "bg-violet-500";
+    case "reasoning":
+      return "bg-pink-500";
+    default:
+      return "bg-foreground/35";
+  }
+}
 
 /** Brand shell tint for connectors (shared by tool activity + citation UI). */
 export function getBrandTintClass(category: string): string {

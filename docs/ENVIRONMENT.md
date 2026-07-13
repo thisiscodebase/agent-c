@@ -23,6 +23,11 @@ Vercel Connect–verified webhook. There is no reason to duplicate these onto
   a plain env var, read directly into the `hd` option of Better Auth's
   Google provider config in `server/utils/auth.ts` (not a Better Auth
   built-in env var name — just app config sourced from the environment).
+- `ADMIN_EMAILS` — comma-separated allowlist of Google account emails that
+  can open `/admin` and `/api/admin/*` (usage & cost dashboard). Matching is
+  case-insensitive. When unset or empty, nobody has admin access. Example:
+  `you@codebase.org,ops@codebase.org`. Costs are never exposed on public
+  `/leaderboard` or `/u/[handle]` responses.
 
 ## Changed — persistence (`web`, and `eve` if it holds its own DB client)
 

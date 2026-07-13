@@ -31,6 +31,26 @@ export function logoForModelId(modelId: string): ModelLogo | null {
   return PROVIDER_LOGOS[provider] ?? null;
 }
 
+/** Progress-bar / accent fill matching the model provider brand. */
+export function modelBrandAccentClass(modelId: string): string {
+  switch (modelProviderFromId(modelId)) {
+    case "anthropic":
+    case "claude":
+      return "bg-[#D97757]";
+    case "openai":
+      return "bg-neutral-950 dark:bg-white";
+    case "google":
+    case "gemini":
+      return "bg-[#4285F4]";
+    case "xai":
+    case "grok":
+    case "cursor":
+      return "bg-[#F54E00]";
+    default:
+      return "bg-foreground/35";
+  }
+}
+
 export function ModelProviderLogo({
   modelId,
   label,

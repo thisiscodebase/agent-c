@@ -1,8 +1,12 @@
 import type { ThreadState } from "#shared/types/thread";
+import { toolCategory } from "#shared/tool-category";
 import type {
+  PublicUserUsageStats,
   UsageDailyPoint,
   UsageHeatmapDay,
   UsageModelStat,
+  UsageThreadStat,
+  UsageToolStat,
   UserUsageStats,
 } from "#shared/types/usage-stats";
 
@@ -27,6 +31,8 @@ interface TypedEvent {
 const CHART_DAYS_MAX = 90;
 const CHART_DAYS_MIN = 7;
 const HEATMAP_DAYS_MAX = 365;
+const TOP_MODELS = 10;
+const TOP_TOOLS = 10;
 
 function asEvent(value: unknown): TypedEvent | null {
   if (!value || typeof value !== "object") {
@@ -80,9 +86,41 @@ function readUsage(data: Record<string, unknown> | undefined): StepUsage | undef
   return usage as StepUsage;
 }
 
+function readStepIndex(data: Record<string, unknown> | undefined): number | null {
+  const raw = data?.stepIndex;
+  if (typeof raw === "number" && Number.isFinite(raw)) {
+    return raw;
+  }
+  if (typeof raw === "string" && raw.trim() !== "") {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function readToolNamesFromActions(data: Record<string, unknown> | undefined): string[] {
+  const actions = data?.actions;
+  if (!Array.isArray(actions)) {
+    return [];
+  }
+
+  const names: string[] = [];
+  for (const action of actions) {
+    if (!action || typeof action !== "object") {
+      continue;
+    }
+    const toolName = (action as { toolName?: unknown }).toolName;
+    if (typeof toolName === "string" && toolName.length > 0) {
+      names.push(toolName);
+    }
+  }
+  return names;
+}
+
 function modelLabel(modelId: string): string {
-  const slash = modelId.lastIndexOf("/");
-  const raw = slash >= 0 ? modelId.slice(slash + 1) : modelId;
+  const cleaned = modelId.replace(/^dynamic:/, "");
+  const slash = cleaned.lastIndexOf("/");
+  const raw = slash >= 0 ? cleaned.slice(slash + 1) : cleaned;
   return raw
     .split("-")
     .map((part) => {
@@ -137,25 +175,64 @@ function computeStreaks(activeDays: Set<string>, todayKey: string): {
 
 export interface ThreadUsageInput {
   id: string;
+  title?: string;
   createdAt: number;
   updatedAt: number;
   state: ThreadState | null;
+}
+
+export interface AggregateUsageOptions {
+  /** When true, return per-thread breakdowns (admin user drill-down). */
+  includeThreads?: boolean;
+}
+
+export function toPublicUsageStats(stats: UserUsageStats): PublicUserUsageStats {
+  return {
+    totalTokens: stats.totalTokens,
+    agentCount: stats.agentCount,
+    longestAgentMs: stats.longestAgentMs,
+    currentStreakDays: stats.currentStreakDays,
+    longestStreakDays: stats.longestStreakDays,
+    joinedAt: stats.joinedAt,
+    heatmap: stats.heatmap,
+    models: stats.models.map(({ modelId, label, tokens, agents }) => ({
+      modelId,
+      label,
+      tokens,
+      agents,
+    })),
+    daily: stats.daily.map(({ date, tokens, agents }) => ({ date, tokens, agents })),
+    tools: stats.tools.map(({ category, label, calls, tokens }) => ({
+      category,
+      label,
+      calls,
+      tokens,
+    })),
+  };
 }
 
 export function aggregateUsageStats(
   threads: ThreadUsageInput[],
   joinedAt: number,
   now = Date.now(),
-): UserUsageStats {
+  options: AggregateUsageOptions = {},
+): UserUsageStats & { threads?: UsageThreadStat[] } {
   let totalTokens = 0;
   let totalCostUsd = 0;
   let longestAgentMs = 0;
 
   const activityByDay = new Map<string, number>();
   const tokensByDay = new Map<string, number>();
+  const costByDay = new Map<string, number>();
   const agentIdsByDay = new Map<string, Set<string>>();
   const modelTokens = new Map<string, number>();
+  const modelCost = new Map<string, number>();
   const modelAgents = new Map<string, number>();
+  const toolCalls = new Map<
+    string,
+    { label: string; calls: number; tokens: number; costUsd: number }
+  >();
+  const threadStats: UsageThreadStat[] = [];
 
   function markAgentDay(day: string, threadId: string) {
     let set = agentIdsByDay.get(day);
@@ -164,6 +241,22 @@ export function aggregateUsageStats(
       agentIdsByDay.set(day, set);
     }
     set.add(threadId);
+  }
+
+  function bumpTool(toolName: string, calls: number, tokens: number, costUsd: number) {
+    const { category, label } = toolCategory(toolName);
+    // Meta lookup for other tools — not a real usage source on the leaderboard.
+    if (category === "connections") {
+      return;
+    }
+    const existing = toolCalls.get(category);
+    if (existing) {
+      existing.calls += calls;
+      existing.tokens += tokens;
+      existing.costUsd += costUsd;
+      return;
+    }
+    toolCalls.set(category, { label, calls, tokens, costUsd });
   }
 
   for (const thread of threads) {
@@ -176,6 +269,12 @@ export function aggregateUsageStats(
     let currentModelId: string | null = null;
     const modelsInThread = new Set<string>();
     let sawActivity = false;
+
+    let threadTokens = 0;
+    let threadCost = 0;
+    let threadToolCalls = 0;
+    /** Tools requested on each stepIndex within this thread. */
+    const toolsByStep = new Map<number, string[]>();
 
     for (const event of events) {
       const at = eventTime(event);
@@ -202,15 +301,28 @@ export function aggregateUsageStats(
         sawActivity = true;
       }
 
+      if (event.type === "actions.requested") {
+        const stepIndex = readStepIndex(event.data);
+        const names = readToolNamesFromActions(event.data);
+        if (stepIndex !== null && names.length > 0) {
+          toolsByStep.set(stepIndex, names);
+          threadToolCalls += names.length;
+        }
+      }
+
       if (event.type === "step.completed") {
         const usage = readUsage(event.data);
         const tokens = stepTokens(usage);
+        const cost = usage?.costUsd ?? 0;
         totalTokens += tokens;
-        totalCostUsd += usage?.costUsd ?? 0;
+        totalCostUsd += cost;
+        threadTokens += tokens;
+        threadCost += cost;
 
         if (at !== null) {
           const day = formatLocalDate(at);
           tokensByDay.set(day, (tokensByDay.get(day) ?? 0) + tokens);
+          costByDay.set(day, (costByDay.get(day) ?? 0) + cost);
           if (!activityByDay.has(day)) {
             activityByDay.set(day, 1);
           }
@@ -218,8 +330,19 @@ export function aggregateUsageStats(
           sawActivity = true;
         }
 
-        if (currentModelId && tokens > 0) {
+        if (currentModelId && (tokens > 0 || cost > 0)) {
           modelTokens.set(currentModelId, (modelTokens.get(currentModelId) ?? 0) + tokens);
+          modelCost.set(currentModelId, (modelCost.get(currentModelId) ?? 0) + cost);
+        }
+
+        const stepIndex = readStepIndex(event.data);
+        const names = stepIndex !== null ? toolsByStep.get(stepIndex) : undefined;
+        if (names && names.length > 0) {
+          const costShare = cost / names.length;
+          const tokenShare = tokens / names.length;
+          for (const name of names) {
+            bumpTool(name, 1, tokenShare, costShare);
+          }
         }
       }
     }
@@ -235,12 +358,27 @@ export function aggregateUsageStats(
       if (!modelTokens.has(modelId)) {
         modelTokens.set(modelId, 0);
       }
+      if (!modelCost.has(modelId)) {
+        modelCost.set(modelId, 0);
+      }
     }
 
     if (threadStart !== null && threadEnd !== null) {
       longestAgentMs = Math.max(longestAgentMs, Math.max(0, threadEnd - threadStart));
     } else {
       longestAgentMs = Math.max(longestAgentMs, Math.max(0, thread.updatedAt - thread.createdAt));
+    }
+
+    if (options.includeThreads) {
+      threadStats.push({
+        threadId: thread.id,
+        title: thread.title?.trim() || "Untitled",
+        totalTokens: threadTokens,
+        totalCostUsd: threadCost,
+        toolCalls: threadToolCalls,
+        createdAt: thread.createdAt,
+        updatedAt: thread.updatedAt,
+      });
     }
   }
 
@@ -261,7 +399,6 @@ export function aggregateUsageStats(
     ? new Date(`${activityKeys[0]}T00:00:00`)
     : joinedDay;
 
-  // Charts start at join/first activity so empty pre-project months don't dominate.
   const rangeStart = new Date(Math.min(joinedDay.getTime(), firstActivityDay.getTime()));
   const daysSinceStart = Math.max(
     0,
@@ -290,6 +427,7 @@ export function aggregateUsageStats(
       date,
       tokens: tokensByDay.get(date) ?? 0,
       agents: agentIdsByDay.get(date)?.size ?? 0,
+      costUsd: costByDay.get(date) ?? 0,
     });
   }
 
@@ -299,11 +437,23 @@ export function aggregateUsageStats(
       label: modelLabel(modelId),
       tokens,
       agents: modelAgents.get(modelId) ?? 0,
+      costUsd: modelCost.get(modelId) ?? 0,
     }))
-    .sort((a, b) => b.tokens - a.tokens || b.agents - a.agents)
-    .slice(0, 8);
+    .sort((a, b) => b.tokens - a.tokens || b.costUsd - a.costUsd || b.agents - a.agents)
+    .slice(0, TOP_MODELS);
 
-  return {
+  const tools: UsageToolStat[] = [...toolCalls.entries()]
+    .map(([category, value]) => ({
+      category,
+      label: value.label,
+      calls: value.calls,
+      tokens: value.tokens,
+      costUsd: value.costUsd,
+    }))
+    .sort((a, b) => b.calls - a.calls || b.tokens - a.tokens || b.costUsd - a.costUsd)
+    .slice(0, TOP_TOOLS);
+
+  const result: UserUsageStats & { threads?: UsageThreadStat[] } = {
     totalTokens,
     totalCostUsd,
     agentCount: threads.length,
@@ -314,5 +464,14 @@ export function aggregateUsageStats(
     heatmap,
     models,
     daily,
+    tools,
   };
+
+  if (options.includeThreads) {
+    result.threads = threadStats.sort(
+      (a, b) => b.totalCostUsd - a.totalCostUsd || b.totalTokens - a.totalTokens,
+    );
+  }
+
+  return result;
 }

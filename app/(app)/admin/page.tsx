@@ -1,19 +1,20 @@
 "use client";
 
-import { LinkIcon } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import type { UsageMetric } from "#shared/types/usage-metric";
-import { PUBLIC_USAGE_METRICS } from "#shared/types/usage-metric";
+import { ADMIN_USAGE_METRICS } from "#shared/types/usage-metric";
+import { AdminUserLeaderboard } from "~/components/admin/admin-user-leaderboard";
 import { ModelsLeaderboard } from "~/components/profile/models-leaderboard";
 import { PopularTools } from "~/components/profile/popular-tools";
 import { ProfileActivityHeatmap } from "~/components/profile/profile-activity-heatmap";
 import { ProfileUsageChart } from "~/components/profile/profile-usage-charts";
-import { TokenLeaderboard } from "~/components/profile/token-leaderboard";
 import { UsageMetricSwitcher } from "~/components/profile/usage-metric-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { useCompanyProfile } from "~/hooks/use-company-profile";
+import { useAdminAccess, useAdminCompanyProfile } from "~/hooks/use-admin";
 import {
+  formatCostUsd,
   formatDurationMs,
   formatTokenCount,
 } from "~/lib/format-usage";
@@ -27,15 +28,26 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-export default function LeaderboardPage() {
-  const { data, isLoading, error } = useCompanyProfile();
-  const [copied, setCopied] = useState(false);
-  const [metric, setMetric] = useState<Exclude<UsageMetric, "cost">>("agents");
+export default function AdminDashboardPage() {
+  const access = useAdminAccess();
+  const { data, isLoading, error } = useAdminCompanyProfile(access.data?.allowed === true);
+  const [metric, setMetric] = useState<UsageMetric>("cost");
 
-  if (isLoading) {
+  if (access.isLoading || (access.data?.allowed && isLoading)) {
     return (
       <div className="flex h-full items-center justify-center p-8">
-        <p className="text-sm text-muted-foreground">Loading leaderboard…</p>
+        <p className="text-sm text-muted-foreground">Loading admin dashboard…</p>
+      </div>
+    );
+  }
+
+  if (access.data && !access.data.allowed) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-8">
+        <p className="text-sm text-muted-foreground">Admin access required.</p>
+        <Button nativeButton={false} render={<Link href="/leaderboard" />} variant="outline">
+          Back to leaderboard
+        </Button>
       </div>
     );
   }
@@ -44,7 +56,7 @@ export default function LeaderboardPage() {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <p className="text-sm text-muted-foreground">
-          {error instanceof Error ? error.message : "Failed to load leaderboard"}
+          {error instanceof Error ? error.message : "Failed to load admin dashboard"}
         </p>
       </div>
     );
@@ -52,17 +64,6 @@ export default function LeaderboardPage() {
 
   const company = data.company;
   const { stats } = company;
-
-  async function shareLeaderboard() {
-    const url = `${window.location.origin}/leaderboard`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignore
-    }
-  }
 
   return (
     <div className="h-full overflow-y-auto">
@@ -79,24 +80,24 @@ export default function LeaderboardPage() {
             </Avatar>
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold tracking-tight">
-                {company.name}
+                Admin · {company.name}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {company.userCount} {company.userCount === 1 ? "member" : "members"}
+                Internal usage & cost · {company.userCount}{" "}
+                {company.userCount === 1 ? "member" : "members"}
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => void shareLeaderboard()}>
-            <LinkIcon />
-            {copied ? "Copied" : "Share"}
+          <Button nativeButton={false} render={<Link href="/leaderboard" />} variant="outline">
+            Public leaderboard
           </Button>
         </header>
 
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-          <Metric label="Agents" value={String(stats.agentCount)} />
+          <Metric label="Cost" value={formatCostUsd(stats.totalCostUsd)} />
           <Metric label="Tokens" value={formatTokenCount(stats.totalTokens)} />
+          <Metric label="Agents" value={String(stats.agentCount)} />
           <Metric label="Longest Agent" value={formatDurationMs(stats.longestAgentMs)} />
-          <Metric label="Longest Streak" value={`${stats.longestStreakDays}d`} />
         </div>
 
         <ProfileActivityHeatmap data={stats.heatmap} />
@@ -104,17 +105,13 @@ export default function LeaderboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Sort & chart by</p>
           <UsageMetricSwitcher
-            options={PUBLIC_USAGE_METRICS}
+            options={ADMIN_USAGE_METRICS}
             value={metric}
-            onChange={(next) => {
-              if (next !== "cost") {
-                setMetric(next);
-              }
-            }}
+            onChange={setMetric}
           />
         </div>
 
-        <TokenLeaderboard entries={company.leaderboard} metric={metric} />
+        <AdminUserLeaderboard entries={company.leaderboard} metric={metric} />
 
         <PopularTools metric={metric} tools={stats.tools} />
 
@@ -124,6 +121,7 @@ export default function LeaderboardPage() {
           agentCount={stats.agentCount}
           daily={stats.daily}
           metric={metric}
+          totalCostUsd={stats.totalCostUsd}
           totalTokens={stats.totalTokens}
         />
       </div>

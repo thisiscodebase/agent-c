@@ -2,14 +2,15 @@
 
 import { LinkIcon, PencilIcon } from "lucide-react";
 import { use, useState } from "react";
+import type { UsageMetric } from "#shared/types/usage-metric";
+import { PUBLIC_USAGE_METRICS } from "#shared/types/usage-metric";
 import { profilePathForHandle } from "#shared/user-handle";
-import { ModelProviderLogo } from "~/components/profile/model-provider-logo";
+import { ModelsLeaderboard } from "~/components/profile/models-leaderboard";
+import { PopularTools } from "~/components/profile/popular-tools";
 import { ProfileActivityHeatmap } from "~/components/profile/profile-activity-heatmap";
 import { ProfileEditDialog } from "~/components/profile/profile-edit-dialog";
-import {
-  ProfileAgentsChart,
-  ProfileTokensChart,
-} from "~/components/profile/profile-usage-charts";
+import { ProfileUsageChart } from "~/components/profile/profile-usage-charts";
+import { UsageMetricSwitcher } from "~/components/profile/usage-metric-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { usePublicProfile } from "~/hooks/use-public-profile";
@@ -42,6 +43,7 @@ export default function UserProfilePage({
   const { data, isLoading, error } = usePublicProfile(handle);
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [metric, setMetric] = useState<Exclude<UsageMetric, "cost">>("agents");
 
   if (isLoading) {
     return (
@@ -126,30 +128,29 @@ export default function UserProfilePage({
 
         <ProfileActivityHeatmap data={stats.heatmap} />
 
-        {stats.models.length > 0 ? (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium">Models</h2>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {stats.models.map((model, index) => (
-                <div
-                  key={model.modelId}
-                  className="relative flex items-center gap-3 rounded-xl bg-muted/70 px-4 py-3"
-                >
-                  <ModelProviderLogo label={model.label} modelId={model.modelId} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{model.label}</p>
-                  </div>
-                  <span className="absolute top-2 right-3 text-xs text-muted-foreground">
-                    {index + 1}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">Sort & chart by</p>
+          <UsageMetricSwitcher
+            options={PUBLIC_USAGE_METRICS}
+            value={metric}
+            onChange={(next) => {
+              if (next !== "cost") {
+                setMetric(next);
+              }
+            }}
+          />
+        </div>
 
-        <ProfileTokensChart daily={stats.daily} totalTokens={stats.totalTokens} />
-        <ProfileAgentsChart agentCount={stats.agentCount} daily={stats.daily} />
+        <PopularTools metric={metric} tools={stats.tools} />
+
+        <ModelsLeaderboard metric={metric} models={stats.models} />
+
+        <ProfileUsageChart
+          agentCount={stats.agentCount}
+          daily={stats.daily}
+          metric={metric}
+          totalTokens={stats.totalTokens}
+        />
       </div>
 
       {profile.isOwn ? (

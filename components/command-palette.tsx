@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusIcon, SettingsIcon, MessageSquareIcon, PlugIcon, UserIcon, PodiumIcon } from "lucide-react";
+import { PlusIcon, SettingsIcon, MessageSquareIcon, PlugIcon, UserIcon, PodiumIcon, ShieldIcon } from "lucide-react";
 import { useMemo } from "react";
 import { profilePathForEmail } from "#shared/user-handle";
 import {
@@ -16,12 +16,14 @@ import {
 } from "~/components/ui/command";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
 import { useThreadList } from "~/hooks/chat/use-threads";
+import { useAdminAccess } from "~/hooks/use-admin";
 import { authClient } from "~/lib/auth-client";
 
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { threads } = useThreadList();
   const { navigate } = useChatNavigation();
   const { data: session } = authClient.useSession();
+  const { data: adminAccess } = useAdminAccess();
   const profileHref = useMemo(
     () => profilePathForEmail(session?.user?.email) ?? "/settings",
     [session?.user?.email],
@@ -51,6 +53,12 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
               <PodiumIcon />
               Leaderboard
             </CommandItem>
+            {adminAccess?.allowed ? (
+              <CommandItem onSelect={() => go("/admin")}>
+                <ShieldIcon />
+                Admin dashboard
+              </CommandItem>
+            ) : null}
             <CommandItem onSelect={() => go("/settings")}>
               <SettingsIcon />
               Settings

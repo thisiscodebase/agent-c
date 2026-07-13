@@ -2,7 +2,7 @@ import { eq, sql } from "drizzle-orm";
 import { handleFromEmail, isValidHandle } from "#shared/user-handle";
 import type { PublicUserProfile } from "#shared/types/usage-stats";
 import { db, schema } from "~~/server/db/client";
-import { aggregateUsageStats } from "~~/server/utils/usage-stats";
+import { aggregateUsageStats, toPublicUsageStats } from "~~/server/utils/usage-stats";
 
 function escapeLikePattern(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
@@ -43,6 +43,7 @@ export async function getPublicProfileByHandle(
   const threadRows = await db
     .select({
       id: schema.threads.id,
+      title: schema.threads.title,
       createdAt: schema.threads.createdAt,
       updatedAt: schema.threads.updatedAt,
       state: schema.threads.state,
@@ -50,14 +51,17 @@ export async function getPublicProfileByHandle(
     .from(schema.threads)
     .where(eq(schema.threads.userId, user.id));
 
-  const stats = aggregateUsageStats(
-    threadRows.map((row) => ({
-      id: row.id,
-      createdAt: row.createdAt.getTime(),
-      updatedAt: row.updatedAt.getTime(),
-      state: row.state,
-    })),
-    user.createdAt.getTime(),
+  const stats = toPublicUsageStats(
+    aggregateUsageStats(
+      threadRows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        createdAt: row.createdAt.getTime(),
+        updatedAt: row.updatedAt.getTime(),
+        state: row.state,
+      })),
+      user.createdAt.getTime(),
+    ),
   );
 
   return {

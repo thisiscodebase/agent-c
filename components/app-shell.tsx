@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { PencilIcon, PlusIcon, PodiumIcon, SearchIcon, SettingsIcon } from "lucide-react";
+import { PencilIcon, PlusIcon, PodiumIcon, SearchIcon, SettingsIcon, ShieldIcon } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,6 +22,7 @@ import { requestThreadTitleGeneration } from "~/hooks/chat/use-thread-title";
 import { formatThreadTime, useThreadList } from "~/hooks/chat/use-threads";
 import { useThreadGroups } from "~/hooks/chat/use-thread-groups";
 import { useSidebarResize } from "~/hooks/use-sidebar-resize";
+import { useAdminAccess } from "~/hooks/use-admin";
 import { authClient } from "~/lib/auth-client";
 
 type ShellUser = {
@@ -53,6 +54,7 @@ export function AppShell({
   const { width: sidebarWidth, startResize, onKeyDown: onResizeKeyDown, minWidth, maxWidth } =
     useSidebarResize();
   const { data: session } = authClient.useSession();
+  const { data: adminAccess } = useAdminAccess();
   const user = session?.user ?? serverUser;
   const profileHref = useMemo(
     () => profilePathForEmail(user?.email) ?? "/settings",
@@ -189,6 +191,18 @@ export function AppShell({
           >
             <PodiumIcon className="size-4" />
           </Button>
+          {adminAccess?.allowed ? (
+            <Button
+              aria-label="Admin dashboard"
+              className="shrink-0 text-muted-foreground"
+              nativeButton={false}
+              render={<Link href="/admin" />}
+              size="icon"
+              variant="ghost"
+            >
+              <ShieldIcon className="size-4" />
+            </Button>
+          ) : null}
           <Button
             aria-label="Settings"
             className="shrink-0 text-muted-foreground"

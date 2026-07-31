@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo } from "react";
 import type { UsageMetric } from "#shared/types/usage-metric";
 import type { UsageToolStat } from "#shared/types/usage-stats";
@@ -47,16 +48,18 @@ function ToolRowItem({
   rank,
   metric,
   maxValue,
+  href,
 }: {
   tool: ToolRow;
   rank: number;
   metric: UsageMetric;
   maxValue: number;
+  href?: string;
 }) {
   const value = toolMetricValue(tool, metric);
 
-  return (
-    <li className="flex items-center gap-3 rounded-xl bg-muted/70 px-3 py-2.5">
+  const body = (
+    <>
       <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
         {rank}
       </span>
@@ -75,6 +78,25 @@ function ToolRowItem({
           />
         </div>
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <li>
+        <Link
+          className="flex items-center gap-3 rounded-xl bg-muted/70 px-3 py-2.5 transition-colors hover:bg-muted"
+          href={href}
+        >
+          {body}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-3 rounded-xl bg-muted/70 px-3 py-2.5">
+      {body}
     </li>
   );
 }
@@ -82,9 +104,12 @@ function ToolRowItem({
 export function PopularTools({
   tools,
   metric,
+  /** When set, each row links to `/admin/tools/{category}`. */
+  linkToAdmin = false,
 }: {
   tools: ToolRow[];
   metric: UsageMetric;
+  linkToAdmin?: boolean;
 }) {
   const ranked = useMemo(() => {
     return [...tools]
@@ -105,14 +130,16 @@ export function PopularTools({
         <h2 className="text-sm font-medium">Popular tools</h2>
         {metric === "cost" ? (
           <p className="text-xs text-muted-foreground">
-            By token cost
+            {linkToAdmin ? "By token cost — click a tool to inspect" : "By token cost"}
           </p>
         ) : metric === "tokens" ? (
           <p className="text-xs text-muted-foreground">
-            By token usage
+            {linkToAdmin ? "By token usage — click a tool to inspect" : "By token usage"}
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">By number of uses</p>
+          <p className="text-xs text-muted-foreground">
+            {linkToAdmin ? "By number of uses — click a tool to inspect" : "By number of uses"}
+          </p>
         )}
       </div>
       <div className="grid gap-2 sm:grid-cols-2 sm:gap-x-4">
@@ -120,6 +147,11 @@ export function PopularTools({
           {left.map((tool, index) => (
             <ToolRowItem
               key={tool.category}
+              href={
+                linkToAdmin
+                  ? `/admin/tools/${encodeURIComponent(tool.category)}`
+                  : undefined
+              }
               maxValue={maxValue}
               metric={metric}
               rank={index + 1}
@@ -132,6 +164,11 @@ export function PopularTools({
             {right.map((tool, index) => (
               <ToolRowItem
                 key={tool.category}
+                href={
+                  linkToAdmin
+                    ? `/admin/tools/${encodeURIComponent(tool.category)}`
+                    : undefined
+                }
                 maxValue={maxValue}
                 metric={metric}
                 rank={index + 6}

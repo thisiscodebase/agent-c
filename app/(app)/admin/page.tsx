@@ -113,7 +113,7 @@ export default function AdminDashboardPage() {
 
         <AdminUserLeaderboard entries={company.leaderboard} metric={metric} />
 
-        <PopularTools metric={metric} tools={stats.tools} />
+        <PopularTools linkToAdmin metric={metric} tools={stats.tools} />
 
         <ModelsLeaderboard metric={metric} models={stats.models} />
 

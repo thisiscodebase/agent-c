@@ -29,14 +29,62 @@ export interface UsageToolStat {
   costUsd: number;
 }
 
+/** Per-tool-name breakdown within a category (admin drill-down). */
+export interface UsageToolNameStat {
+  toolName: string;
+  label: string;
+  calls: number;
+  tokens: number;
+  costUsd: number;
+}
+
+export type UsageThreadFlag = "high_steps" | "connector_spray";
+
+export interface UsageThreadCategoryStat {
+  category: string;
+  label: string;
+  calls: number;
+}
+
 export interface UsageThreadStat {
   threadId: string;
   title: string;
   totalTokens: number;
   totalCostUsd: number;
   toolCalls: number;
+  turnCount: number;
+  stepCount: number;
+  /** Top tool categories in this thread by call count (max 3). */
+  topCategories: UsageThreadCategoryStat[];
+  flags: UsageThreadFlag[];
   createdAt: number;
   updatedAt: number;
+  /**
+   * When present (tool-category drill-down), LLM tokens/cost attributed to
+   * that category within the thread (equal-split).
+   */
+  categoryTokens?: number;
+  categoryCostUsd?: number;
+}
+
+/** Admin-only drill-down for one popular-tool category. */
+export interface AdminToolCategoryDetail {
+  category: string;
+  label: string;
+  calls: number;
+  tokens: number;
+  costUsd: number;
+  tokensPerCall: number;
+  /** Individual tool names within the category (incl. remapped discovery calls). */
+  tools: UsageToolNameStat[];
+  /** connection_search calls targeting this connector, when present. */
+  discovery: {
+    calls: number;
+    tokens: number;
+    costUsd: number;
+  } | null;
+  /** Threads that used this category, sorted by attributed cost. */
+  threads: UsageThreadStat[];
 }
 
 export interface UserUsageStats {

@@ -2,12 +2,19 @@ import { handleFromEmail } from "#shared/user-handle";
 import type {
   AdminCompanyProfile,
   AdminLeaderboardEntry,
+  AdminToolCategoryDetail,
   CompanyProfile,
   LeaderboardEntry,
 } from "#shared/types/usage-stats";
+import { isToolCategoryKey } from "#shared/tool-category";
 import type { ThreadState } from "#shared/types/thread";
 import { db, schema } from "~~/server/db/client";
-import { aggregateUsageStats, toPublicUsageStats } from "~~/server/utils/usage-stats";
+import {
+  aggregateToolCategoryDetail,
+  aggregateUsageStats,
+  toPublicUsageStats,
+} from "~~/server/utils/usage-stats";
+import { createError } from "~~/server/utils/http-error";
 
 const COMPANY_NAME = "CodeBase";
 
@@ -178,4 +185,23 @@ export async function getAdminCompanyProfile(): Promise<AdminCompanyProfile> {
     stats,
     leaderboard,
   };
+}
+
+export async function getAdminToolCategoryDetail(
+  category: string,
+): Promise<AdminToolCategoryDetail> {
+  if (!isToolCategoryKey(category)) {
+    throw createError({ statusCode: 400, statusMessage: "Unknown tool category" });
+  }
+
+  const { threads } = await loadCompanyRows();
+  const allThreads = threads.map((row) => ({
+    id: row.id,
+    title: row.title,
+    createdAt: row.createdAt.getTime(),
+    updatedAt: row.updatedAt.getTime(),
+    state: row.state,
+  }));
+
+  return aggregateToolCategoryDetail(allThreads, category);
 }

@@ -5,6 +5,7 @@ export const queryKeys = {
   adminAccess: ["admin-access"] as const,
   adminCompany: ["admin-company"] as const,
   adminUser: (handle: string) => ["admin-user", handle] as const,
+  adminTool: (category: string) => ["admin-tool", category] as const,
   memory: ["memory"] as const,
   connectors: ["connectors"] as const,
   slackLink: ["slack-link"] as const,

@@ -1,7 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { AdminCompanyProfile, AdminUserDetail } from "#shared/types/usage-stats";
+import type {
+  AdminCompanyProfile,
+  AdminToolCategoryDetail,
+  AdminUserDetail,
+} from "#shared/types/usage-stats";
 import { queryKeys } from "~/lib/query-keys";
 
 interface AdminCompanyResponse {
@@ -10,6 +14,10 @@ interface AdminCompanyResponse {
 
 interface AdminUserResponse {
   user: AdminUserDetail;
+}
+
+interface AdminToolResponse {
+  tool: AdminToolCategoryDetail;
 }
 
 export function useAdminAccess() {
@@ -59,6 +67,26 @@ export function useAdminUserDetail(handle: string, enabled = true) {
         throw new Error("Failed to load admin user detail");
       }
       return res.json() as Promise<AdminUserResponse>;
+    },
+  });
+}
+
+export function useAdminToolCategory(category: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.adminTool(category),
+    enabled: enabled && category.length > 0,
+    queryFn: async () => {
+      const res = await fetch(`/api/admin/tools/${encodeURIComponent(category)}`);
+      if (res.status === 403) {
+        throw new Error("Admin access required");
+      }
+      if (res.status === 400) {
+        throw new Error("Unknown tool category");
+      }
+      if (!res.ok) {
+        throw new Error("Failed to load tool category");
+      }
+      return res.json() as Promise<AdminToolResponse>;
     },
   });
 }

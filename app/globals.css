@@ -105,6 +105,70 @@
   }
 }
 
+/*
+ * Office-paper stocks for artifacts. A stock names a hue and how strongly it is
+ * tinted; lightness comes from the colour scheme. The rest of the theme tokens
+ * are mixed from background and foreground, so markdown, tables, code blocks,
+ * and borders all pick up the paper rather than the surrounding app chrome.
+ */
+[data-paper] {
+  --paper-tint: 0.03;
+  --paper-lightness: 0.955;
+  --paper-ink: 0.26;
+  --background: oklch(var(--paper-lightness) var(--paper-tint) var(--paper-hue));
+  --foreground: oklch(var(--paper-ink) calc(var(--paper-tint) * 0.8) var(--paper-hue));
+  --card: color-mix(in oklab, var(--background) 96%, var(--foreground));
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --muted: color-mix(in oklab, var(--background) 91%, var(--foreground));
+  --muted-foreground: color-mix(in oklab, var(--foreground) 62%, var(--background));
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --accent: var(--muted);
+  --accent-foreground: var(--foreground);
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --border: color-mix(in oklab, var(--background) 84%, var(--foreground));
+  --input: var(--border);
+  --ring: color-mix(in oklab, var(--foreground) 45%, var(--background));
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+[data-paper="white"] {
+  --paper-hue: 85;
+  --paper-tint: 0.005;
+  --paper-lightness: 0.995;
+}
+
+[data-paper="peach"] {
+  --paper-hue: 52;
+  --paper-tint: 0.034;
+}
+
+[data-paper="green"] {
+  --paper-hue: 148;
+  --paper-tint: 0.026;
+}
+
+[data-paper="lilac"] {
+  --paper-hue: 300;
+  --paper-tint: 0.028;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-paper] {
+    color-scheme: dark;
+    --paper-lightness: 0.235;
+    --paper-ink: 0.93;
+  }
+
+  [data-paper="white"] {
+    --paper-lightness: 0.19;
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);

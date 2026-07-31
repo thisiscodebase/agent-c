@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { profilePathForEmail } from "#shared/user-handle";
+import { DocsTile } from "~/components/artifacts/docs-tile";
 import { CommandPalette } from "~/components/command-palette";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
@@ -64,6 +65,7 @@ function mobilePageTitle({
   if (activeChatId) {
     return threads.find((thread) => thread.id === activeChatId)?.title ?? "Chat";
   }
+  if (pathname.startsWith("/artifacts")) return "Docs";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/leaderboard")) return "Leaderboard";
   if (pathname.startsWith("/admin")) return "Admin";
@@ -73,6 +75,7 @@ function mobilePageTitle({
 
 function SidebarNav({
   activeChatId,
+  docsActive,
   groups,
   user,
   profileHref,
@@ -84,6 +87,7 @@ function SidebarNav({
   onRenameThread,
 }: {
   activeChatId?: string;
+  docsActive: boolean;
   groups: ThreadGroup[];
   user: ShellUser | undefined;
   profileHref: string;
@@ -157,6 +161,8 @@ function SidebarNav({
         </nav>
       </ScrollArea>
 
+      <DocsTile active={docsActive} />
+
       <div className="flex items-center gap-1 p-3">
         <Button
           className="h-10 min-w-0 flex-1 justify-start gap-2.5 px-2"
@@ -218,7 +224,9 @@ export function AppShell({
 }) {
   const params = useParams<{ id?: string }>();
   const pathname = usePathname();
-  const activeChatId = typeof params.id === "string" ? params.id : undefined;
+  const routeId = typeof params.id === "string" ? params.id : undefined;
+  const activeChatId = pathname.startsWith("/chat/") ? routeId : undefined;
+  const docsActive = pathname.startsWith("/artifacts");
   const queryClient = useQueryClient();
 
   const { threads } = useThreadList();
@@ -290,6 +298,7 @@ export function AppShell({
 
   const sidebarProps = {
     activeChatId,
+    docsActive,
     groups,
     user,
     profileHref,

@@ -32,6 +32,7 @@ function isInteractiveTool(
   part: Extract<EveMessagePart, { type: "dynamic-tool" }>,
 ): boolean {
   if (part.toolName === "save_memory") return true;
+  if (part.toolName === "create_artifact") return true;
   if (part.state === "approval-requested") return true;
   if (part.toolMetadata?.eve?.inputRequest) return true;
   return false;

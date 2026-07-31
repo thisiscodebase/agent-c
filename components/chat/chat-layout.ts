@@ -14,7 +14,8 @@ export const chatFooterInputAreaClass = "relative z-10 mr-3 pb-4";
 export const chatFooterSolidClass =
   "pointer-events-none absolute bottom-0 left-0 right-0 top-1.5 bg-background";
 export const chatFooterInteractiveClass = "pointer-events-auto";
-export const chatScrollButtonClass = "data-[direction=end]:bottom-[10.5rem]";
+export const chatScrollButtonClass =
+  "pointer-events-auto z-10 data-[direction=end]:bottom-2";
 
 /** @deprecated Use chatInputColumnClass */
 export const chatContentClass = chatInputColumnClass;

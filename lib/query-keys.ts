@@ -11,4 +11,6 @@ export const queryKeys = {
   slackLink: ["slack-link"] as const,
   threads: ["threads"] as const,
   thread: (id: string) => ["threads", id] as const,
+  artifacts: ["artifacts"] as const,
+  artifact: (id: string) => ["artifacts", id] as const,
 };

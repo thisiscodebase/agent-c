@@ -7,6 +7,7 @@ import {
   getInputRequestResponseLabel,
   isInputRequestPending,
 } from "~/lib/input-request-display";
+import { ArtifactPart } from "./artifact-part";
 import { SaveMemoryPart } from "./save-memory-part";
 
 type DynamicToolPartData = Extract<EveMessagePart, { type: "dynamic-tool" }>;
@@ -39,6 +40,10 @@ export function ToolPart({
 }) {
   if (part.toolName === "save_memory") {
     return <SaveMemoryPart onRespond={onRespond} part={part} />;
+  }
+
+  if (part.toolName === "create_artifact") {
+    return <ArtifactPart part={part} />;
   }
 
   const request = part.toolMetadata?.eve?.inputRequest;

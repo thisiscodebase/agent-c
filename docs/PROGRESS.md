@@ -16,8 +16,11 @@ operator provisioning (`vercel connect create` / attach, GCP OAuth client for
 Drive, HubSpot MCP Auth App, Notion OAuth, Slack search scopes) before they work
 live — see [`docs/ENVIRONMENT.md`](ENVIRONMENT.md).
 
-**Phases 4–5 — artifact data model and Slack surface polish — are not started.**
-Synthesis into reviewable case studies still depends on Phase 4.
+**Phase 4 has a first experimental slice** — the `artifacts` table, author-scoped
+CRUD, a `create_artifact` agent tool, an inline chat card, a resizable side
+panel, a `/artifacts` document browser, and deep links at `/artifacts/[id]`.
+Provenance, chunking, and search are still outstanding. **Phase 5 — Slack
+surface polish — is not started.**
 
 All work through Phase 3 code below is ready to commit once verified.
 
@@ -61,15 +64,24 @@ Operator steps before live verification:
 - [ ] Slack-linked user can run `search_slack` with expanded scopes
 - [ ] `pnpm typecheck` clean (already verified in Phase 3 implementation)
 
-### Phase 4 — Artifact data model (not started)
+### Phase 4 — Artifact data model (first slice shipped)
 
-This is the core of the "Synthesis" half of the product and nothing for it
-exists yet: no `artifacts`/`artifact_sources`/`artifact_chunks` tables (see
-`ARCHITECTURE.md`'s "Data model: generic artifacts" section — `source_type`
-includes `notion`), no `search_artifacts.ts` or `generate_report.ts` tools, no
-case-study browser or review-before-publish UI. Blocks the daily/weekly digest
-meta-feature too — `agent/skills/daily-summary.md` still needs the fuller rework
-once this lands.
+Shipped as an experiment, deliberately narrower than
+`ARCHITECTURE.md`'s "Data model: generic artifacts" section:
+
+- `artifacts` table only — author-scoped, `status` is a lifecycle label rather
+  than a visibility control, and `metadata` (jsonb) carries per-type fields.
+- `create_artifact` saves straight to `draft` with no approval gate. The design
+  leaves room for one, but nothing enforces review today.
+- Web surface: inline chat card, resizable side panel, `/artifacts` browser
+  (Finder-style, over the flat manifest in `lib/file-system.ts`), and
+  `/artifacts/[id]` deep links. Documents are tinted with one of four paper
+  stocks (`colour`), which is decorative only.
+
+Still outstanding: `artifact_sources` (provenance and the review gate it
+enables), `artifact_chunks` + embeddings, `search_artifacts.ts`, and
+`generate_report.ts`. The daily/weekly digest rework in
+`agent/skills/daily-summary.md` still waits on search landing.
 
 ### Phase 5 — Slack surface polish (not started)
 

@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "~~/server/db/client";
-import type { ThreadRecord, ThreadState, ThreadSummary } from "#shared/types/thread";
+import type { ThreadRecord, ThreadState, ThreadSummary, ThreadTitleMeta } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
 import { createError } from "~~/server/utils/http-error";
 
@@ -15,16 +15,33 @@ function parseThreadState(value: ThreadState | null | undefined): ThreadState | 
 
 function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): ThreadState {
   const session = incoming.session;
+  const existingEvents = existing?.events ?? [];
+  // Title-only writers historically sent `events: []` and could race a successful
+  // persist, wiping the transcript. Never shrink the durable event log.
+  const events = incoming.events.length >= existingEvents.length
+    ? incoming.events
+    : existingEvents;
 
   return {
     session: {
       sessionId: session.sessionId ?? existing?.session.sessionId,
       continuationToken: session.continuationToken ?? existing?.session.continuationToken,
-      streamIndex: session.streamIndex,
+      streamIndex: Math.max(session.streamIndex, existing?.session.streamIndex ?? 0),
     },
-    events: incoming.events,
+    events,
     // Preserve title metadata when clients only patch session/events.
     titleMeta: incoming.titleMeta ?? existing?.titleMeta,
+  };
+}
+
+function applyTitleMeta(
+  existing: ThreadState | null,
+  titleMeta: ThreadTitleMeta,
+): ThreadState {
+  return {
+    session: existing?.session ?? { streamIndex: 0 },
+    events: existing?.events ?? [],
+    titleMeta,
   };
 }
 
@@ -96,6 +113,8 @@ export async function updateThreadForUser(
   patch: {
     title?: string;
     state?: ThreadState;
+    /** Update title cadence metadata without replacing session/events. */
+    titleMeta?: ThreadTitleMeta;
   },
 ) {
   const existing = await getThreadForUser(userId, id);
@@ -103,13 +122,19 @@ export async function updateThreadForUser(
     return undefined;
   }
 
+  let nextState: ThreadState | undefined;
+  if (patch.state !== undefined) {
+    nextState = mergeThreadState(existing.state, patch.state);
+  }
+  if (patch.titleMeta !== undefined) {
+    nextState = applyTitleMeta(nextState ?? existing.state, patch.titleMeta);
+  }
+
   await db.update(schema.threads)
     .set({
       updatedAt: new Date(),
       ...(patch.title !== undefined ? { title: truncateThreadTitle(patch.title) } : {}),
-      ...(patch.state !== undefined
-        ? { state: mergeThreadState(existing.state, patch.state) }
-        : {}),
+      ...(nextState !== undefined ? { state: nextState } : {}),
     })
     .where(and(
       eq(schema.threads.id, id),

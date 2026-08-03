@@ -44,11 +44,22 @@ export async function persistThreadState(
     events: [...snapshot.events],
   };
 
-  await fetch(`/api/threads/${threadId}`, {
+  const response = await fetch(`/api/threads/${threadId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ state }),
   });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[persist-thread] failed", {
+      threadId,
+      status: response.status,
+      eventCount: snapshot.events.length,
+      detail: detail.slice(0, 500),
+    });
+    throw new Error(`Failed to persist chat (${response.status})`);
+  }
 
   void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
 }

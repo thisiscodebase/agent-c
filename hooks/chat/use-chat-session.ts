@@ -31,7 +31,17 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
     initialEvents: resumeOptions.initialEvents,
     onFinish: (snapshot) => {
       void (async () => {
-        await persistThreadState(chatId, snapshot, queryClient);
+        try {
+          await persistThreadState(chatId, snapshot, queryClient);
+        }
+        catch (error) {
+          console.error("[persist-thread] onFinish failed", { chatId, error });
+          showChatErrorToast(
+            error instanceof Error ? error : new Error("Failed to save chat"),
+            chatId,
+            { source: "persistThreadState" },
+          );
+        }
 
         const userCount = snapshot.data.messages.filter(
           (message) => message.role === "user" && !message.metadata?.optimistic,
@@ -77,6 +87,31 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
       setStreamFailure(undefined);
     }
   }, [agent.status]);
+
+  // Best-effort save if the tab hides/unloads before onFinish settles.
+  useEffect(() => {
+    function flush() {
+      if (agent.status === "submitted" || agent.status === "streaming") {
+        return;
+      }
+      void persistThreadState(chatId, agent, queryClient).catch((error) => {
+        console.error("[persist-thread] flush failed", { chatId, error });
+      });
+    }
+
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        flush();
+      }
+    }
+
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [agent, chatId, queryClient]);
 
   const sentPendingRef = useRef(false);
   useEffect(() => {

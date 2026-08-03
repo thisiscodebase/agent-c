@@ -15,24 +15,13 @@ import {
   extractTitleTurnsFromEvents,
 } from "~~/server/utils/thread-title-turns";
 import { getThreadForUser, updateThreadForUser } from "~~/server/utils/threads";
-import type { ThreadState, ThreadTitleMeta } from "#shared/types/thread";
+import type { ThreadTitleMeta } from "#shared/types/thread";
 import {
   shouldRefineThreadTitle,
   shouldSeedThreadTitle,
 } from "#shared/types/thread";
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-function withTitleMeta(
-  existing: ThreadState | null,
-  titleMeta: ThreadTitleMeta,
-): ThreadState {
-  return {
-    session: existing?.session ?? { streamIndex: 0 },
-    events: existing?.events ?? [],
-    titleMeta,
-  };
-}
 
 export const POST = withRoute(async (request: Request, { params }: RouteParams) => {
   const { id } = threadIdParamsSchema.parse(await params);
@@ -72,13 +61,15 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
       return NextResponse.json({ thread, skipped: true });
     }
 
+    const nextMeta: ThreadTitleMeta = {
+      lastUserCount: 1,
+      lastPhase: "seed",
+      source: "generated",
+    };
+
     const updated = await updateThreadForUser(userId, id, {
       title,
-      state: withTitleMeta(thread.state, {
-        lastUserCount: 1,
-        lastPhase: "seed",
-        source: "generated",
-      }),
+      titleMeta: nextMeta,
     });
 
     return NextResponse.json({ thread: updated });
@@ -110,13 +101,15 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
     return NextResponse.json({ thread, skipped: true });
   }
 
+  const nextMeta: ThreadTitleMeta = {
+    lastUserCount: Math.max(userCount, 1),
+    lastPhase: "refine",
+    source: "generated",
+  };
+
   const updated = await updateThreadForUser(userId, id, {
     title,
-    state: withTitleMeta(thread.state, {
-      lastUserCount: Math.max(userCount, 1),
-      lastPhase: "refine",
-      source: "generated",
-    }),
+    titleMeta: nextMeta,
   });
 
   return NextResponse.json({ thread: updated });

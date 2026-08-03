@@ -26,6 +26,10 @@ const VIEWS = [
 
 type FileBrowserView = typeof VIEWS[number]["id"];
 
+export interface FileBrowserHomeContext {
+  goTo: (path: string) => void;
+}
+
 /** Cursor into the visited-folder trail, so back and forward behave like Finder. */
 function useFolderHistory(initialPath: string) {
   const [{ trail, cursor }, setHistory] = useState(() => ({
@@ -75,6 +79,7 @@ export function FileBrowser({
   title = "Files",
   emptyState,
   renderFilePreview,
+  renderHome,
   onFileOpen,
   className,
 }: {
@@ -82,6 +87,8 @@ export function FileBrowser({
   title?: string;
   emptyState?: ReactNode;
   renderFilePreview?: (file: FileSystemFileItem) => ReactNode;
+  /** When set, shown at the Docs root instead of the folder icons grid. */
+  renderHome?: (ctx: FileBrowserHomeContext) => ReactNode;
   onFileOpen: (file: FileSystemFileItem) => void;
   className?: string;
 }) {
@@ -92,6 +99,7 @@ export function FileBrowser({
   const contents = useMemo(() => folderContents(items, path), [items, path]);
   const trail = folderTrail(path);
   const entryCount = contents.folders.length + contents.files.length;
+  const atHome = path === "" && Boolean(renderHome);
 
   const open = useCallback((item: FileSystemItem) => {
     if (item.kind === "folder") {
@@ -109,6 +117,10 @@ export function FileBrowser({
   }, [goTo, path]);
 
   const onKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (atHome) {
+      return;
+    }
+
     const entries: FileSystemItem[] = [...contents.folders, ...contents.files];
 
     if (event.key === "Enter") {
@@ -139,7 +151,7 @@ export function FileBrowser({
     if (next) {
       setSelectedPath(next.path);
     }
-  }, [contents, goUp, open, path, selectedPath]);
+  }, [atHome, contents, goUp, open, path, selectedPath]);
 
   const viewProps = {
     contents,
@@ -217,21 +229,25 @@ export function FileBrowser({
           ))}
         </nav>
 
-        <Tabs onValueChange={(next) => setView(next as FileBrowserView)} value={view}>
-          <TabsList>
-            {VIEWS.map((option) => (
-              <TabsTrigger key={option.id} value={option.id}>
-                {option.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        {atHome ? null : (
+          <Tabs onValueChange={(next) => setView(next as FileBrowserView)} value={view}>
+            <TabsList>
+              {VIEWS.map((option) => (
+                <TabsTrigger key={option.id} value={option.id}>
+                  {option.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
       </header>
 
       {/* One tab stop for the whole grid, matching a Finder pane. */}
       <ScrollArea className="min-h-0 flex-1">
         <div className="outline-none" onKeyDown={onKeyDown} tabIndex={0}>
-          {entryCount === 0 ? (
+          {atHome && renderHome ? (
+            renderHome({ goTo })
+          ) : entryCount === 0 ? (
             <div className="flex h-40 items-center justify-center p-6 text-center text-sm text-muted-foreground">
               {emptyState ?? "This folder is empty."}
             </div>
@@ -243,9 +259,11 @@ export function FileBrowser({
         </div>
       </ScrollArea>
 
-      <footer className="shrink-0 border-t border-border/60 px-3 py-1.5 text-center text-xs text-muted-foreground">
-        {entryCount === 1 ? "1 item" : `${entryCount} items`}
-      </footer>
+      {atHome ? null : (
+        <footer className="shrink-0 border-t border-border/60 px-3 py-1.5 text-center text-xs text-muted-foreground">
+          {entryCount === 1 ? "1 item" : `${entryCount} items`}
+        </footer>
+      )}
     </div>
   );
 }

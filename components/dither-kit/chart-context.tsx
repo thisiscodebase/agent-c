@@ -85,6 +85,8 @@ export type ChartContextValue = {
   hovered: boolean // parent-driven hover (e.g. the whole card) — lifts the fill
   bloom: BloomInput // glow on the dither canvas
   bloomOnHover: boolean // only bloom while hovered
+  /** Winking sparkle dots over the dither fill. Off for print-style charts. */
+  showStars: boolean
 
   // Series register themselves so the canvas knows what (and how) to paint.
   seriesSpecs: Record<string, SeriesSpec>
@@ -190,6 +192,7 @@ export function useChartController({
   hovered = false,
   bloom = "off",
   bloomOnHover = false,
+  showStars = true,
   defaultSelectedDataKey = null,
   onSelectionChange,
 }: {
@@ -206,6 +209,7 @@ export function useChartController({
   hovered?: boolean
   bloom?: BloomInput
   bloomOnHover?: boolean
+  showStars?: boolean
   defaultSelectedDataKey?: string | null
   onSelectionChange?: (key: string | null) => void
 }): ChartContextValue {
@@ -447,6 +451,7 @@ export function useChartController({
       hovered,
       bloom,
       bloomOnHover,
+      showStars,
       seriesSpecs,
       registerSeries,
       unregisterSeries,
@@ -489,6 +494,7 @@ export function useChartController({
       hovered,
       bloom,
       bloomOnHover,
+      showStars,
       seriesSpecs,
       registerSeries,
       unregisterSeries,

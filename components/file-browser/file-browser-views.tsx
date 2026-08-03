@@ -54,8 +54,8 @@ function FolderTile({
       type="button"
       {...handlers}
     >
-      <FolderIcon className="size-14 fill-orange-300/70 stroke-orange-500/70 dark:fill-orange-400/25 dark:stroke-orange-300/60" />
-      <span className="line-clamp-2 rounded px-1.5 py-0.5 text-xs group-data-[selected=true]:bg-orange-500/20 group-data-[selected=true]:font-medium">
+      <FolderIcon className="size-20 fill-orange-300/70 stroke-orange-500/70 dark:fill-orange-400/25 dark:stroke-orange-300/60" />
+      <span className="rounded px-1.5 py-0.5 text-xs break-words group-data-[selected=true]:bg-orange-500/20 group-data-[selected=true]:font-medium">
         {itemName(folder)}
       </span>
       <span className="-mt-1.5 text-[0.6875rem] text-muted-foreground">
@@ -85,14 +85,14 @@ function FileTile({
       type="button"
       {...handlers}
     >
-      <div className="h-16 w-[3.25rem] overflow-hidden rounded-sm border border-border/70 shadow-sm group-data-[selected=true]:ring-2 group-data-[selected=true]:ring-orange-500/50">
+      <div className="h-28 w-[5.5rem] overflow-hidden rounded-sm border border-border/70 shadow-sm group-data-[selected=true]:ring-2 group-data-[selected=true]:ring-orange-500/50">
         {preview ?? (
           <div className="flex size-full items-center justify-center bg-background">
-            <FileTextIcon className="size-5 text-muted-foreground" />
+            <FileTextIcon className="size-6 text-muted-foreground" />
           </div>
         )}
       </div>
-      <span className="line-clamp-2 rounded px-1.5 py-0.5 text-xs group-data-[selected=true]:bg-orange-500/20 group-data-[selected=true]:font-medium">
+      <span className="rounded px-1.5 py-0.5 text-xs break-words group-data-[selected=true]:bg-orange-500/20 group-data-[selected=true]:font-medium">
         {itemName(file)}
       </span>
     </button>
@@ -108,7 +108,7 @@ export function FileBrowserIconsView({
   renderFilePreview,
 }: FileBrowserViewProps) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-1 p-3">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2 p-3">
       {contents.folders.map((folder) => (
         <FolderTile
           fileCount={countFilesUnder(items, folder.path)}

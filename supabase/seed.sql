@@ -164,6 +164,69 @@ $md$,
     'draft',
     'lilac',
     '{"cohort":"Cohort 12"}'::jsonb
+  ),
+  (
+    'a1000000-0000-4000-8000-000000000005',
+    'report',
+    'Acquisition channels: Q2 performance',
+    $md$A look at how Cohort 12 companies found their first ten customers, based on
+founder interviews and HubSpot deal sources.
+
+## Pipeline by month
+
+Outbound rebuilt messaging mid-April; inbound stayed flat while partner
+referrals stepped up in June.
+
+```chart
+{
+  "type": "area",
+  "title": "Qualified opportunities by month",
+  "xKey": "month",
+  "series": [
+    { "key": "outbound", "label": "Outbound" },
+    { "key": "inbound", "label": "Inbound" },
+    { "key": "partner", "label": "Partner" }
+  ],
+  "data": [
+    { "month": "Jan", "outbound": 4, "inbound": 6, "partner": 1 },
+    { "month": "Feb", "outbound": 5, "inbound": 5, "partner": 2 },
+    { "month": "Mar", "outbound": 7, "inbound": 7, "partner": 2 },
+    { "month": "Apr", "outbound": 12, "inbound": 6, "partner": 3 },
+    { "month": "May", "outbound": 18, "inbound": 8, "partner": 4 },
+    { "month": "Jun", "outbound": 21, "inbound": 7, "partner": 9 }
+  ]
+}
+```
+
+## Mix of closed-won
+
+Outbound now accounts for just over half of closed-won deals in the half.
+
+```chart
+{
+  "type": "pie",
+  "title": "Closed-won by channel (H1)",
+  "nameKey": "channel",
+  "valueKey": "deals",
+  "data": [
+    { "channel": "Outbound", "deals": 19 },
+    { "channel": "Inbound", "deals": 11 },
+    { "channel": "Partner", "deals": 8 }
+  ]
+}
+```
+
+## Takeaways
+
+1. The April outbound rewrite is the clearest inflection in the series.
+2. Partner is still small in absolute terms but grew fastest into June — worth
+   a dedicated playbook before Cohort 13.
+3. Inbound volume has not moved; treat it as a brand/content problem rather than
+   a sales-capacity one.
+$md$,
+    'published',
+    'peach',
+    '{"period":"H1","cohort":"Cohort 12","charts":["area","pie"]}'::jsonb
   )
 ) as seed (id, type, title, content_markdown, status, colour, metadata)
 cross join (
@@ -173,3 +236,161 @@ cross join (
   limit 1
 ) as u
 on conflict (id) do nothing;
+
+-- Chat with an inline create_artifact card pointing at the acquisition-channels
+-- report. History is Eve stream events in threads.state (there is no messages table).
+-- Display-only: no live Eve session cursor, so continuing the chat starts fresh.
+insert into public.threads (id, user_id, title, state)
+select
+  't1000000-0000-4000-8000-000000000001',
+  u.id,
+  'Acquisition channels report',
+  $state${
+  "session": { "streamIndex": 11 },
+  "titleMeta": { "lastUserCount": 1, "lastPhase": "seed", "source": "truncated" },
+  "events": [
+    {
+      "type": "session.started",
+      "meta": { "at": "2026-07-31T15:00:00.000Z" },
+      "data": {
+        "runtime": {
+          "agentId": "agent-c",
+          "modelId": "openai/gpt-5.4-mini",
+          "agentName": "agent-c",
+          "eveVersion": "0.29.2"
+        }
+      }
+    },
+    {
+      "type": "turn.started",
+      "meta": { "at": "2026-07-31T15:00:00.050Z" },
+      "data": { "turnId": "turn_0", "sequence": 0 }
+    },
+    {
+      "type": "message.received",
+      "meta": { "at": "2026-07-31T15:00:00.050Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "message": "Can you pull together a short report on how Cohort 12 companies found their first customers, with charts if you have the numbers?",
+        "parts": [
+          {
+            "type": "text",
+            "text": "Can you pull together a short report on how Cohort 12 companies found their first customers, with charts if you have the numbers?"
+          }
+        ]
+      }
+    },
+    {
+      "type": "step.started",
+      "meta": { "at": "2026-07-31T15:00:00.100Z" },
+      "data": { "turnId": "turn_0", "sequence": 0, "stepIndex": 0 }
+    },
+    {
+      "type": "actions.requested",
+      "meta": { "at": "2026-07-31T15:00:01.000Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "stepIndex": 0,
+        "actions": [
+          {
+            "kind": "tool-call",
+            "callId": "call_seed_create_artifact_1",
+            "toolName": "create_artifact",
+            "input": {
+              "type": "report",
+              "title": "Acquisition channels: Q2 performance",
+              "contentMarkdown": "A look at how Cohort 12 companies found their first ten customers…",
+              "metadata": { "period": "H1", "cohort": "Cohort 12" }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "action.result",
+      "meta": { "at": "2026-07-31T15:00:01.200Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "stepIndex": 0,
+        "status": "completed",
+        "result": {
+          "kind": "tool-result",
+          "callId": "call_seed_create_artifact_1",
+          "toolName": "create_artifact",
+          "output": {
+            "id": "a1000000-0000-4000-8000-000000000005",
+            "type": "report",
+            "title": "Acquisition channels: Q2 performance",
+            "status": "published",
+            "colour": "peach",
+            "preview": "A look at how Cohort 12 companies found their first ten customers, based on\nfounder interviews and HubSpot deal sources.\n\n## Pipeline by month\n\nOutbound rebuilt messaging mid-April; inbound stayed flat while partner\nreferrals stepped up in June.\n\n\n*(Qualified opportunities by month)*\n\n\n## Mix of closed-won\n\nOutbound now accounts for just over half of closed-won deals in the half.\n\n\n*(Closed-won by channel (H1))*\n\n\n## Takeaways\n\n1. The April outbound rewrite is the clearest inflection in the series.\n2. Partner is still small in absolute terms but grew fastest into June — worth\n   a dedicated playbook before Cohort 13.\n3. Inbound volume has not moved; treat it as a brand/content problem rather than\n   a sales-capacity one."
+          }
+        }
+      }
+    },
+    {
+      "type": "step.completed",
+      "meta": { "at": "2026-07-31T15:00:01.250Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "stepIndex": 0,
+        "finishReason": "tool-calls"
+      }
+    },
+    {
+      "type": "step.started",
+      "meta": { "at": "2026-07-31T15:00:01.300Z" },
+      "data": { "turnId": "turn_0", "sequence": 0, "stepIndex": 1 }
+    },
+    {
+      "type": "message.completed",
+      "meta": { "at": "2026-07-31T15:00:02.000Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "stepIndex": 1,
+        "finishReason": "stop",
+        "message": "Saved the acquisition channels report as an artifact — open the card to review the charts."
+      }
+    },
+    {
+      "type": "step.completed",
+      "meta": { "at": "2026-07-31T15:00:02.050Z" },
+      "data": {
+        "turnId": "turn_0",
+        "sequence": 0,
+        "stepIndex": 1,
+        "finishReason": "stop"
+      }
+    },
+    {
+      "type": "turn.completed",
+      "meta": { "at": "2026-07-31T15:00:02.100Z" },
+      "data": { "turnId": "turn_0", "sequence": 0 }
+    }
+  ]
+}$state$::jsonb
+from (
+  select id
+  from public."user"
+  order by (email like '%@example.com') asc, created_at asc
+  limit 1
+) as u
+on conflict (id) do update
+set
+  title = excluded.title,
+  state = excluded.state,
+  user_id = excluded.user_id,
+  updated_at = now();
+
+update public.artifacts
+set thread_id = 't1000000-0000-4000-8000-000000000001'
+where id = 'a1000000-0000-4000-8000-000000000005'
+  and exists (
+    select 1 from public.threads
+    where id = 't1000000-0000-4000-8000-000000000001'
+  );

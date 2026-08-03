@@ -1,29 +1,25 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangleIcon, ArrowUpRightIcon } from "lucide-react";
+import { AlertTriangleIcon } from "lucide-react";
 import { useEffect } from "react";
 import type { EveMessagePart } from "eve/react";
 import {
-  ARTIFACT_STATUS_LABELS,
-  ARTIFACT_TYPE_LABELS,
   ARTIFACT_TYPES,
+  extractArtifactSummaryLine,
+  stripLeadingTitleHeading,
   type ArtifactColour,
   type ArtifactStatus,
   type ArtifactType,
 } from "#shared/types/artifact";
-import { ArtifactMarkdown } from "~/components/artifacts/artifact-markdown";
-import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
+import { extractLeadingArtifactVisual } from "#shared/types/artifact-chart";
+import { ArtifactCoverCard } from "~/components/artifacts/artifact-cover-card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Spinner } from "~/components/ui/spinner";
-import {
-  ARTIFACT_STATUS_VARIANTS,
-  ARTIFACT_TYPE_ICONS,
-  toArtifactColour,
-} from "~/lib/artifact-display";
-import { queryKeys } from "~/lib/query-keys";
+import { useArtifact } from "~/hooks/use-artifact";
 import { useArtifactPanel } from "~/hooks/use-artifact-panel";
+import { toArtifactColour } from "~/lib/artifact-display";
+import { queryKeys } from "~/lib/query-keys";
 
 interface CreateArtifactOutput {
   id: string;
@@ -54,11 +50,16 @@ function asArtifactOutput(output: unknown): CreateArtifactOutput | undefined {
   };
 }
 
-/** Title from the streaming tool input, before the artifact has been saved. */
 function pendingTitle(input: unknown): string | undefined {
   if (!input || typeof input !== "object") return undefined;
   const title = (input as { title?: unknown }).title;
   return typeof title === "string" && title.trim() ? title.trim() : undefined;
+}
+
+function contentMarkdownFromInput(input: unknown): string {
+  if (!input || typeof input !== "object") return "";
+  const content = (input as { contentMarkdown?: unknown }).contentMarkdown;
+  return typeof content === "string" ? content : "";
 }
 
 export function ArtifactPart({
@@ -70,9 +71,8 @@ export function ArtifactPart({
   const queryClient = useQueryClient();
   const artifact = "output" in part ? asArtifactOutput(part.output) : undefined;
   const savedArtifactId = artifact?.id;
+  const { artifact: liveArtifact } = useArtifact(savedArtifactId);
 
-  // The agent writes artifacts server-side, so the sidebar list only learns
-  // about a new one once the tool call resolves here.
   useEffect(() => {
     if (!savedArtifactId) return;
     void queryClient.invalidateQueries({ queryKey: queryKeys.artifacts });
@@ -97,50 +97,31 @@ export function ArtifactPart({
   if (!artifact) {
     const title = pendingTitle(part.input);
     return (
-      <Card className="not-prose mb-4" size="sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Spinner className="size-4" />
-            {title ? `Writing “${title}”…` : "Writing document…"}
-          </CardTitle>
-        </CardHeader>
-      </Card>
+      <div
+        className="not-prose mb-4 flex aspect-[3/4] w-52 -rotate-1 skew-x-[0.6deg] items-center justify-center rounded-none border border-border/60 bg-muted/30 shadow-[3px_6px_16px_rgb(0_0_0/0.14),1px_2px_4px_rgb(0_0_0/0.08)] sm:w-56"
+      >
+        <span className="flex items-center gap-2 px-3 text-center text-xs text-muted-foreground">
+          <Spinner className="size-4 shrink-0" />
+          {title ? `Writing “${title}”…` : "Writing document…"}
+        </span>
+      </div>
     );
   }
 
-  const TypeIcon = ARTIFACT_TYPE_ICONS[artifact.type];
+  const inputBody = contentMarkdownFromInput(part.input);
+  const body = liveArtifact?.contentMarkdown || inputBody || artifact.preview;
+  const stripped = stripLeadingTitleHeading(body, artifact.title);
+  const leadingVisual = liveArtifact?.leadingVisual
+    ?? extractLeadingArtifactVisual(stripped);
+  const summaryLine = extractArtifactSummaryLine(body, artifact.title);
 
   return (
-    <Card className="not-prose mb-4 bg-background" data-paper={artifact.colour}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TypeIcon className="size-4 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{artifact.title}</span>
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">{ARTIFACT_TYPE_LABELS[artifact.type]}</Badge>
-          <Badge variant={ARTIFACT_STATUS_VARIANTS[artifact.status]}>
-            {ARTIFACT_STATUS_LABELS[artifact.status]}
-          </Badge>
-        </div>
-      </CardHeader>
-
-      {artifact.preview ? (
-        <CardContent className="relative max-h-52 overflow-hidden text-sm">
-          <ArtifactMarkdown>{artifact.preview}</ArtifactMarkdown>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent"
-          />
-        </CardContent>
-      ) : null}
-
-      <CardFooter>
-        <Button onClick={() => openArtifact(artifact.id)} size="sm" variant="outline">
-          Open
-          <ArrowUpRightIcon />
-        </Button>
-      </CardFooter>
-    </Card>
+    <ArtifactCoverCard
+      colour={artifact.colour}
+      leadingVisual={leadingVisual}
+      onOpen={() => openArtifact(artifact.id)}
+      summaryLine={summaryLine}
+      title={artifact.title}
+    />
   );
 }

@@ -7,7 +7,12 @@ import type {
   ArtifactSummary,
   ArtifactType,
 } from "#shared/types/artifact";
-import { artifactColourForId, truncateArtifactTitle } from "#shared/types/artifact";
+import {
+  artifactColourForId,
+  stripLeadingTitleHeading,
+  truncateArtifactTitle,
+} from "#shared/types/artifact";
+import { extractLeadingArtifactVisual } from "#shared/types/artifact-chart";
 import { createError } from "~~/server/utils/http-error";
 
 const LIST_LIMIT = 50;
@@ -15,6 +20,7 @@ const LIST_LIMIT = 50;
 type ArtifactRow = typeof schema.artifacts.$inferSelect;
 
 function rowToSummary(row: ArtifactRow): ArtifactSummary {
+  const body = stripLeadingTitleHeading(row.contentMarkdown, row.title);
   return {
     id: row.id,
     type: row.type,
@@ -22,6 +28,7 @@ function rowToSummary(row: ArtifactRow): ArtifactSummary {
     status: row.status,
     colour: row.colour,
     size: new TextEncoder().encode(row.contentMarkdown).length,
+    leadingVisual: extractLeadingArtifactVisual(body),
     metadata: row.metadata ?? {},
     threadId: row.threadId ?? undefined,
     createdAt: row.createdAt.getTime(),
@@ -29,10 +36,11 @@ function rowToSummary(row: ArtifactRow): ArtifactSummary {
   };
 }
 
-function rowToArtifact(row: ArtifactRow): Artifact {
+function rowToArtifact(row: ArtifactRow, authorName: string): Artifact {
   return {
     ...rowToSummary(row),
     contentMarkdown: row.contentMarkdown,
+    authorName,
   };
 }
 
@@ -47,15 +55,19 @@ export async function listArtifactsForUser(userId: string): Promise<ArtifactSumm
 }
 
 export async function getArtifactForUser(userId: string, id: string) {
-  const [row] = await db.select()
+  const [row] = await db.select({
+    artifact: schema.artifacts,
+    authorName: schema.user.name,
+  })
     .from(schema.artifacts)
+    .innerJoin(schema.user, eq(schema.artifacts.authorId, schema.user.id))
     .where(and(
       eq(schema.artifacts.id, id),
       eq(schema.artifacts.authorId, userId),
     ))
     .limit(1);
 
-  return row ? rowToArtifact(row) : undefined;
+  return row ? rowToArtifact(row.artifact, row.authorName) : undefined;
 }
 
 export async function createArtifactForUser(

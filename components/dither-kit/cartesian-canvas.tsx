@@ -323,6 +323,7 @@ export function CartesianCanvas() {
   // Memoized: the star field is deterministic — only its shape (series ×
   // column count) matters, so it need not be rebuilt on unrelated re-renders.
   const stars = useMemo(() => {
+    if (!ctx.showStars) return [] as Star[]
     const out: Star[] = []
     const per = Math.max(4, Math.round(cols / 14))
     configKeys.forEach((key, k) => {
@@ -337,7 +338,7 @@ export function CartesianCanvas() {
       }
     })
     return out
-  }, [configKeys, dataLength, cols])
+  }, [ctx.showStars, configKeys, dataLength, cols])
 
   // The RAF loop reads these through refs so it always sees the latest values
   // without re-subscribing. Refs are written in an effect (never during

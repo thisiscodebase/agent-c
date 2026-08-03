@@ -8,6 +8,7 @@ export type DitherColor =
   | "orange"
   | "red"
   | "grey"
+  | "ink"
 
 export type Seed = { fill: Rgb; line: Rgb; star: Rgb }
 
@@ -29,6 +30,8 @@ export const PALETTE: Record<DitherColor, Seed> = {
   red: { fill: [240, 70, 70], line: [255, 150, 140], star: [255, 195, 185] },
   // No-data: a muted grey so empty metrics read as "nothing here".
   grey: { fill: [92, 92, 100], line: [140, 140, 150], star: [165, 165, 175] },
+  // Body-text ink for charts on coloured paper (~page foreground).
+  ink: { fill: [42, 40, 38], line: [68, 64, 60], star: [110, 105, 98] },
 }
 
 export const rgb = ([r, g, b]: Rgb, k = 1, a = 1) =>

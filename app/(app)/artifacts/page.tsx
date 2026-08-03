@@ -12,7 +12,7 @@ export default async function ArtifactsPage() {
       <div>
         <h1 className="font-heading text-lg font-medium">Docs</h1>
         <p className="text-sm text-muted-foreground">
-          Everything the agent has written up, filed by kind.
+          Recent opens, everything you’ve written, and a browse-by-kind filing cabinet.
         </p>
       </div>
 

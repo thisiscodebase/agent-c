@@ -2,22 +2,81 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
-import type { ArtifactColour, ArtifactSummary } from "#shared/types/artifact";
+import type { ArtifactSummary } from "#shared/types/artifact";
+import {
+  ArtifactBrowseRail,
+  ArtifactDocRail,
+} from "~/components/artifacts/artifact-doc-rail";
+import { DocumentThumbnail } from "~/components/artifacts/document-thumbnail";
 import { FileBrowser } from "~/components/file-browser/file-browser";
+import { useRecentArtifactIds } from "~/hooks/use-artifact-recents";
 import { toArtifactColour } from "~/lib/artifact-display";
 import { buildArtifactManifest } from "~/lib/artifact-manifest";
-import type { FileSystemFileItem } from "~/lib/file-system";
+import {
+  countFilesUnder,
+  folderContents,
+  type FileSystemFileItem,
+} from "~/lib/file-system";
 
-/** A page of the document's own paper stock, with its text suggested in ink. */
-function PaperThumbnail({ colour }: { colour: ArtifactColour }) {
+const MY_DOCS_LIMIT = 16;
+
+function DocsHome({
+  artifacts,
+  goTo,
+  onOpenDoc,
+}: {
+  artifacts: ArtifactSummary[];
+  goTo: (path: string) => void;
+  onOpenDoc: (id: string) => void;
+}) {
+  const recentIds = useRecentArtifactIds();
+  const byId = useMemo(
+    () => new Map(artifacts.map((artifact) => [artifact.id, artifact])),
+    [artifacts],
+  );
+
+  const recent = useMemo(
+    () => recentIds
+      .map((id) => byId.get(id))
+      .filter((artifact): artifact is ArtifactSummary => Boolean(artifact)),
+    [byId, recentIds],
+  );
+
+  const myDocs = useMemo(
+    () => [...artifacts]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, MY_DOCS_LIMIT),
+    [artifacts],
+  );
+
+  const browseFolders = useMemo(() => {
+    const items = buildArtifactManifest(artifacts);
+    return folderContents(items, "").folders.map((folder) => ({
+      name: folder.name ?? folder.path.replace(/\/$/, ""),
+      path: folder.path,
+      fileCount: countFilesUnder(items, folder.path),
+    }));
+  }, [artifacts]);
+
   return (
-    <div className="flex size-full flex-col gap-[3px] p-1.5" data-paper={colour}>
-      <span className="h-[3px] w-3/4 rounded-full bg-foreground/70" />
-      <span className="mt-0.5 h-[2px] w-full rounded-full bg-foreground/25" />
-      <span className="h-[2px] w-full rounded-full bg-foreground/25" />
-      <span className="h-[2px] w-4/5 rounded-full bg-foreground/25" />
-      <span className="mt-1 h-[2px] w-full rounded-full bg-foreground/25" />
-      <span className="h-[2px] w-2/3 rounded-full bg-foreground/25" />
+    <div className="flex flex-col gap-6 py-4">
+      <ArtifactDocRail
+        artifacts={recent}
+        empty="Open a document to see it here."
+        onOpen={onOpenDoc}
+        title="Recent docs"
+      />
+      <ArtifactDocRail
+        artifacts={myDocs}
+        empty="No documents here yet. Ask for a case study or report in chat."
+        onOpen={onOpenDoc}
+        title="My docs"
+      />
+      <ArtifactBrowseRail
+        folders={browseFolders}
+        onOpenFolder={goTo}
+        title="Browse"
+      />
     </div>
   );
 }
@@ -25,6 +84,14 @@ function PaperThumbnail({ colour }: { colour: ArtifactColour }) {
 export function ArtifactBrowser({ artifacts }: { artifacts: ArtifactSummary[] }) {
   const router = useRouter();
   const items = useMemo(() => buildArtifactManifest(artifacts), [artifacts]);
+  const byId = useMemo(
+    () => new Map(artifacts.map((artifact) => [artifact.id, artifact])),
+    [artifacts],
+  );
+
+  function openDoc(id: string) {
+    router.push(`/artifacts/${id}`);
+  }
 
   return (
     <FileBrowser
@@ -32,11 +99,21 @@ export function ArtifactBrowser({ artifacts }: { artifacts: ArtifactSummary[] })
       items={items}
       onFileOpen={(file: FileSystemFileItem) => {
         if (file.key) {
-          router.push(`/artifacts/${file.key}`);
+          openDoc(file.key);
         }
       }}
-      renderFilePreview={(file) => (
-        <PaperThumbnail colour={toArtifactColour(file.metadata?.colour)} />
+      renderFilePreview={(file) => {
+        const artifact = file.key ? byId.get(file.key) : undefined;
+        return (
+          <DocumentThumbnail
+            colour={toArtifactColour(file.metadata?.colour)}
+            leadingVisual={artifact?.leadingVisual}
+            title={file.metadata?.title || file.name || "Untitled"}
+          />
+        );
+      }}
+      renderHome={({ goTo }) => (
+        <DocsHome artifacts={artifacts} goTo={goTo} onOpenDoc={openDoc} />
       )}
       title="Docs"
     />

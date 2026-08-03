@@ -5,14 +5,18 @@ import { createArtifactRemote } from "../lib/artifact-internal.js";
 
 export default defineTool({
   description:
-    "Save a synthesized markdown document as a durable artifact the user can reopen, edit, and share. Use for substantial multi-source syntheses (case studies, reports, summaries) the user will want to keep — not for ordinary chat answers. Saves immediately as a draft; the user reviews it afterwards.",
+    "Save a synthesized markdown document as a durable artifact the user can reopen, edit, and share. Use for substantial multi-source syntheses (case studies, reports, summaries) the user will want to keep — not for ordinary chat answers. Saves immediately as a draft; the user reviews it afterwards. Optional ```chart fences (area/bar/pie JSON) render as still, stacked near-black dither charts on the document paper.",
   inputSchema: z.object({
     type: z.enum(ARTIFACT_TYPES).describe("Kind of document being saved"),
-    title: z.string().min(1).max(200).describe("Short descriptive title"),
+    title: z.string().min(1).max(200).describe(
+      "Cover title shown above the document — do not repeat as a leading # heading in contentMarkdown",
+    ),
     contentMarkdown: z
       .string()
       .min(1)
-      .describe("Full document body in markdown, including headings and any source citations"),
+      .describe(
+        "Document body in markdown (intro prose and ## sections, citation links, optional ```chart JSON fences). Do not start with a # that repeats title.",
+      ),
     metadata: z
       .record(z.string(), z.unknown())
       .optional()

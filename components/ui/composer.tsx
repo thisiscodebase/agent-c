@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { Spinner } from "~/components/ui/spinner";
 import { useSpeechDictation } from "~/hooks/use-speech-dictation";
 import { cn } from "~/lib/utils";
 
@@ -189,9 +188,8 @@ export function Composer({
   }, [onStop]);
 
   let sendIcon = <ArrowUpIcon className="size-4" />;
-  if (status === "submitted") {
-    sendIcon = <Spinner className="size-4" />;
-  } else if (status === "streaming") {
+  if (status === "submitted" || status === "streaming") {
+    // Stop control while busy — agent presence lives in the in-thread orb.
     sendIcon = <SquareIcon className="size-3.5 fill-current" />;
   } else if (status === "error") {
     sendIcon = <XIcon className="size-4" />;

@@ -7,6 +7,7 @@ trustPolicyIgnoreAfter: 10080
 trustLockfile: true
 minimumReleaseAgeExclude:
   - eve
+  - thinking-orbs
   - "@vercel/connect"
   - '@ai-sdk/gateway@4.0.33'
   - '@ai-sdk/provider-utils@5.0.16'
@@ -61,3 +62,5 @@ allowBuilds:
   better-sqlite3: true
   esbuild: true
   sharp: false
+patchedDependencies:
+  thinking-orbs@0.2.0: patches/thinking-orbs@0.2.0.patch

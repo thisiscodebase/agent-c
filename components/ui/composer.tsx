@@ -1,9 +1,10 @@
 "use client";
 
 import type { ChatStatus } from "ai";
-import { ArrowUpIcon, MicVocalIcon, SquareIcon, XIcon } from "lucide-react";
+import { ArrowUpIcon, MicIcon, SquareIcon, XIcon } from "lucide-react";
 import {
-  type ChangeEvent,
+  type CSSProperties,
+  type ClipboardEvent,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
@@ -12,7 +13,21 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  SkillSlashMenu,
+  clearComposerContent,
+  composerHasContent,
+  serializeComposerContent,
+  setComposerPlainText,
+  useSkillSlashMenu,
+} from "~/components/ui/composer-skill-chips";
+import {
+  RefMentionMenu,
+  useRefMentionMenu,
+} from "~/components/ui/composer-ref-chips";
+import { useDetailPanel } from "~/hooks/use-detail-panel";
 import { useSpeechDictation } from "~/hooks/use-speech-dictation";
+import { isComposerRefService } from "#shared/composer-refs";
 import { cn } from "~/lib/utils";
 
 /** Prepared for file-attachment UI (not rendered yet). */
@@ -25,7 +40,7 @@ export type UploadedFile = {
   isUploading?: boolean;
 };
 
-/** Prepared for slash-command / tools UI (not rendered yet). */
+/** @deprecated Prefer shared/composer-skills — kept for API compatibility. */
 export type ComposerTool = {
   name: string;
   category: string;
@@ -43,6 +58,10 @@ export type ComposerContextOption = {
 };
 
 export type ComposerProps = {
+  /**
+   * Static placeholder. When omitted, the empty composer rotates through
+   * built-in hints (skills, connectors, general prompts).
+   */
   placeholder?: string;
   onSubmit?: (message: string, files?: UploadedFile[]) => void;
   onChange?: (value: string) => void;
@@ -50,12 +69,13 @@ export type ComposerProps = {
   autoFocus?: boolean;
   maxRows?: number;
   defaultValue?: string;
+  /** When set, resets the editor to this plain text (chips are not preserved). */
   value?: string;
   className?: string;
   /** Reserved for upcoming attachment chips. */
   attachedFiles?: UploadedFile[];
   onRemoveFile?: (id: string) => void;
-  /** Reserved for upcoming slash-command tools. */
+  /** @deprecated Slash skills are built-in; prop ignored. */
   tools?: ComposerTool[];
   onToolSelect?: (tool: ComposerTool) => void;
   showToolsButton?: boolean;
@@ -68,8 +88,63 @@ export type ComposerProps = {
 
 const LINE_HEIGHT_PX = 24;
 
+/** Rotating empty-state hints when no static `placeholder` prop is passed. */
+const COMPOSER_PLACEHOLDERS = [
+  "What would you like to know?",
+  "Type / for skills…",
+  "Mention a Drive file with @…",
+  "Draft a bid response with /bid-writing…",
+  "Search Drive for the latest deck…",
+  "What's the status of that HubSpot deal?",
+] as const;
+
+const PLACEHOLDER_ROTATE_MS = 4200;
+const PLACEHOLDER_FADE_MS = 220;
+
+function useRotatingPlaceholder(enabled: boolean): {
+  text: string;
+  fading: boolean;
+} {
+  const [index, setIndex] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) {
+      setFading(false);
+      return;
+    }
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    let fadeTimeout: number | undefined;
+
+    const id = window.setInterval(() => {
+      if (reduceMotion) {
+        setIndex((i) => (i + 1) % COMPOSER_PLACEHOLDERS.length);
+        return;
+      }
+      setFading(true);
+      fadeTimeout = window.setTimeout(() => {
+        setIndex((i) => (i + 1) % COMPOSER_PLACEHOLDERS.length);
+        setFading(false);
+      }, PLACEHOLDER_FADE_MS);
+    }, PLACEHOLDER_ROTATE_MS);
+
+    return () => {
+      window.clearInterval(id);
+      if (fadeTimeout !== undefined) window.clearTimeout(fadeTimeout);
+    };
+  }, [enabled]);
+
+  return {
+    text: COMPOSER_PLACEHOLDERS[index] ?? COMPOSER_PLACEHOLDERS[0],
+    fading,
+  };
+}
+
 export function Composer({
-  placeholder = "What would you like to know?",
+  placeholder,
   onSubmit,
   onChange,
   disabled = false,
@@ -82,26 +157,72 @@ export function Composer({
   status,
   onStop,
 }: ComposerProps) {
-  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isComposing, setIsComposing] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isEmpty, setIsEmpty] = useState(!defaultValue.trim());
+  const canSubmit = !isEmpty || attachedFiles.length > 0;
 
-  const currentValue = value !== undefined ? value : uncontrolledValue;
   const isGenerating = status === "submitted" || status === "streaming";
-  const canSubmit =
-    Boolean(currentValue.trim()) || attachedFiles.length > 0;
+  const editorDisabled = disabled || isGenerating;
 
-  const setValue = useCallback(
+  const rotatePlaceholders = placeholder === undefined;
+  const rotating = useRotatingPlaceholder(rotatePlaceholders && isEmpty);
+  const activePlaceholder =
+    placeholder ?? rotating.text ?? "What would you like to know?";
+  const ariaLabel = placeholder ?? "What would you like to know?";
+
+  const emitChange = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setIsEmpty(!composerHasContent(editor));
+    onChange?.(serializeComposerContent(editor));
+  }, [onChange]);
+
+  const syncLocalEmpty = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setIsEmpty(!composerHasContent(editor));
+  }, []);
+
+
+  const slash = useSkillSlashMenu({
+    editorRef,
+    containerRef: cardRef,
+    disabled: editorDisabled,
+    onContentChange: emitChange,
+  });
+
+  const refs = useRefMentionMenu({
+    editorRef,
+    containerRef: cardRef,
+    disabled: editorDisabled,
+    onOpen: slash.close,
+    onContentChange: emitChange,
+  });
+
+  // Keep menus mutually exclusive.
+  useEffect(() => {
+    if (slash.open) refs.close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to slash.open
+  }, [slash.open]);
+
+  const getBaseText = useCallback(() => {
+    const editor = editorRef.current;
+    return editor ? serializeComposerContent(editor) : "";
+  }, []);
+
+  const setPlainValue = useCallback(
     (next: string) => {
-      if (value === undefined) {
-        setUncontrolledValue(next);
-      }
-      onChange?.(next);
+      const editor = editorRef.current;
+      if (!editor) return;
+      setComposerPlainText(editor, next);
+      emitChange();
+      slash.refresh();
+      refs.refresh();
     },
-    [onChange, value],
+    [emitChange, refs.refresh, slash.refresh],
   );
-
-  const getBaseText = useCallback(() => currentValue, [currentValue]);
 
   const {
     supported: dictationSupported,
@@ -110,77 +231,187 @@ export function Composer({
     stop: stopDictation,
     toggle: toggleDictation,
   } = useSpeechDictation({
-    disabled: disabled || isGenerating,
+    disabled: editorDisabled,
     getBaseText,
-    onTranscript: setValue,
+    onTranscript: setPlainValue,
   });
 
-  const resizeTextarea = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  const { openSkill, openRef } = useDetailPanel();
 
-    textarea.style.height = "0px";
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const openFromChip = (target: EventTarget | null) => {
+      if (!(target instanceof Element)) return false;
+      const skill = target.closest('[data-skill-chip="true"]');
+      if (skill instanceof HTMLElement && skill.dataset.skillId) {
+        openSkill(skill.dataset.skillId);
+        return true;
+      }
+      const ref = target.closest('[data-ref-chip="true"]');
+      if (ref instanceof HTMLElement) {
+        const service = ref.dataset.service;
+        const id = ref.dataset.refId;
+        if (service && id && isComposerRefService(service)) {
+          openRef(service, id, ref.dataset.name);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const onClick = (event: MouseEvent) => {
+      if (openFromChip(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const onChipKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (!(event.target instanceof HTMLElement)) return;
+      if (
+        !event.target.matches(
+          '[data-skill-chip="true"], [data-ref-chip="true"]',
+        )
+      ) {
+        return;
+      }
+      if (openFromChip(event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    editor.addEventListener("click", onClick);
+    editor.addEventListener("keydown", onChipKeyDown);
+    return () => {
+      editor.removeEventListener("click", onClick);
+      editor.removeEventListener("keydown", onChipKeyDown);
+    };
+  }, [openRef, openSkill]);
+
+  const resizeEditor = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.style.height = "0px";
     const maxHeight = LINE_HEIGHT_PX * maxRows;
     const nextHeight = Math.min(
-      Math.max(textarea.scrollHeight, LINE_HEIGHT_PX),
+      Math.max(editor.scrollHeight, LINE_HEIGHT_PX),
       maxHeight,
     );
-    textarea.style.height = `${nextHeight}px`;
+    editor.style.height = `${nextHeight}px`;
   }, [maxRows]);
 
   useEffect(() => {
-    resizeTextarea();
-  }, [currentValue, resizeTextarea]);
+    resizeEditor();
+  }, [isEmpty, resizeEditor]);
 
   useEffect(() => {
     if (autoFocus) {
-      textareaRef.current?.focus();
+      editorRef.current?.focus();
     }
   }, [autoFocus]);
 
-  const handleChange = useCallback(
-    (event: ChangeEvent<HTMLTextAreaElement>) => {
-      if (isDictating) {
-        stopDictation();
-      }
-      setValue(event.target.value);
-    },
-    [isDictating, setValue, stopDictation],
-  );
+  useEffect(() => {
+    if (defaultValue && editorRef.current && !editorRef.current.textContent) {
+      setComposerPlainText(editorRef.current, defaultValue);
+      syncLocalEmpty();
+    }
+    // Only seed once from defaultValue.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount seed
+  }, []);
+
+  useEffect(() => {
+    if (value === undefined) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+    const current = serializeComposerContent(editor);
+    if (current === value) return;
+    setComposerPlainText(editor, value);
+    syncLocalEmpty();
+  }, [syncLocalEmpty, value]);
+
+  const handleInput = useCallback(() => {
+    if (isDictating) {
+      stopDictation();
+    }
+    emitChange();
+    resizeEditor();
+    slash.refresh();
+    refs.refresh();
+  }, [
+    emitChange,
+    isDictating,
+    refs.refresh,
+    resizeEditor,
+    slash.refresh,
+    stopDictation,
+  ]);
 
   const handleSubmit = useCallback(
     (event?: FormEvent) => {
       event?.preventDefault();
-      if (disabled || isGenerating) return;
-      if (!canSubmit) return;
+      if (editorDisabled) return;
+
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      const message = serializeComposerContent(editor);
+      if (!message && attachedFiles.length === 0) return;
 
       stopDictation();
-      onSubmit?.(currentValue, attachedFiles);
+      onSubmit?.(message, attachedFiles);
+
       if (value === undefined) {
-        setUncontrolledValue("");
+        clearComposerContent(editor);
+        emitChange();
+        resizeEditor();
+        slash.close();
+        refs.close();
       }
     },
     [
       attachedFiles,
-      canSubmit,
-      currentValue,
-      disabled,
-      isGenerating,
+      editorDisabled,
+      emitChange,
       onSubmit,
+      refs.close,
+      resizeEditor,
+      slash.close,
       stopDictation,
       value,
     ],
   );
 
   const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (slash.onKeyDown(event)) return;
+      if (refs.onKeyDown(event)) return;
+
       if (event.key !== "Enter" || event.shiftKey) return;
       if (isComposing || event.nativeEvent.isComposing) return;
 
       event.preventDefault();
       handleSubmit();
     },
-    [handleSubmit, isComposing],
+    [handleSubmit, isComposing, refs.onKeyDown, slash.onKeyDown],
+  );
+
+  const handlePaste = useCallback(
+    (event: ClipboardEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const text = event.clipboardData.getData("text/plain");
+      if (!text) return;
+      document.execCommand("insertText", false, text);
+      emitChange();
+      resizeEditor();
+      slash.refresh();
+      refs.refresh();
+    },
+    [emitChange, refs.refresh, resizeEditor, slash.refresh],
   );
 
   const handleStop = useCallback(() => {
@@ -189,15 +420,25 @@ export function Composer({
 
   let sendIcon = <ArrowUpIcon className="size-4" />;
   if (status === "submitted" || status === "streaming") {
-    // Stop control while busy — agent presence lives in the in-thread orb.
     sendIcon = <SquareIcon className="size-3.5 fill-current" />;
   } else if (status === "error") {
     sendIcon = <XIcon className="size-4" />;
   }
 
+  const menuStyle: CSSProperties = {
+    left: slash.menuPos.left,
+    bottom: slash.menuPos.bottom,
+  };
+
+  const refMenuStyle: CSSProperties = {
+    left: refs.menuPos.left,
+    bottom: refs.menuPos.bottom,
+  };
+
   return (
     <form className={cn("w-full", className)} onSubmit={handleSubmit}>
       <div
+        ref={cardRef}
         className={cn(
           "relative rounded-3xl border border-black/5 bg-white px-4 pt-3 pb-3",
           "dark:border-white/10 dark:bg-card",
@@ -207,37 +448,78 @@ export function Composer({
           "focus-within:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1)]",
         )}
       >
-        <textarea
-          ref={textareaRef}
-          aria-label={placeholder}
-          className={cn(
-            "w-full resize-none bg-transparent text-base leading-6",
-            "text-foreground placeholder:text-muted-foreground/70",
-            "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
-            "min-h-6",
-          )}
-          disabled={disabled || isGenerating}
-          name="message"
-          onChange={handleChange}
-          onCompositionEnd={() => setIsComposing(false)}
-          onCompositionStart={() => setIsComposing(true)}
-          onKeyDown={handleKeyDown}
-          placeholder={isDictating ? "Listening…" : placeholder}
-          rows={1}
-          style={{
-            maxHeight: `${LINE_HEIGHT_PX * maxRows}px`,
-            overflowY: "auto",
-          }}
-          value={currentValue}
+        <SkillSlashMenu
+          activeIndex={slash.activeIndex}
+          onActiveIndexChange={slash.setActiveIndex}
+          onSelect={slash.selectSkill}
+          open={slash.open}
+          query={slash.query}
+          skills={slash.skills}
+          style={menuStyle}
         />
 
-        <div className="mt-2 flex items-center justify-between gap-2">
-          {/* Left toolbar — reserved for attach / tools / settings */}
-          <div
-            className="flex min-w-0 items-center gap-1"
-            data-slot="composer-tools"
-          />
+        <RefMentionMenu
+          activeIndex={refs.activeIndex}
+          error={refs.error}
+          items={refs.items}
+          level={refs.level}
+          loading={refs.loading}
+          onActiveIndexChange={refs.setActiveIndex}
+          onSelectItem={refs.selectItem}
+          onSelectService={refs.selectService}
+          open={refs.open}
+          query={refs.query}
+          recentItems={refs.recentItems}
+          searchEmpty={refs.searchEmpty}
+          searching={refs.searching}
+          connecting={refs.connecting}
+          service={refs.service}
+          services={refs.services}
+          style={refMenuStyle}
+        />
 
+        <div className="relative">
+          {isEmpty ? (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-0 text-base leading-6 text-muted-foreground/70",
+                "transition-opacity duration-200 ease-out",
+                !isDictating && rotatePlaceholders && rotating.fading
+                  ? "opacity-0"
+                  : "opacity-100",
+              )}
+            >
+              {isDictating ? "Listening…" : activePlaceholder}
+            </div>
+          ) : null}
+          <div
+            ref={editorRef}
+            aria-label={ariaLabel}
+            aria-multiline="true"
+            className={cn(
+              "relative w-full resize-none bg-transparent text-base leading-6",
+              "text-foreground focus:outline-none",
+              "min-h-6 whitespace-pre-wrap break-words",
+              editorDisabled && "pointer-events-none opacity-50",
+            )}
+            contentEditable={!editorDisabled}
+            data-slot="composer-editor"
+            onCompositionEnd={() => setIsComposing(false)}
+            onCompositionStart={() => setIsComposing(true)}
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            role="textbox"
+            style={{
+              maxHeight: `${LINE_HEIGHT_PX * maxRows}px`,
+              overflowY: "auto",
+            }}
+            suppressContentEditableWarning
+          />
+        </div>
+
+        <div className="mt-2 flex items-center justify-end gap-2">
           <div className="flex shrink-0 items-center gap-0.5">
             {dictationSupported ? (
               <button
@@ -250,10 +532,9 @@ export function Composer({
                   isDictating
                     ? "bg-foreground text-background"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  (disabled || isGenerating) &&
-                    "cursor-not-allowed opacity-50",
+                  editorDisabled && "cursor-not-allowed opacity-50",
                 )}
-                disabled={disabled || isGenerating}
+                disabled={editorDisabled}
                 onClick={toggleDictation}
                 title={
                   dictationError ??
@@ -261,7 +542,7 @@ export function Composer({
                 }
                 type="button"
               >
-                <MicVocalIcon
+                <MicIcon
                   className={cn("size-4", isDictating && "animate-pulse")}
                 />
               </button>

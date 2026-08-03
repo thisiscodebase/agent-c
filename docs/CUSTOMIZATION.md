@@ -28,10 +28,10 @@ code:
 
 ## 3. Kept and repurposed
 
-- `agent/skills/daily-summary.md` — kept, rewritten as the case-study- relevant
-  activity digest described in `ARCHITECTURE.md`. This is the one piece of
-  upstream example content judged good enough to build on directly rather than
-  replace. Full digest rework still depends on Phase 4 artifacts.
+- `agent/skills/daily-summary/SKILL.md` — activity digest over live connectors
+  (Drive recent, Slack, HubSpot, Platform) plus injected `active_focus`. Optional
+  `create_artifact` (`type: "summary"`, `kind: "daily_summary"`). Shared tracked-
+  folder artifact search from Phase 4 can tighten scoping later.
 
 ## 4. New tools (`agent/tools/`)
 

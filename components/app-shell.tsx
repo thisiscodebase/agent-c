@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  ChevronRightIcon,
   MenuIcon,
   PencilIcon,
   PlusIcon,
@@ -18,6 +19,11 @@ import { DocsTile } from "~/components/artifacts/docs-tile";
 import { CommandPalette } from "~/components/command-palette";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -48,6 +54,11 @@ type ShellUser = {
 };
 
 type ThreadGroup = ReturnType<typeof useThreadGroups>[number];
+
+/** Recent buckets stay open; older history (Last month+) starts collapsed. */
+function isCollapsibleThreadGroup(groupId: string) {
+  return groupId !== "today" && groupId !== "yesterday" && groupId !== "last-week";
+}
 
 function userInitial(user: ShellUser | undefined) {
   return user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
@@ -98,9 +109,13 @@ function SidebarNav({
   onDeleteThread: (threadId: string) => void;
   onRenameThread: (threadId: string) => void;
 }) {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
+
   return (
-    <>
-      <div className="flex flex-col gap-1.5 p-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 flex-col gap-1.5 p-3">
         <Button className="w-full justify-between" variant="outline" onClick={onNewChat}>
           <span className="flex items-center gap-1.5">
             <PlusIcon className="size-4" />
@@ -117,11 +132,21 @@ function SidebarNav({
         </Button>
       </div>
 
-      <ScrollArea className="min-w-0 flex-1 px-3">
+      <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-hidden px-3">
         <nav className="flex min-w-0 flex-col gap-4 pb-3">
-          {groups.map((group) => (
-            <div key={group.id}>
-              <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">{group.label}</p>
+          {groups.map((group) => {
+            const collapsible = isCollapsibleThreadGroup(group.id);
+            const containsActive = Boolean(
+              activeChatId &&
+                group.items.some((thread) => thread.id === activeChatId),
+            );
+            const explicit = expandedGroups[group.id];
+            const open = collapsible
+              ? explicit === true ||
+                (containsActive && explicit !== false)
+              : true;
+
+            const threads = (
               <div className="flex min-w-0 flex-col gap-0.5">
                 {group.items.map((thread) => (
                   <ContextMenu key={thread.id}>
@@ -156,62 +181,99 @@ function SidebarNav({
                   </ContextMenu>
                 ))}
               </div>
-            </div>
-          ))}
+            );
+
+            if (!collapsible) {
+              return (
+                <div key={group.id}>
+                  <p className="mb-1 px-2 text-xs font-medium text-muted-foreground">
+                    {group.label}
+                  </p>
+                  {threads}
+                </div>
+              );
+            }
+
+            return (
+              <Collapsible
+                key={group.id}
+                open={open}
+                onOpenChange={(next) =>
+                  setExpandedGroups((prev) => ({ ...prev, [group.id]: next }))
+                }
+              >
+                <CollapsibleTrigger className="mb-1 flex w-full items-center gap-1 rounded-md px-2 py-0.5 text-left text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+                  <ChevronRightIcon
+                    className={cn(
+                      "size-3.5 shrink-0 transition-transform",
+                      open && "rotate-90",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{group.label}</span>
+                  <span className="shrink-0 tabular-nums opacity-70">
+                    {group.items.length}
+                  </span>
+                </CollapsibleTrigger>
+                <CollapsibleContent>{threads}</CollapsibleContent>
+              </Collapsible>
+            );
+          })}
         </nav>
       </ScrollArea>
 
-      <DocsTile active={docsActive} />
+      <div className="shrink-0">
+        <DocsTile active={docsActive} />
 
-      <div className="flex items-center gap-1 p-3">
-        <Button
-          className="h-10 min-w-0 flex-1 justify-start gap-2.5 px-2"
-          nativeButton={false}
-          render={<Link href={profileHref} />}
-          variant="ghost"
-        >
-          <Avatar>
-            <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
-            <AvatarFallback>{userInitial(user)}</AvatarFallback>
-          </Avatar>
-          <span className="min-w-0 truncate text-left font-medium">
-            {user?.name?.trim() || "Profile"}
-          </span>
-        </Button>
-        <Button
-          aria-label="Leaderboard"
-          className="shrink-0 text-muted-foreground"
-          nativeButton={false}
-          render={<Link href="/leaderboard" />}
-          size="icon"
-          variant="ghost"
-        >
-          <PodiumIcon className="size-4" />
-        </Button>
-        {showAdmin ? (
+        <div className="flex items-center gap-1 p-3">
           <Button
-            aria-label="Admin dashboard"
+            className="h-10 min-w-0 flex-1 justify-start gap-2.5 px-2"
+            nativeButton={false}
+            render={<Link href={profileHref} />}
+            variant="ghost"
+          >
+            <Avatar>
+              <AvatarImage alt={user?.name ?? "Account"} src={user?.image ?? undefined} />
+              <AvatarFallback>{userInitial(user)}</AvatarFallback>
+            </Avatar>
+            <span className="min-w-0 truncate text-left font-medium">
+              {user?.name?.trim() || "Profile"}
+            </span>
+          </Button>
+          <Button
+            aria-label="Leaderboard"
             className="shrink-0 text-muted-foreground"
             nativeButton={false}
-            render={<Link href="/admin" />}
+            render={<Link href="/leaderboard" />}
             size="icon"
             variant="ghost"
           >
-            <ShieldIcon className="size-4" />
+            <PodiumIcon className="size-4" />
           </Button>
-        ) : null}
-        <Button
-          aria-label="Settings"
-          className="shrink-0 text-muted-foreground"
-          nativeButton={false}
-          render={<Link href="/settings" />}
-          size="icon"
-          variant="ghost"
-        >
-          <SettingsIcon className="size-4" />
-        </Button>
+          {showAdmin ? (
+            <Button
+              aria-label="Admin dashboard"
+              className="shrink-0 text-muted-foreground"
+              nativeButton={false}
+              render={<Link href="/admin" />}
+              size="icon"
+              variant="ghost"
+            >
+              <ShieldIcon className="size-4" />
+            </Button>
+          ) : null}
+          <Button
+            aria-label="Settings"
+            className="shrink-0 text-muted-foreground"
+            nativeButton={false}
+            render={<Link href="/settings" />}
+            size="icon"
+            variant="ghost"
+          >
+            <SettingsIcon className="size-4" />
+          </Button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -320,7 +382,7 @@ export function AppShell({
       <CommandPalette onOpenChange={setPaletteOpen} open={paletteOpen} />
 
       <aside
-        className="app-sidebar-frost relative hidden shrink-0 flex-col border-r border-black/[0.06] md:flex"
+        className="app-sidebar-frost relative hidden h-dvh min-h-0 shrink-0 flex-col overflow-hidden border-r border-black/[0.06] md:flex"
         style={{ width: sidebarWidth }}
       >
         <SidebarNav {...sidebarProps} showShortcuts />

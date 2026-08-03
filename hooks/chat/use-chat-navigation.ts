@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { ThreadRecord, ThreadSummary } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
+import { toDisplayText } from "#shared/composer-refs";
 import { queryKeys } from "~/lib/query-keys";
 import { setPendingMessage } from "./use-pending-message";
 import { requestThreadTitleGeneration } from "./use-thread-title";
@@ -30,22 +31,34 @@ export function useChatNavigation() {
     if (!text) return;
 
     const chatId = crypto.randomUUID();
+    const displayTitle = toDisplayText(text);
 
-    const { thread } = await fetch("/api/threads", {
+    const response = await fetch("/api/threads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: chatId, title: truncateThreadTitle(text) }),
-    }).then((r) => r.json() as Promise<{ thread: ThreadRecord }>);
+      body: JSON.stringify({
+        id: chatId,
+        title: truncateThreadTitle(displayTitle),
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401
+          ? "Signed out — refresh and try again"
+          : "Failed to start chat",
+      );
+    }
+    const { thread } = (await response.json()) as { thread: ThreadRecord };
 
     queryClient.setQueryData<ThreadListResponse>(queryKeys.threads, (old) => ({
-      threads: [thread, ...(old?.threads ?? []).filter((entry) => entry.id !== thread.id)],
+      threads: [thread, ...(old?.threads ?? []).filter((entry) => entry.id !== chatId)],
     }));
     setPendingMessage(chatId, text);
 
     // Fire-and-forget: replace truncated first-line title with a nano-model title.
     void requestThreadTitleGeneration(
       chatId,
-      { mode: "seed", seedText: text },
+      { mode: "seed", seedText: displayTitle },
       queryClient,
     );
 

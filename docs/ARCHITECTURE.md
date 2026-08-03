@@ -203,16 +203,16 @@ restricts each system.
   example.
 - **Linear connection** — removed; not a CodeBase data source.
 
-## Kept and repurposed: `daily-summary.md`
+## Kept and repurposed: `daily-summary`
 
-Upstream ships `daily-summary.md` as an example "meta-feature" skill — an
+Upstream ships `daily-summary` as an example "meta-feature" skill — an
 agent-native output that only works because the agent has combined context
 across sources. Rather than deleting it as example scaffolding, it's kept and
-repurposed as a case-study-relevant activity digest (new HubSpot deal stages,
-Drive/Notion activity in tracked customer folders, Slack mentions of tracked
-accounts, surfaced as one periodic summary). This doubles as the clearest
-adoption lever for colleagues who haven't yet learned to ask the agent things
-directly.
+repurposed as a case-study-relevant activity digest (HubSpot deal movement,
+Drive/Notion file activity, Slack mentions of focused accounts, Platform
+sessions when relevant — scoped by injected `active_focus`). See
+`agent/skills/daily-summary/SKILL.md`. This doubles as the clearest adoption
+lever for colleagues who haven't yet learned to ask the agent things directly.
 
 ## Memory
 

@@ -218,19 +218,19 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --background: oklch(0.145 0 0);
+    --background: oklch(0.168 0.002 255);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.22 0.002 255);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
+    --popover: oklch(0.22 0.002 255);
     --popover-foreground: oklch(0.985 0 0);
     --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
+    --primary-foreground: oklch(0.22 0.002 255);
+    --secondary: oklch(0.28 0.002 255);
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
+    --muted: oklch(0.28 0.002 255);
     --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
+    --accent: oklch(0.28 0.002 255);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
@@ -241,11 +241,11 @@
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
+    --sidebar: oklch(0.205 0.002 255);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent: oklch(0.28 0.002 255);
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
@@ -254,19 +254,19 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.168 0.002 255);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: oklch(0.22 0.002 255);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: oklch(0.22 0.002 255);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --primary-foreground: oklch(0.22 0.002 255);
+  --secondary: oklch(0.28 0.002 255);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: oklch(0.28 0.002 255);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: oklch(0.28 0.002 255);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
@@ -277,11 +277,11 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: oklch(0.205 0.002 255);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: oklch(0.28 0.002 255);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
@@ -297,5 +297,162 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/*
+ * Composer skill mention: orange highlight wave + per-character warp on insert.
+ * Letters stay as permanent spans so spacing never snaps when the animation ends.
+ */
+.skill-mention {
+  --skill-mention: #ea580c; /* orange-600 */
+  --skill-mention-peak: #ffedd5; /* orange-100 */
+  --skill-mention-mid: #fb923c; /* orange-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .skill-mention {
+    --skill-mention: #fb923c; /* orange-400 */
+    --skill-mention-peak: #fff7ed; /* orange-50 */
+    --skill-mention-mid: #fdba74; /* orange-300 */
+  }
+}
+
+.dark .skill-mention {
+  --skill-mention: #fb923c;
+  --skill-mention-peak: #fff7ed;
+  --skill-mention-mid: #fdba74;
+}
+
+.skill-mention-char {
+  display: inline-block;
+}
+
+.skill-mention[data-inserting] .skill-mention-icon {
+  animation: skill-mention-icon-wave 0.78s ease-out both;
+}
+
+.skill-mention[data-inserting] .skill-mention-char {
+  animation: skill-mention-char-wave 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+@keyframes skill-mention-char-wave {
+  0% {
+    color: var(--skill-mention);
+    transform: translateY(0) rotate(0deg);
+  }
+  32% {
+    color: var(--skill-mention-peak);
+    transform: translateY(-0.14em) rotate(-5deg);
+  }
+  55% {
+    color: var(--skill-mention-mid);
+    transform: translateY(0.06em) rotate(3.5deg);
+  }
+  100% {
+    color: var(--skill-mention);
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes skill-mention-icon-wave {
+  0% {
+    color: var(--skill-mention);
+    filter: brightness(1);
+  }
+  32% {
+    color: var(--skill-mention-peak);
+    filter: brightness(1.25);
+  }
+  55% {
+    color: var(--skill-mention-mid);
+    filter: brightness(1.08);
+  }
+  100% {
+    color: var(--skill-mention);
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-mention[data-inserting] .skill-mention-icon,
+  .skill-mention[data-inserting] .skill-mention-char {
+    animation: none;
+  }
+}
+
+/* Composer @ refs — leafy green (leaf of a fresh orange). */
+.ref-mention {
+  --ref-mention: #4d7c0f; /* lime-700 */
+  --ref-mention-peak: #ecfccb; /* lime-100 */
+  --ref-mention-mid: #a3e635; /* lime-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .ref-mention {
+    --ref-mention: #a3e635; /* lime-400 */
+    --ref-mention-peak: #f7fee7; /* lime-50 */
+    --ref-mention-mid: #bef264; /* lime-300 */
+  }
+}
+
+.dark .ref-mention {
+  --ref-mention: #a3e635;
+  --ref-mention-peak: #f7fee7;
+  --ref-mention-mid: #bef264;
+}
+
+.ref-mention-char {
+  display: inline-block;
+}
+
+.ref-mention[data-inserting] .ref-mention-icon {
+  animation: ref-mention-icon-wave 0.78s ease-out both;
+}
+
+.ref-mention[data-inserting] .ref-mention-char {
+  animation: ref-mention-char-wave 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+@keyframes ref-mention-char-wave {
+  0% {
+    color: var(--ref-mention);
+    transform: translateY(0) rotate(0deg);
+  }
+  32% {
+    color: var(--ref-mention-peak);
+    transform: translateY(-0.14em) rotate(-5deg);
+  }
+  55% {
+    color: var(--ref-mention-mid);
+    transform: translateY(0.06em) rotate(3.5deg);
+  }
+  100% {
+    color: var(--ref-mention);
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes ref-mention-icon-wave {
+  0% {
+    filter: brightness(1);
+  }
+  32% {
+    filter: brightness(1.25);
+  }
+  55% {
+    filter: brightness(1.08);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ref-mention[data-inserting] .ref-mention-icon,
+  .ref-mention[data-inserting] .ref-mention-char {
+    animation: none;
   }
 }

@@ -2,13 +2,12 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ThreadRecord } from "#shared/types/thread";
-import { ArtifactSidePanel } from "~/components/artifacts/artifact-side-panel";
+import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
 import {
   MessageScrollerButton,
   MessageScrollerProvider,
 } from "~/components/ui/message-scroller";
-import { useArtifactPanel } from "~/hooks/use-artifact-panel";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
 import {
   resolveTurnOrbActivity,
@@ -29,7 +28,6 @@ import { AgentPresence } from "./agent-presence";
 
 export function ChatPageClient({ chatId, initialThread }: { chatId: string; initialThread: ThreadRecord }) {
   const { agent, error } = useChatSession(chatId, initialThread);
-  const { openArtifactId, closeArtifact } = useArtifactPanel();
   const reduceMotion = useReducedMotion();
 
   const showPresence = shouldShowAgentPresence(
@@ -46,8 +44,8 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
 
   return (
     <MessageScrollerProvider autoScroll>
-      <div className="flex h-full min-w-0">
-        <div className="relative min-w-0 flex-1">
+      <DetailPanelHost>
+        <div className="relative h-full min-w-0">
           <MessageList
             messages={agent.data.messages}
             onRespond={respondToInput}
@@ -59,7 +57,6 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
             <div className="relative">
               <div aria-hidden className={chatFooterFadeClass} />
 
-              {/* Centered dock: presence stays on the midline; scroll control sits to its right when busy. */}
               <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center">
                 <div className="relative flex items-center justify-center">
                   <AnimatePresence initial={false}>
@@ -125,11 +122,7 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
             </div>
           </div>
         </div>
-
-        {openArtifactId ? (
-          <ArtifactSidePanel artifactId={openArtifactId} onClose={closeArtifact} />
-        ) : null}
-      </div>
+      </DetailPanelHost>
     </MessageScrollerProvider>
   );
 }

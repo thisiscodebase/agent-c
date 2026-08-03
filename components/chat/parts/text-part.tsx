@@ -4,7 +4,6 @@ import type { EveMessage, EveMessagePart } from "eve/react";
 import { useMemo } from "react";
 import { Streamdown } from "streamdown";
 import { Bubble, BubbleContent } from "~/components/ui/bubble";
-import { MessageResponse } from "~/components/ai-elements/message";
 import {
   streamdownAnimation,
   streamdownPlugins,
@@ -17,6 +16,7 @@ import {
 import { unwrapUnsafeMarkdownLinks } from "~/lib/unwrap-unsafe-markdown-links";
 import { cn } from "~/lib/utils";
 import { createCitationComponents } from "./inline-citation";
+import { UserTextWithRefs } from "./user-text-with-refs";
 
 const EMPTY_CITATIONS: readonly Citation[] = [];
 
@@ -45,10 +45,8 @@ export function TextPart({
   if (!isAssistant) {
     return (
       <Bubble variant="imessage">
-        <BubbleContent>
-          <MessageResponse isAnimating={part.state === "streaming"}>
-            {part.text}
-          </MessageResponse>
+        <BubbleContent className="text-sm">
+          <UserTextWithRefs text={part.text} />
         </BubbleContent>
       </Bubble>
     );

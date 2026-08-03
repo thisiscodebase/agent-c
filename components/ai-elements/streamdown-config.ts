@@ -13,4 +13,9 @@ export const streamdownPlugins = {
   mermaid,
 } as PluginConfig;
 
-export const streamdownAnimation = { animation: "blurIn" } as const;
+export const streamdownAnimation = {
+  animation: "blurIn",
+  // Default stagger is 40ms/word — tighten so streaming feels snappier.
+  stagger: 10,
+  duration: 500,
+} as const;

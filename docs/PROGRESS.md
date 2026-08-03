@@ -80,8 +80,8 @@ Shipped as an experiment, deliberately narrower than
 
 Still outstanding: `artifact_sources` (provenance and the review gate it
 enables), `artifact_chunks` + embeddings, `search_artifacts.ts`, and
-`generate_report.ts`. The daily/weekly digest rework in
-`agent/skills/daily-summary.md` still waits on search landing.
+`generate_report.ts`. `agent/skills/daily-summary/` already digests live
+connectors; tracked-folder / artifact-search scoping can tighten later.
 
 ### Phase 5 — Slack surface polish (not started)
 

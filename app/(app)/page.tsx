@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Suggestion, Suggestions } from "~/components/ai-elements/suggestion";
+import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
 import { getToolCategoryIcon } from "~/lib/tool-icons";
@@ -100,40 +101,39 @@ export default function HomePage() {
   const starters = pickPair(offset);
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-6 p-6">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">🍊 Agent C</h1>
-        <p className="text-sm text-muted-foreground">
-          Ask about anything across Drive, HubSpot, Slack, and the platform.
-        </p>
+    <DetailPanelHost>
+      <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-6 p-6">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-orange-600">🍊 Agent C</h1>
+        </div>
+
+        <Composer
+          autoFocus
+          className="w-full"
+          onSubmit={(message) => {
+            if (message.trim()) void startNewChat(message);
+          }}
+        />
+
+        <Suggestions
+          className={cn(
+            "min-h-10 transition-opacity duration-300 ease-in-out",
+            visible ? "opacity-100" : "opacity-0",
+          )}
+        >
+          {starters.map((starter) => (
+            <Suggestion
+              key={starter.id}
+              icon={getToolCategoryIcon(starter.tool, {
+                size: 14,
+                showBackground: false,
+              })}
+              suggestion={starter.text}
+              onClick={startNewChat}
+            />
+          ))}
+        </Suggestions>
       </div>
-
-      <Composer
-        autoFocus
-        className="w-full"
-        onSubmit={(message) => {
-          if (message.trim()) void startNewChat(message);
-        }}
-      />
-
-      <Suggestions
-        className={cn(
-          "min-h-10 transition-opacity duration-300 ease-in-out",
-          visible ? "opacity-100" : "opacity-0",
-        )}
-      >
-        {starters.map((starter) => (
-          <Suggestion
-            key={starter.id}
-            icon={getToolCategoryIcon(starter.tool, {
-              size: 14,
-              showBackground: false,
-            })}
-            suggestion={starter.text}
-            onClick={startNewChat}
-          />
-        ))}
-      </Suggestions>
-    </div>
+    </DetailPanelHost>
   );
 }

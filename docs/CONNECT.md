@@ -272,7 +272,7 @@ HubSpot single-use refresh tokens).
 
 | Source            | MCP / API endpoint                       | Connect role                | DIY shortcut?                                             |
 | ----------------- | ---------------------------------------- | --------------------------- | --------------------------------------------------------- |
-| **Drive**         | `https://drivemcp.googleapis.com/mcp/v1` | Per-user GCP OAuth          | No — per-user required for ACLs                           |
+| **Drive**         | Connect OAuth → Drive API v3 REST tools (temporary; MCP bypassed) | Per-user GCP OAuth          | No — per-user required for ACLs; Connect UID still `drivemcp.googleapis.com/agent-c` |
 | **HubSpot**       | `https://mcp.hubspot.com`                | App-scoped default          | Possible: single `HUBSPOT_TOKEN` in env                   |
 | **Notion**        | `https://mcp.notion.com/mcp`             | Per-user OAuth only         | No — hosted MCP rejects bearer/integration tokens         |
 | **Tally**         | `https://api.tally.so/mcp`               | Per-user OAuth              | Possible: API key `tly-…` in env, but loses per-user ACLs |
@@ -288,7 +288,9 @@ shared/connect.ts              Connector UIDs
 server/connectors.ts           Integrations registry + test probes
 server/utils/connect.ts        getTokenResponse, startAuthorization, revoke
 app/api/integrations/*       Connect / Test / Revoke API
-agent/connections/drive.ts   MCP + connect(DRIVE_CONNECTOR)
+agent/tools/search_drive.ts   REST + ctx.getToken(connect(DRIVE_CONNECTOR))  # temporary MCP bypass
+agent/tools/list_recent_drive.ts
+agent/tools/read_drive_file.ts
 agent/connections/hubspot.ts MCP + connect({ principalType: "app" })
 agent/connections/notion.ts  MCP + connect(NOTION_CONNECTOR)
 agent/connections/tally.ts   MCP + connect(TALLY_CONNECTOR)

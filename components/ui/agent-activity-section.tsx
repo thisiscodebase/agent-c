@@ -18,7 +18,9 @@ import {
   formatToolName,
   getActivitySummaryLabel,
   getReasoningSummaryLabel,
+  getReasoningTimelineLabel,
   getToolCallsSummaryLabel,
+  stripLatestReasoningHeading,
 } from "~/lib/tool-call-display";
 import { getToolCategoryIcon } from "~/lib/tool-icons";
 import { cn } from "~/lib/utils";
@@ -116,6 +118,9 @@ function ToolCallDetails({
 }
 
 function ReasoningDetails({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+  const body = stripLatestReasoningHeading(text);
+  if (!body.trim()) return null;
+
   return (
     <div className="max-h-60 overflow-y-auto text-xs text-muted-foreground">
       <Streamdown
@@ -124,7 +129,7 @@ function ReasoningDetails({ text, isStreaming }: { text: string; isStreaming: bo
         linkSafety={streamdownLinkSafety}
         plugins={streamdownPlugins}
       >
-        {text}
+        {body}
       </Streamdown>
     </div>
   );
@@ -144,7 +149,9 @@ function ReasoningTimelineRow({
   const duration = useReasoningDuration(step.isStreaming);
   const [expanded, setExpanded] = useState(defaultExpanded ?? false);
   const hasText = step.text.trim().length > 0;
-  const label = getReasoningSummaryLabel({
+  const bodyText = stripLatestReasoningHeading(step.text);
+  const hasBody = bodyText.trim().length > 0;
+  const label = getReasoningTimelineLabel({
     isStreaming: step.isStreaming,
     durationSeconds: duration,
     text: step.text,
@@ -164,7 +171,7 @@ function ReasoningTimelineRow({
 
       <div className="min-w-0 flex-1 pb-2">
         <div className="flex min-h-7 items-center gap-1">
-          {hasText ? (
+          {hasBody ? (
             <button
               type="button"
               className="group/parent flex min-w-0 cursor-pointer items-center gap-1 text-left"
@@ -198,7 +205,7 @@ function ReasoningTimelineRow({
           )}
         </div>
 
-        {expanded && hasText ? (
+        {expanded && hasBody ? (
           <div className="mt-2">
             <ReasoningDetails isStreaming={step.isStreaming} text={step.text} />
           </div>
@@ -219,7 +226,7 @@ function SoloReasoningSection({
 }) {
   const duration = useReasoningDuration(step.isStreaming);
   const [isExpanded, setIsExpanded] = useState(false);
-  const label = getReasoningSummaryLabel({
+  const label = getReasoningTimelineLabel({
     isStreaming: step.isStreaming,
     durationSeconds: duration,
     text: step.text,

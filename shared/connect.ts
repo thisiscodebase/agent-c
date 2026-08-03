@@ -9,7 +9,18 @@ export const CONNECT_USER_ISSUER = "app";
  * and `agent/connections/*.ts`. Update after `vercel connect create` /
  * `vercel connect list` if the provisioned UID differs.
  */
-export const DRIVE_CONNECTOR = "oauth/drive-codebase-agent";
+export const DRIVE_CONNECTOR = "drivemcp.googleapis.com/agent-c";
+/**
+ * Google rejects an authorization request with no `scope` parameter
+ * (`invalid_request: Missing required parameter: scope`), so every Drive
+ * connect path must pass these explicitly — the connector has no usable
+ * default. Read-only REST tools (`search_drive`, etc.) only need
+ * `drive.readonly`. Connect UID remains `drivemcp.googleapis.com/agent-c`
+ * even though chat temporarily uses Drive API v3 instead of hosted MCP.
+ */
+export const DRIVE_OAUTH_SCOPES = [
+  "https://www.googleapis.com/auth/drive.readonly",
+] as const;
 export const HUBSPOT_CONNECTOR = "mcp.hubspot.com/agent-c";
 /**
  * CRM read scopes requested on Connect + in-chat OAuth. HubSpot MCP also

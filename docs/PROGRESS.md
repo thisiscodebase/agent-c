@@ -35,7 +35,7 @@ All work through Phase 3 code below is ready to commit once verified.
 | — Chat UI foundations | Done, verified live             | Vue composables ported to React hooks (TanStack Query); Next.js UI (home, `/chat/[id]`, settings) on shadcn/AI Elements; message rendering split into reusable `components/chat/parts/*`; dismissable turn-error banner; Cmd+K command palette. Confirmed live end-to-end. |
 | — Chat primitives     | shadcn chat components          | Adopted shadcn's June 2026 chat-components release: `MessageScroller`, `Message`+`Bubble`, `shimmer` CSS utility.                                                                                                                                                          |
 | — UI primitives       | Radix → Base UI                 | All 18 shadcn `components/ui/*` primitives migrated from `radix-ui` to `@base-ui/react`. `components/ai-elements/*` stays on Radix.                                                                                                                                        |
-| 3 — Connectors        | Code done; provisioning pending | Drive MCP (`agent/connections/drive.ts`), HubSpot MCP (`hubspot.ts`), Notion MCP (`notion.ts`), Slack search tool (`agent/tools/search_slack.ts`) on same `slack/agent-c` app. Integrations registry in `server/connectors.ts`. GitHub connector removed from product surface.   |
+| 3 — Connectors        | Code done; provisioning pending | Drive temporary REST tools (`search_drive` / `list_recent_drive` / `read_drive_file`; MCP connection removed), HubSpot MCP (`hubspot.ts`), Notion MCP (`notion.ts`), Slack search tool (`agent/tools/search_slack.ts`) on same `slack/agent-c` app. Integrations registry in `server/connectors.ts`. GitHub connector removed from product surface.   |
 
 ## Remaining — original roadmap
 
@@ -56,7 +56,7 @@ Operator steps before live verification:
 
 - [ ] Settings → Integrations lists Drive, HubSpot, Notion, Slack search (no
       GitHub)
-- [ ] Drive Connect → Test lists recent files; chat can `search_files` / read
+- [ ] Drive Connect → Test lists recent files; chat can `search_drive` / `list_recent_drive` / `read_drive_file`
       content
 - [ ] HubSpot Connect/Test returns companies; chat CRM lookup works without
       inventing deals
@@ -154,7 +154,9 @@ pattern still needs to be finalized as a config choice.
   (`Cannot read properties of undefined
   (reading 'subscribe')`) — always nest
   an explicit `<Command>` between `CommandDialog` and its content.
-- **Drive MCP is Google Developer Preview** — enable `drivemcp.googleapis.com`
+- **Drive chat uses temporary REST tools** — hosted MCP data-plane returned
+  permission errors; Connect UID / OAuth unchanged. Revisit MCP when Google’s
+  preview allows it.
   in the GCP project; tool names and availability may change.
 - **HubSpot app-scoped Connect**: if Connect cannot mint an app token against
   HubSpot's PKCE MCP Auth App, set `authMode: "user"` on the HubSpot entry in

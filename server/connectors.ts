@@ -1,6 +1,7 @@
 import type { ConnectorDef } from "#shared/types/connector";
 import {
   DRIVE_CONNECTOR,
+  DRIVE_OAUTH_SCOPES,
   HUBSPOT_CONNECTOR,
   HUBSPOT_OAUTH_SCOPES,
   NOTION_CONNECTOR,
@@ -16,13 +17,12 @@ export const connectors: ConnectorDef[] = [
   {
     id: "drive",
     name: "Google Drive",
-    description: "Search and read Drive files you can access (case-study source material).",
+    description:
+      "Search and read Drive files you can access (REST tools; temporary MCP bypass).",
     connector: DRIVE_CONNECTOR,
-    connectionName: "drive",
+    connectionName: "search_drive",
     icon: "i-simple-icons-googledrive",
-    scopes: [
-      "https://www.googleapis.com/auth/drive.readonly",
-    ],
+    scopes: [...DRIVE_OAUTH_SCOPES],
     test: {
       label: "List recent files",
       run: async (token) => {

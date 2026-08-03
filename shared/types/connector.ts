@@ -29,7 +29,10 @@ export interface ConnectorDef {
   description: string;
   /** Vercel Connect connector UID — must match `agent/connections/<id>.ts`. */
   connector: string;
-  /** Eve connection name from `agent/connections/<connectionName>.ts`. */
+  /**
+   * Eve auth challenge target: MCP connection name (`agent/connections/<name>.ts`)
+   * or custom tool name (`agent/tools/<name>.ts`, e.g. `search_slack` / `search_drive`).
+   */
   connectionName: string;
   icon: string;
   scopes: string[];

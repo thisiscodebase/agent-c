@@ -94,7 +94,7 @@ vercel env pull
 ```
 
 Update UIDs in `shared/connect.ts` if `vercel connect list` returns different
-values than the placeholders (`oauth/drive-codebase-agent`,
+values than the provisioned ones (`drivemcp.googleapis.com/agent-c`,
 `mcp.hubspot.com/agent-c`, `mcp.notion.com/agent-c`, `api.tally.so/agent-c`,
 `slack/agent-c`).
 
@@ -134,7 +134,11 @@ Drive MCP requires a Google Cloud project with:
 - Redirect URI matching Vercel Connect's callback for the custom OAuth connector
 - Scopes: at least `https://www.googleapis.com/auth/drive.readonly`
 
-Drive MCP is currently a **Google Workspace Developer Preview**.
+Drive MCP is currently a **Google Workspace Developer Preview**. Chat
+temporarily uses Drive API v3 REST tools (`search_drive`, etc.) with the same
+Connect grant — Connect UID stays `drivemcp.googleapis.com/agent-c`. Enable
+`drive.googleapis.com` (required for REST); `drivemcp.googleapis.com` can stay
+enabled for a future MCP re-enable.
 
 ### HubSpot
 

@@ -47,6 +47,149 @@ export function getLatestReasoningHeading(text: string): string | null {
   return latest ? truncate(latest, 56) : null;
 }
 
+/**
+ * Remove the markdown heading line that `getLatestReasoningHeading` would use,
+ * so expanded reasoning body does not repeat the timeline title.
+ */
+export function stripLatestReasoningHeading(text: string): string {
+  const heading = getLatestReasoningHeading(text);
+  if (!heading) return text;
+
+  const lines = text.split("\n");
+  let removeIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i]!.trim();
+    const atx = trimmed.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
+    if (atx && truncate(atx[1]!.trim(), 56) === heading) {
+      removeIndex = i;
+      continue;
+    }
+    const bold = trimmed.match(/^\*\*(.+?)\*\*$/);
+    if (bold && truncate(bold[1]!.trim(), 56) === heading) {
+      removeIndex = i;
+    }
+  }
+
+  if (removeIndex < 0) return text;
+
+  lines.splice(removeIndex, 1);
+  if (lines[removeIndex]?.trim() === "") {
+    lines.splice(removeIndex, 1);
+  } else if (removeIndex > 0 && lines[removeIndex - 1]?.trim() === "") {
+    lines.splice(removeIndex - 1, 1);
+  }
+
+  return lines.join("\n").replace(/^\n+/, "").replace(/\n+$/, "");
+}
+
+/** Common progressive verbs in model reasoning headers → past tense. */
+const REASONING_VERB_PAST: Record<string, string> = {
+  analyzing: "Analyzed",
+  analysing: "Analysed",
+  checking: "Checked",
+  comparing: "Compared",
+  confirming: "Confirmed",
+  considering: "Considered",
+  deciding: "Decided",
+  evaluating: "Evaluated",
+  exploring: "Explored",
+  fetching: "Fetched",
+  finding: "Found",
+  gathering: "Gathered",
+  getting: "Got",
+  identifying: "Identified",
+  investigating: "Investigated",
+  listing: "Listed",
+  looking: "Looked",
+  making: "Made",
+  opening: "Opened",
+  parsing: "Parsed",
+  planning: "Planned",
+  preparing: "Prepared",
+  reading: "Read",
+  resolving: "Resolved",
+  reviewing: "Reviewed",
+  running: "Ran",
+  scanning: "Scanned",
+  searching: "Searched",
+  summarizing: "Summarized",
+  summarising: "Summarised",
+  taking: "Took",
+  thinking: "Thought",
+  verifying: "Verified",
+  writing: "Wrote",
+};
+
+/**
+ * Convert a reasoning section title like "Searching for files" to past tense
+ * for completed timeline rows ("Searched for files").
+ */
+export function toPastTenseReasoningHeading(heading: string): string {
+  const trimmed = heading.trim();
+  if (!trimmed) return trimmed;
+
+  const match = trimmed.match(/^([A-Za-z]+)([\s'’].*)?$/);
+  if (!match) return trimmed;
+
+  const first = match[1]!;
+  const rest = match[2] ?? "";
+  const lower = first.toLowerCase();
+
+  const mapped = REASONING_VERB_PAST[lower];
+  if (mapped) return `${mapped}${rest}`;
+
+  if (lower.endsWith("ing") && lower.length > 5) {
+    const stem = first.slice(0, -3);
+    const past = `${stem}${stem.toLowerCase().endsWith("e") ? "d" : "ed"}`;
+    return `${past.charAt(0).toUpperCase()}${past.slice(1)}${rest}`;
+  }
+
+  return trimmed;
+}
+
+export type ReasoningSummaryInput = {
+  isStreaming: boolean;
+  durationSeconds?: number;
+  text?: string;
+};
+
+/**
+ * Condensed / duration-based label ("Thought briefly", "Thought for 3s").
+ * Does not use the reasoning markdown heading — keep group summaries short.
+ */
+export function getReasoningSummaryLabel({
+  isStreaming,
+  durationSeconds,
+  text,
+}: ReasoningSummaryInput): string {
+  if (isStreaming) {
+    const heading = text ? getLatestReasoningHeading(text) : null;
+    if (heading) return heading;
+    return "Thinking...";
+  }
+  if (durationSeconds !== undefined && durationSeconds > 0) {
+    return `Thought for ${durationSeconds}s`;
+  }
+  return "Thought briefly";
+}
+
+/**
+ * Expanded timeline / solo-reasoning row label.
+ * Prefers the latest markdown heading, past-tense when the thought has finished.
+ */
+export function getReasoningTimelineLabel({
+  isStreaming,
+  durationSeconds,
+  text,
+}: ReasoningSummaryInput): string {
+  const heading = text ? getLatestReasoningHeading(text) : null;
+  if (heading) {
+    return isStreaming ? heading : toPastTenseReasoningHeading(heading);
+  }
+  return getReasoningSummaryLabel({ isStreaming, durationSeconds, text });
+}
+
 function getBashCommand(input: unknown): string | undefined {
   if (!input || typeof input !== "object") return undefined;
   const record = input as Record<string, unknown>;
@@ -185,12 +328,38 @@ export function getToolDisplayInfo(
     };
   }
 
-  if (name.startsWith("drive__") || name.includes("drive")) {
+  if (
+    name === "search_drive"
+    || name === "list_recent_drive"
+    || name === "read_drive_file"
+    || name.startsWith("drive__")
+    || name.includes("drive")
+  ) {
+    if (name === "list_recent_drive") {
+      return {
+        category: "drive",
+        integrationName: "Google Drive",
+        showCategory: false,
+        runningLabel: "Listing recent Drive files",
+        completedLabel: "Listed recent Drive files",
+        summaryLabel: "Listed recent Drive files",
+      };
+    }
+    if (name === "read_drive_file") {
+      return {
+        category: "drive",
+        integrationName: "Google Drive",
+        showCategory: false,
+        runningLabel: "Reading Drive file",
+        completedLabel: "Read Drive file",
+        summaryLabel: "Read Drive file",
+      };
+    }
     const query = getSearchQuery(input);
     return {
       category: "drive",
       integrationName: "Google Drive",
-      showCategory: true,
+      showCategory: false,
       runningLabel: query ? `Searching Drive for “${query}”` : "Searching Drive",
       completedLabel: query ? `Searched Drive for “${query}”` : "Searched Drive",
       summaryLabel: "Searched Drive",
@@ -253,6 +422,21 @@ export function getToolDisplayInfo(
       runningLabel: query ? `Searching the web for “${query}”` : "Searching the web",
       completedLabel: query ? `Searched the web for “${query}”` : "Searched the web",
       summaryLabel: "Searched the web",
+    };
+  }
+
+  if (
+    name === "web_fetch"
+    || name === "webfetch"
+    || name.includes("web_fetch")
+    || name.includes("webfetch")
+  ) {
+    return {
+      category: "web_fetch",
+      showCategory: false,
+      runningLabel: "Fetching web page",
+      completedLabel: "Ran Web Fetch",
+      summaryLabel: "Fetched web page",
     };
   }
 
@@ -386,28 +570,6 @@ export function getToolCallsSummaryLabel(toolCalls: SummarizableToolCall[]): str
   const unique = getUniqueSummarizableToolCalls(toolCalls);
   if (unique.length === 0) return "Used 0 tools";
   return joinSummaryLabels(unique.map(summaryLabelForCall));
-}
-
-export type ReasoningSummaryInput = {
-  isStreaming: boolean;
-  durationSeconds?: number;
-  text?: string;
-};
-
-export function getReasoningSummaryLabel({
-  isStreaming,
-  durationSeconds,
-  text,
-}: ReasoningSummaryInput): string {
-  if (isStreaming) {
-    const heading = text ? getLatestReasoningHeading(text) : null;
-    if (heading) return heading;
-    return "Thinking...";
-  }
-  if (durationSeconds !== undefined && durationSeconds > 0) {
-    return `Thought for ${durationSeconds}s`;
-  }
-  return "Thought briefly";
 }
 
 /**

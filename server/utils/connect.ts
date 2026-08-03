@@ -60,7 +60,7 @@ function isMissingGrantError(error: unknown) {
 
 function connectCreateCommand(def: ConnectorDef) {
   if (def.id === "drive") {
-    return `vercel connect create https://drivemcp.googleapis.com/mcp/v1 --name codebase-agent`;
+    return `vercel connect create https://drivemcp.googleapis.com/mcp/v1 --name agent-c`;
   }
   if (def.id === "hubspot") {
     return `vercel connect create mcp.hubspot.com --name codebase-agent`;

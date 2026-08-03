@@ -144,10 +144,10 @@ without the storage layer needing to know which one gets used.
 Two different retrieval problems, handled differently:
 
 - **External sources (Drive, HubSpot, Notion, Slack)** — queried live via MCP
-  connector tool calls (or a thin Slack search tool) against each service's own
-  search API, not pre-indexed by us. Building and maintaining a federated
-  indexing pipeline per external source is a large, ongoing engineering
-  investment that isn't justified for v1.
+  connector tool calls, or thin custom tools (Slack search, temporary Drive
+  REST) against each service's own search API, not pre-indexed by us. Building
+  and maintaining a federated indexing pipeline per external source is a large,
+  ongoing engineering investment that isn't justified for v1.
 - **Our own artifact store** — hybrid search, combining:
   - full-text keyword search (Postgres `tsvector` + GIN index) for exact terms —
     customer names, product terms, anything where literal wording matters;
@@ -170,7 +170,7 @@ for provisioning, pricing, and DIY comparison.
 | --------------- | --------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Slack (surface) | Native Vercel Connect Slack connector (`slack/agent-c`)                                             | App-level           | Receiving/replying to messages via `agent/channels/slack.ts`                                                                                                                           |
 | Slack (search)  | Same Connect app (`slack/agent-c`), expanded scopes; `agent/tools/search_slack.ts`                  | **Per-user**        | Slack Real-time Search API (`assistant.search.context`, granular `search:read.public`/`search:read.private`), not the legacy `search:read` scope                                       |
-| Google Drive    | Official Drive MCP (`https://drivemcp.googleapis.com/mcp/v1`) via Vercel Connect custom OAuth | **Per-user**        | Google Workspace Developer Preview. Per-user is required: Drive folder ACLs are the security boundary. See `agent/connections/drive.ts`.                                               |
+| Google Drive    | Temporary Drive REST tools (`search_drive`, `list_recent_drive`, `read_drive_file`) via Vercel Connect OAuth | **Per-user**        | Hosted Drive MCP (`drivemcp.googleapis.com`) temporarily bypassed — data-plane calls returned permission errors. Connect UID still `drivemcp.googleapis.com/agent-c`; chat uses Drive API v3 like Integrations. |
 | HubSpot         | Official HubSpot MCP (`https://mcp.hubspot.com`) via Vercel Connect                           | App-level (default) | Not a third-party router like Composio. CRM visibility is typically uniform; revisit as per-user if HubSpot access at CodeBase is team-restricted. See `agent/connections/hubspot.ts`. |
 | Notion          | Official Notion MCP (`https://mcp.notion.com/mcp`) via Vercel Connect                         | **Per-user**        | Hosted Notion MCP is OAuth-only (no bearer/integration token on this endpoint). See `agent/connections/notion.ts`.                                                                     |
 | Tally           | Official Tally MCP (`https://api.tally.so/mcp`) via Vercel Connect                            | **Per-user**        | OAuth (recommended) or API key. Forms + submissions. See `agent/connections/tally.ts`.                                                                                                 |

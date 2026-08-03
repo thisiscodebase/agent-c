@@ -37,17 +37,19 @@ code:
 
 - `search_slack.ts` — live Slack Real-time Search (`assistant.search.context`)
   on the same Connect app as the Slack channel (`slack/agent-c`), per-user token.
+- `search_drive.ts` / `list_recent_drive.ts` / `read_drive_file.ts` — temporary
+  Drive API v3 REST tools (same Connect OAuth as Integrations). Hosted Drive MCP
+  bypassed until Google’s data plane works.
 - Phase 4 (not yet): `search_artifacts.ts`, `generate_report.ts`.
 
-Live Drive / HubSpot / Notion lookup is folded into connection files
+Live HubSpot / Notion / Tally lookup is folded into connection files
 (`agent/connections/*`) rather than separate `search_*` tools — Eve discovers
-MCP tools via `connection_search`.
+MCP tools via `connection_search`. Drive uses custom tools (Slack-style) for now.
 
 ## 5. New connections (`agent/connections/`)
 
-- `drive.ts` — Google Drive official MCP
-  (`https://drivemcp.googleapis.com/mcp/v1`), Vercel Connect custom OAuth,
-  per-user. Read tools allow-listed.
+- ~~`drive.ts`~~ — removed temporarily; Drive chat uses REST tools above.
+  Connect UID stays `drivemcp.googleapis.com/agent-c`.
   - `hubspot.ts` — HubSpot official MCP (`https://mcp.hubspot.com`), Connect
   app-scoped by default. Read/search tools allow-listed; writes blocked for v1.
 - `notion.ts` — Notion hosted MCP (`https://mcp.notion.com/mcp`), Connect
@@ -95,6 +97,6 @@ login provider.
   scopes; search tool is separate code but not a second bot.
 - **HubSpot connector mechanism**: HubSpot official first-party MCP
   (`mcp.hubspot.com`), not Composio or generic REST-only OAuth.
-- **Drive**: Google official Drive MCP (Developer Preview), not OpenAPI against
-  the Drive REST API.
+- **Drive**: temporary Drive API v3 REST tools (`search_drive`, etc.) via
+  Connect OAuth — hosted Drive MCP bypassed until Google’s data plane works.
 - **Notion**: added as a Phase 3 lookup source via hosted Notion MCP.

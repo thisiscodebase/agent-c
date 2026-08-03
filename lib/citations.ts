@@ -134,7 +134,13 @@ export function classifyCitationSource(
   if (name.startsWith("notion__") || name.includes("notion")) {
     return "notion";
   }
-  if (name.startsWith("drive__") || name.includes("drive")) {
+  if (
+    name === "search_drive"
+    || name === "list_recent_drive"
+    || name === "read_drive_file"
+    || name.startsWith("drive__")
+    || name.includes("drive")
+  ) {
     return "drive";
   }
   if (name.startsWith("tally__") || name.includes("tally")) {

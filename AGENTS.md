@@ -48,7 +48,9 @@ Live lookup sources (MCP / search tools), registered in
 [`server/connectors.ts`](server/connectors.ts) and
 [`agent/connections/`](agent/connections/):
 
-- Drive — `drivemcp.googleapis.com` (per-user)
+- Drive — temporary REST tools (`search_drive`, `list_recent_drive`,
+  `read_drive_file`) via Connect OAuth on `drivemcp.googleapis.com/agent-c`
+  (hosted Drive MCP bypassed until Google’s data plane works)
 - HubSpot — `mcp.hubspot.com` (app-scoped default)
 - Notion — `mcp.notion.com/mcp` (per-user)
 - Tally — `api.tally.so/mcp` (per-user)

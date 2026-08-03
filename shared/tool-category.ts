@@ -96,7 +96,14 @@ export function toolCategory(toolName: string): { category: string; label: strin
   if (name.startsWith("notion__") || name.includes("notion")) {
     return { category: "notion", label: "Notion" };
   }
-  if (name.startsWith("drive__") || name.includes("drive") || name.includes("google_drive")) {
+  if (
+    name === "search_drive"
+    || name === "list_recent_drive"
+    || name === "read_drive_file"
+    || name.startsWith("drive__")
+    || name.includes("drive")
+    || name.includes("google_drive")
+  ) {
     return { category: "drive", label: "Google Drive" };
   }
   if (name.startsWith("tally__") || name.includes("tally")) {

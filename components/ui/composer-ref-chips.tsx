@@ -560,7 +560,9 @@ export function useRefMentionMenu({
   const [menuPos, setMenuPos] = useState({ left: 8, bottom: 56 });
   const replaceRangeRef = useRef<Range | null>(null);
   const levelRef = useRef(level);
-  levelRef.current = level;
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
 
   const matchAt = useCallback((editor: HTMLElement) => {
     return findAtMatch(editor, {

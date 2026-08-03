@@ -1,5 +1,14 @@
 import { getStreamLogSnapshot } from "~/hooks/chat/use-stream-log";
 
+function looksLikeHtmlDocument(message: string) {
+  const trimmed = message.trimStart().slice(0, 200).toLowerCase();
+  return (
+    trimmed.startsWith("<!doctype html")
+    || trimmed.startsWith("<html")
+    || (trimmed.includes("<title>") && trimmed.includes("</html>"))
+  );
+}
+
 export function formatChatErrorMessage(error: Error) {
   const message = error.message;
 
@@ -16,6 +25,27 @@ export function formatChatErrorMessage(error: Error) {
     || message.includes("Free tier requests")
   ) {
     return "AI Gateway rate limit hit (often free-tier credits). Retry shortly, or top up AI Gateway credits on the Vercel team.";
+  }
+
+  // Eve's browser client uses the raw HTTP body as ClientError.message. A Next.js
+  // not-found page is useless in the toast — surface status + a short hint instead.
+  if (looksLikeHtmlDocument(message)) {
+    const statusFromError = (error as Error & { status?: unknown }).status;
+    const status = typeof statusFromError === "number"
+      ? String(statusFromError)
+      : (/<title>([^<]*)<\/title>/i.exec(message)?.[1]?.includes("404") ? "404" : undefined);
+    const title = /<title>([^<]*)<\/title>/i.exec(message)?.[1]?.replace(/\s+/g, " ").trim();
+
+    if (status === "404" || title?.toLowerCase().includes("not found")) {
+      return "Chat lost connection to the agent (404). Retry the message — if it keeps happening, hard-refresh and start a new chat.";
+    }
+    return status
+      ? `Chat request failed (${status}). Retry the message; use Copy details if it persists.`
+      : "Chat request failed with an unexpected HTML error page. Retry the message; use Copy details if it persists.";
+  }
+
+  if (message.length > 400) {
+    return `${message.slice(0, 397).trimEnd()}…`;
   }
 
   return message;
@@ -72,7 +102,12 @@ export function buildChatErrorReport(
   lines.push(
     "",
     "Error message:",
-    error.message,
+    looksLikeHtmlDocument(error.message)
+      ? `[HTML error page omitted — ${error.message.length} chars; title: ${
+        /<title>([^<]*)<\/title>/i.exec(error.message)?.[1]?.replace(/\s+/g, " ").trim()
+        ?? "unknown"
+      }]`
+      : error.message,
     "",
     "Friendly summary:",
     formatChatErrorMessage(error),

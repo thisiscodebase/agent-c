@@ -51,14 +51,13 @@ nothing in our requirements pushes toward collapsing it.
 nothing else in the architecture was Nuxt-specific, so the swap was a frontend +
 route-handler rewrite, not an architecture change. Confirmed via `eve/next`'s
 own docs that its deploy topology (single Vercel project, `eve` mounted behind
-the main app on the same origin via `withEve()`) matches `eve/nuxt`'s — the
-existing two-service `vercel.json` (`experimentalServices.web`
-
-- `.eve`) carried over unchanged, just with `web.framework` switched from
-  `"nuxtjs"` to `"nextjs"`. TanStack Start was the rejected alternative; the
-  Next.js ecosystem's maturity (shadcn/ui, Vercel AI Elements for the chat
-  surface) was the deciding factor. Better Auth and Drizzle needed no
-  architectural change — both already had first-class Next.js support.
+the main app on the same origin via `withEve()`) matches `eve/nuxt`'s —
+`withEve()` writes the Eve Build Output service and `/eve/v1/*` routes at build
+time (do not keep a legacy `experimentalServices` block in `vercel.json`).
+TanStack Start was the rejected alternative; the Next.js ecosystem's maturity
+(shadcn/ui, Vercel AI Elements for the chat surface) was the deciding factor.
+Better Auth and Drizzle needed no architectural change — both already had
+first-class Next.js support.
 
 ## Auth
 

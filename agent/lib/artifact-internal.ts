@@ -15,7 +15,20 @@ export async function createArtifactRemote(input: {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create artifact: ${response.status} ${response.statusText}`);
+    const contentType = response.headers.get("content-type") ?? "";
+    let detail = response.statusText;
+    if (contentType.includes("application/json")) {
+      try {
+        const body = await response.json() as { message?: unknown };
+        if (typeof body.message === "string" && body.message.trim()) {
+          detail = body.message.trim();
+        }
+      }
+      catch {
+        // keep statusText
+      }
+    }
+    throw new Error(`Failed to create artifact: ${response.status} ${detail}`);
   }
 
   const { artifact } = await response.json() as { artifact: Artifact };

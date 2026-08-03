@@ -8,27 +8,31 @@ This is the operational companion to [Environment](ENVIRONMENT.md),
 
 ## 1. Architecture
 
-Agent C is one git repo deployed as **two Vercel services** ([`vercel.json`](../vercel.json)):
+Agent C is one git repo / one Vercel project. `withEve()` in
+[`next.config.ts`](../next.config.ts) deploys Next.js and the Eve runtime
+together: Eve is a Build Output service, and `/eve/v1/*` is routed to it
+before filesystem handling. Do **not** put a legacy `experimentalServices`
+block in [`vercel.json`](../vercel.json) — Vercel no longer routes that
+shape, and the browser then gets a Next.js 404 HTML page for every chat turn.
 
-| Service | Framework | Route prefix | Responsibility |
-| ------- | --------- | ------------ | -------------- |
-| **web** | Next.js (`withEve`) | `/` | Chat UI, Better Auth, DB, Flags, Integrations UI, `/api/internal/*` |
-| **eve** | Eve (`eve build`) | `/_eve_internal/eve` | Agent runtime, Slack channel, MCP connections, tool execution |
+| Surface | How it is served | Responsibility |
+| ------- | ---------------- | -------------- |
+| **web** | Next.js (`withEve`) | Chat UI, Better Auth, DB, Flags, Integrations UI, `/api/internal/*` |
+| **eve** | Eve Build Output service (`eve build` via `withEve`) | Agent runtime at `/eve/v1/*`, Slack channel, MCP connections, tool execution |
 
 ```mermaid
 flowchart LR
   user[Staff browser / Slack]
-  web[web Next.js]
-  eve[eve Agent runtime]
+  web[Next.js web]
+  eve[Eve runtime /eve/v1]
   db[(Supabase Postgres)]
   gateway[Vercel AI Gateway]
   connect[Vercel Connect]
   platform[CodeBase Platform MCP]
 
-  user --> web
-  user --> eve
+  user -->|"pages + /api/*"| web
+  user -->|"/eve/v1/*"| eve
   web --> db
-  web -->|"Bearer INTERNAL_API_SECRET"| eve
   eve -->|"Bearer INTERNAL_API_SECRET"| web
   eve --> gateway
   eve --> connect
@@ -37,9 +41,9 @@ flowchart LR
 ```
 
 Eve never authenticates end users with Google. Web owns OAuth sessions; Eve
-receives already-authenticated web traffic and Slack webhooks. Shared work
-(memory, model routing, Slack link) goes through `/api/internal/*` with
-`INTERNAL_API_SECRET`.
+receives already-authenticated web traffic (session cookies on same-origin
+`/eve/v1/*`) and Slack webhooks. Shared work (memory, model routing, Slack
+link) goes through `/api/internal/*` with `INTERNAL_API_SECRET`.
 
 ---
 
@@ -153,30 +157,26 @@ See [Platform interop](PLATFORM_INTEROP.md) for Platform-side vars.
 
 ### 4.1 Project layout
 
-Deploy from the same linked project that owns Connect resources. Services:
-
-- **web** — Next.js entrypoint `.`
-- **eve** — `eve build`, routes under `/_eve_internal/eve`
-
-Both services need overlapping secrets where Eve calls web (and vice versa).
+Deploy from the same linked project that owns Connect resources. One Vercel
+project / Framework **Next.js**: `withEve()` emits the Eve Build Output service
+and routes `/eve/v1/*` to it. Env vars that Eve and web both need
+(`INTERNAL_API_SECRET`, `BETTER_AUTH_URL`, …) are set on that single project.
 
 ### 4.2 Environment matrix
 
 Set these in the Vercel project for **Production** (and Preview as needed).
 Mark secrets Sensitive where appropriate.
 
-#### Core (both services unless noted)
+#### Core
 
-| Variable | web | eve | Purpose |
-| -------- | --- | --- | ------- |
-| `BETTER_AUTH_SECRET` | ✓ | ✓* | Auth / callbacks |
-| `BETTER_AUTH_URL` | ✓ | ✓ | Canonical public URL (no trailing slash) |
-| `INTERNAL_API_SECRET` | ✓ | ✓ | **Must match** on both |
-| `DATABASE_URL` | ✓ | if Eve queries DB | Pooled Postgres |
-| `DIRECT_URL` | CI / migrate only | — | Unpooled migrate |
-| `VERCEL_OIDC_TOKEN` | auto / pull | auto / pull | Connect + often Gateway |
-
-\*Eve needs `BETTER_AUTH_URL` to call web internal APIs and build Slack link URLs.
+| Variable | Required | Purpose |
+| -------- | -------- | ------- |
+| `BETTER_AUTH_SECRET` | ✓ | Auth / callbacks |
+| `BETTER_AUTH_URL` | ✓ | Canonical public URL (no trailing slash); Eve uses it for internal API + Slack links |
+| `INTERNAL_API_SECRET` | ✓ | Eve ↔ web `/api/internal/*` |
+| `DATABASE_URL` | ✓ | Pooled Postgres |
+| `DIRECT_URL` | CI / migrate only | Unpooled migrate |
+| `VERCEL_OIDC_TOKEN` | auto / pull | Connect + often Gateway |
 
 #### Auth (web)
 
@@ -355,7 +355,9 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 
 ### Production
 
-- [ ] Both **web** and **eve** healthy on the deployment
+- [ ] Framework is **Next.js** (not Services); `vercel.json` has no `experimentalServices`
+- [ ] `GET /eve/v1/health` returns OK on the production host
+- [ ] Chat “hello” gets a model reply (not a Chat error toast)
 - [ ] `BETTER_AUTH_URL` = production URL; OAuth callback registered
 - [ ] Migrations applied; login persists sessions
 - [ ] Flags: unset → chat + Luna; flip `agent-tier` to `premium` and confirm
@@ -370,6 +372,7 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 
 | Symptom | Likely cause |
 | ------- | ------------ |
+| Chat toast shows raw Next.js 404 HTML / “hello” never replies | Stale `experimentalServices` in `vercel.json` (or Framework set to Services) — remove it and redeploy so `withEve()` can route `/eve/v1/*` |
 | 401 on `/api/internal/*` | `INTERNAL_API_SECRET` missing/mismatched between web and eve |
 | Connect works in prod, fails locally | Stale OIDC — `vercel env pull` |
 | HubSpot `AUTHORIZATION_ERROR` | Reconnect and approve CRM objects; check scopes in `shared/connect.ts` |

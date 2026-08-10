@@ -11,10 +11,12 @@ import {
   MessageScrollerProvider,
 } from "~/components/ui/message-scroller";
 import { ContextPressureStrip } from "~/components/chat/context-pressure-strip";
+import { ContextUsagePanel } from "~/components/chat/context-usage-panel";
 import { UsageLimitStrip } from "~/components/usage/usage-limit-strip";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
 import { useUsageMeter } from "~/hooks/use-usage-meter";
 import { queryKeys } from "~/lib/query-keys";
+import { estimateThreadContextBreakdown } from "~/lib/thread-context-breakdown";
 import { resolveThreadContextPressure } from "~/lib/thread-context-pressure";
 import {
   resolveTurnOrbActivity,
@@ -99,6 +101,15 @@ export function ChatPageClient({
   const contextPressure = useMemo(
     () => resolveThreadContextPressure(agent.events),
     [agent.events],
+  );
+  const contextBreakdown = useMemo(
+    () =>
+      estimateThreadContextBreakdown({
+        events: agent.events,
+        messages: agent.data.messages,
+        inputTokens: contextPressure.inputTokens,
+      }),
+    [agent.data.messages, agent.events, contextPressure.inputTokens],
   );
 
   const showUsageStrip = !readOnly && (meterStatus === "warn" || meterStatus === "blocked");
@@ -189,6 +200,11 @@ export function ChatPageClient({
                     <p className="rounded-xl border border-border/60 bg-muted/50 px-3 py-2 text-center text-xs text-muted-foreground">
                       Admin view — read only. You can&apos;t send messages in another user&apos;s thread.
                     </p>
+                  ) : null}
+                  {contextBreakdown && contextBreakdown.ratio >= 0.15 ? (
+                    <div className="flex justify-end">
+                      <ContextUsagePanel breakdown={contextBreakdown} />
+                    </div>
                   ) : null}
                   {showUsageStrip ? (
                     <UsageLimitStrip status={meterStatus} />

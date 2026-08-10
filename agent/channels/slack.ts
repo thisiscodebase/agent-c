@@ -12,6 +12,11 @@ import {
   fetchSlackLinkForMember,
   parseSlackLinkCommand,
 } from "../lib/slack-internal";
+import { fetchUsageMeter } from "../lib/usage-meter-internal";
+import {
+  isAppUserId,
+  USAGE_LIMIT_REACHED_MESSAGE,
+} from "../../shared/usage-meter";
 
 async function slackUserProfile(ctx: SlackContext, userId: string) {
   const res = await ctx.slack.request("users.info", { user: userId });
@@ -167,6 +172,12 @@ async function buildSlackTurn(ctx: SlackContext, message: SlackMessage) {
     context.push(
       `This Slack account is not linked to a V profile yet. Open ${linkUrl}, generate a link code, then message \`link <code>\` here.`,
     );
+  } else if (isAppUserId(auth.principalId)) {
+    const meter = await fetchUsageMeter(auth.principalId);
+    if (meter?.status === "blocked") {
+      await ctx.thread.post(USAGE_LIMIT_REACHED_MESSAGE);
+      return null;
+    }
   }
 
   return {

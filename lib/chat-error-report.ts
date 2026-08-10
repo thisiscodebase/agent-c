@@ -1,3 +1,4 @@
+import { USAGE_LIMIT_REACHED_CODE, USAGE_LIMIT_REACHED_MESSAGE } from "#shared/usage-meter";
 import { getStreamLogSnapshot } from "~/hooks/chat/use-stream-log";
 
 function looksLikeHtmlDocument(message: string) {
@@ -11,6 +12,15 @@ function looksLikeHtmlDocument(message: string) {
 
 export function formatChatErrorMessage(error: Error) {
   const message = error.message;
+  const code = (error as Error & { code?: unknown }).code;
+
+  if (
+    code === USAGE_LIMIT_REACHED_CODE
+    || message.includes(USAGE_LIMIT_REACHED_CODE)
+    || message.includes("monthly Agent C usage limit")
+  ) {
+    return USAGE_LIMIT_REACHED_MESSAGE;
+  }
 
   if (
     message.includes("compiled-agent-manifest")

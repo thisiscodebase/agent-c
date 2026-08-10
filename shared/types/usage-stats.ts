@@ -1,3 +1,5 @@
+import type { UsageMeterSnapshot } from "./usage-meter";
+
 export interface UsageHeatmapDay {
   date: string;
   value: number;
@@ -162,4 +164,6 @@ export interface AdminUserDetail {
   createdAt: number;
   stats: UserUsageStats;
   threads: UsageThreadStat[];
+  /** Soft monthly meter (admin view). */
+  meter: UsageMeterSnapshot;
 }

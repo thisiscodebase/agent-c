@@ -7,6 +7,7 @@ import type { UsageMetric } from "#shared/types/usage-metric";
 import { ADMIN_USAGE_METRICS } from "#shared/types/usage-metric";
 import { profilePathForHandle } from "#shared/user-handle";
 import { AdminThreadList } from "~/components/admin/admin-thread-list";
+import { AdminUsageLimitEditor } from "~/components/admin/admin-usage-limit-editor";
 import { ModelsLeaderboard } from "~/components/profile/models-leaderboard";
 import { PopularTools } from "~/components/profile/popular-tools";
 import { ProfileActivityHeatmap } from "~/components/profile/profile-activity-heatmap";
@@ -124,6 +125,12 @@ export default function AdminUserPage({
           <Metric label="Agents" value={String(stats.agentCount)} />
           <Metric label="Longest Agent" value={formatDurationMs(stats.longestAgentMs)} />
         </div>
+
+        <AdminUsageLimitEditor
+          key={`${user.handle}:${user.meter.limitUsd}:${user.meter.limitOverrideUsd ?? "default"}:${user.meter.usedUsd}`}
+          handle={user.handle}
+          initialMeter={user.meter}
+        />
 
         <ProfileActivityHeatmap data={stats.heatmap} />
 

@@ -2,6 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type {
+  AdminUsageMeterRow,
+  UsageMeterSettings,
+} from "#shared/types/usage-meter";
+import type {
   AdminCompanyProfile,
   AdminToolCategoryDetail,
   AdminUserDetail,
@@ -47,6 +51,26 @@ export function useAdminCompanyProfile(enabled = true) {
         throw new Error("Failed to load admin dashboard");
       }
       return res.json() as Promise<AdminCompanyResponse>;
+    },
+  });
+}
+
+export function useAdminUsageMeters(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.adminUsageMeters,
+    enabled,
+    queryFn: async () => {
+      const res = await fetch("/api/admin/usage");
+      if (res.status === 403) {
+        throw new Error("Admin access required");
+      }
+      if (!res.ok) {
+        throw new Error("Failed to load usage meters");
+      }
+      return res.json() as Promise<{
+        meters: AdminUsageMeterRow[];
+        settings: UsageMeterSettings;
+      }>;
     },
   });
 }

@@ -5,6 +5,7 @@ import { db, schema } from "~~/server/db/client";
 import { findUserByHandle } from "~~/server/utils/public-profile";
 import { aggregateUsageStats } from "~~/server/utils/usage-stats";
 import { createError } from "~~/server/utils/http-error";
+import { getUsageMeterForUser } from "~~/server/utils/usage-meter";
 
 export async function getAdminUserDetail(handle: string): Promise<AdminUserDetail> {
   if (!isValidHandle(handle)) {
@@ -21,16 +22,19 @@ export async function getAdminUserDetail(handle: string): Promise<AdminUserDetai
     throw createError({ statusCode: 404, statusMessage: "User not found" });
   }
 
-  const threadRows = await db
-    .select({
-      id: schema.threads.id,
-      title: schema.threads.title,
-      createdAt: schema.threads.createdAt,
-      updatedAt: schema.threads.updatedAt,
-      state: schema.threads.state,
-    })
-    .from(schema.threads)
-    .where(eq(schema.threads.userId, user.id));
+  const [threadRows, meter] = await Promise.all([
+    db
+      .select({
+        id: schema.threads.id,
+        title: schema.threads.title,
+        createdAt: schema.threads.createdAt,
+        updatedAt: schema.threads.updatedAt,
+        state: schema.threads.state,
+      })
+      .from(schema.threads)
+      .where(eq(schema.threads.userId, user.id)),
+    getUsageMeterForUser(user.id),
+  ]);
 
   const aggregated = aggregateUsageStats(
     threadRows.map((row) => ({
@@ -55,5 +59,6 @@ export async function getAdminUserDetail(handle: string): Promise<AdminUserDetai
     createdAt: user.createdAt.getTime(),
     stats,
     threads: threads ?? [],
+    meter,
   };
 }

@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronRightIcon,
+  CircleHelpIcon,
   MenuIcon,
   PencilIcon,
   PlusIcon,
@@ -64,6 +65,13 @@ function userInitial(user: ShellUser | undefined) {
   return user?.name?.trim()?.[0]?.toUpperCase() ?? "?";
 }
 
+/** Orange tint for the footer nav item that matches the current route. */
+function footerNavActiveClass(active: boolean) {
+  return active
+    ? "bg-orange-500/15 text-orange-950 dark:bg-orange-500/22 dark:text-orange-50"
+    : "text-muted-foreground";
+}
+
 function mobilePageTitle({
   pathname,
   activeChatId,
@@ -77,6 +85,7 @@ function mobilePageTitle({
     return threads.find((thread) => thread.id === activeChatId)?.title ?? "Chat";
   }
   if (pathname.startsWith("/artifacts")) return "Docs";
+  if (pathname.startsWith("/help")) return "Help";
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/leaderboard")) return "Leaderboard";
   if (pathname.startsWith("/admin")) return "Admin";
@@ -87,6 +96,10 @@ function mobilePageTitle({
 function SidebarNav({
   activeChatId,
   docsActive,
+  profileActive,
+  leaderboardActive,
+  helpActive,
+  settingsActive,
   groups,
   user,
   profileHref,
@@ -99,6 +112,10 @@ function SidebarNav({
 }: {
   activeChatId?: string;
   docsActive: boolean;
+  profileActive: boolean;
+  leaderboardActive: boolean;
+  helpActive: boolean;
+  settingsActive: boolean;
   groups: ThreadGroup[];
   user: ShellUser | undefined;
   profileHref: string;
@@ -226,7 +243,10 @@ function SidebarNav({
 
         <div className="flex items-center gap-1 p-3">
           <Button
-            className="h-10 min-w-0 flex-1 justify-start gap-2.5 px-2"
+            className={cn(
+              "h-10 min-w-0 flex-1 justify-start gap-2.5 px-2",
+              footerNavActiveClass(profileActive),
+            )}
             nativeButton={false}
             render={<Link href={profileHref} />}
             variant="ghost"
@@ -241,13 +261,23 @@ function SidebarNav({
           </Button>
           <Button
             aria-label="Leaderboard"
-            className="shrink-0 text-muted-foreground"
+            className={cn("shrink-0", footerNavActiveClass(leaderboardActive))}
             nativeButton={false}
             render={<Link href="/leaderboard" />}
             size="icon"
             variant="ghost"
           >
             <PodiumIcon className="size-4" />
+          </Button>
+          <Button
+            aria-label="Help and FAQs"
+            className={cn("shrink-0", footerNavActiveClass(helpActive))}
+            nativeButton={false}
+            render={<Link href="/help" />}
+            size="icon"
+            variant="ghost"
+          >
+            <CircleHelpIcon className="size-4" />
           </Button>
           {showAdmin ? (
             <Button
@@ -263,7 +293,7 @@ function SidebarNav({
           ) : null}
           <Button
             aria-label="Settings"
-            className="shrink-0 text-muted-foreground"
+            className={cn("shrink-0", footerNavActiveClass(settingsActive))}
             nativeButton={false}
             render={<Link href="/settings" />}
             size="icon"
@@ -289,6 +319,9 @@ export function AppShell({
   const routeId = typeof params.id === "string" ? params.id : undefined;
   const activeChatId = pathname.startsWith("/chat/") ? routeId : undefined;
   const docsActive = pathname.startsWith("/artifacts");
+  const leaderboardActive = pathname.startsWith("/leaderboard");
+  const helpActive = pathname.startsWith("/help");
+  const settingsActive = pathname.startsWith("/settings");
   const queryClient = useQueryClient();
 
   const { threads } = useThreadList();
@@ -306,6 +339,9 @@ export function AppShell({
     () => profilePathForEmail(user?.email) ?? "/settings",
     [user?.email],
   );
+  const profileActive =
+    profileHref.startsWith("/u/") &&
+    (pathname === profileHref || pathname.startsWith(`${profileHref}/`));
   const pageTitle = useMemo(
     () => mobilePageTitle({ pathname, activeChatId, threads }),
     [pathname, activeChatId, threads],
@@ -361,6 +397,10 @@ export function AppShell({
   const sidebarProps = {
     activeChatId,
     docsActive,
+    profileActive,
+    leaderboardActive,
+    helpActive,
+    settingsActive,
     groups,
     user,
     profileHref,

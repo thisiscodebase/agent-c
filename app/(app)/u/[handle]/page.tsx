@@ -11,9 +11,11 @@ import { ProfileActivityHeatmap } from "~/components/profile/profile-activity-he
 import { ProfileEditDialog } from "~/components/profile/profile-edit-dialog";
 import { ProfileUsageChart } from "~/components/profile/profile-usage-charts";
 import { UsageMetricSwitcher } from "~/components/profile/usage-metric-switcher";
+import { UsageMeterCard } from "~/components/usage/usage-meter-card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { usePublicProfile } from "~/hooks/use-public-profile";
+import { useUsageMeter } from "~/hooks/use-usage-meter";
 import {
   formatDurationMs,
   formatJoinedDaysAgo,
@@ -44,6 +46,8 @@ export default function UserProfilePage({
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [metric, setMetric] = useState<Exclude<UsageMetric, "cost">>("agents");
+  const isOwn = data?.profile?.isOwn === true;
+  const usageMeter = useUsageMeter(isOwn);
 
   if (isLoading) {
     return (
@@ -117,6 +121,10 @@ export default function UserProfilePage({
 
         {profile.bio ? (
           <p className="text-sm text-foreground/80 whitespace-pre-wrap">{profile.bio}</p>
+        ) : null}
+
+        {profile.isOwn && usageMeter.data?.meter ? (
+          <UsageMeterCard meter={usageMeter.data.meter} />
         ) : null}
 
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">

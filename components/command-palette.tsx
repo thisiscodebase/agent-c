@@ -1,6 +1,15 @@
 "use client";
 
-import { PlusIcon, SettingsIcon, MessageSquareIcon, PlugIcon, UserIcon, PodiumIcon, ShieldIcon } from "lucide-react";
+import {
+  CircleHelpIcon,
+  MessageSquareIcon,
+  PlugIcon,
+  PlusIcon,
+  PodiumIcon,
+  SettingsIcon,
+  ShieldIcon,
+  UserIcon,
+} from "lucide-react";
 import { useMemo } from "react";
 import { profilePathForEmail } from "#shared/user-handle";
 import {
@@ -19,7 +28,13 @@ import { useThreadList } from "~/hooks/chat/use-threads";
 import { useAdminAccess } from "~/hooks/use-admin";
 import { authClient } from "~/lib/auth-client";
 
-export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function CommandPalette({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const { threads } = useThreadList();
   const { navigate } = useChatNavigation();
   const { data: session } = authClient.useSession();
@@ -52,6 +67,10 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <CommandItem onSelect={() => go("/leaderboard")}>
               <PodiumIcon />
               Leaderboard
+            </CommandItem>
+            <CommandItem onSelect={() => go("/help")}>
+              <CircleHelpIcon />
+              Help and FAQs
             </CommandItem>
             {adminAccess?.allowed ? (
               <CommandItem onSelect={() => go("/admin")}>

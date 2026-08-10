@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { UsageMetric } from "#shared/types/usage-metric";
 import { ADMIN_USAGE_METRICS } from "#shared/types/usage-metric";
+import { AdminUsageMeters } from "~/components/admin/admin-usage-meters";
 import { AdminUserLeaderboard } from "~/components/admin/admin-user-leaderboard";
 import { ModelsLeaderboard } from "~/components/profile/models-leaderboard";
 import { PopularTools } from "~/components/profile/popular-tools";
@@ -12,7 +13,11 @@ import { ProfileUsageChart } from "~/components/profile/profile-usage-charts";
 import { UsageMetricSwitcher } from "~/components/profile/usage-metric-switcher";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { useAdminAccess, useAdminCompanyProfile } from "~/hooks/use-admin";
+import {
+  useAdminAccess,
+  useAdminCompanyProfile,
+  useAdminUsageMeters,
+} from "~/hooks/use-admin";
 import {
   formatCostUsd,
   formatDurationMs,
@@ -30,10 +35,12 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 export default function AdminDashboardPage() {
   const access = useAdminAccess();
-  const { data, isLoading, error } = useAdminCompanyProfile(access.data?.allowed === true);
+  const allowed = access.data?.allowed === true;
+  const { data, isLoading, error } = useAdminCompanyProfile(allowed);
+  const usageMeters = useAdminUsageMeters(allowed);
   const [metric, setMetric] = useState<UsageMetric>("cost");
 
-  if (access.isLoading || (access.data?.allowed && isLoading)) {
+  if (access.isLoading || (allowed && isLoading)) {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <p className="text-sm text-muted-foreground">Loading admin dashboard…</p>
@@ -99,6 +106,13 @@ export default function AdminDashboardPage() {
           <Metric label="Agents" value={String(stats.agentCount)} />
           <Metric label="Longest Agent" value={formatDurationMs(stats.longestAgentMs)} />
         </div>
+
+        {usageMeters.data?.meters && usageMeters.data.settings ? (
+          <AdminUsageMeters
+            meters={usageMeters.data.meters}
+            settings={usageMeters.data.settings}
+          />
+        ) : null}
 
         <ProfileActivityHeatmap data={stats.heatmap} />
 

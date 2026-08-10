@@ -1,8 +1,22 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "~~/server/db/client";
-import type { ThreadRecord, ThreadState, ThreadSummary, ThreadTitleMeta } from "#shared/types/thread";
+import type {
+  ThreadRecord,
+  ThreadState,
+  ThreadSummary,
+  ThreadTitleMeta,
+  ThreadViewerAccess,
+} from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
+import { isAdminEmail } from "~~/server/utils/admin";
 import { createError } from "~~/server/utils/http-error";
+
+export type ThreadForViewer = {
+  thread: ThreadRecord;
+  access: ThreadViewerAccess;
+  /** Present when `access` is `admin_readonly`. */
+  ownerUserId?: string;
+};
 
 const LIST_LIMIT = 50;
 
@@ -81,6 +95,52 @@ export async function getThreadForUser(userId: string, id: string) {
     .limit(1);
 
   return row ? rowToRecord(row) : undefined;
+}
+
+export async function getThreadById(id: string) {
+  const [row] = await db.select()
+    .from(schema.threads)
+    .where(eq(schema.threads.id, id))
+    .limit(1);
+
+  if (!row) {
+    return undefined;
+  }
+
+  return {
+    thread: rowToRecord(row),
+    ownerUserId: row.userId,
+  };
+}
+
+/**
+ * Resolve a thread for the signed-in viewer: own threads as owner, or any
+ * thread when the viewer is on the admin allowlist (read-only).
+ */
+export async function getThreadForViewer(
+  userId: string,
+  email: string | null | undefined,
+  id: string,
+): Promise<ThreadForViewer | undefined> {
+  const owned = await getThreadForUser(userId, id);
+  if (owned) {
+    return { thread: owned, access: "owner" };
+  }
+
+  if (!isAdminEmail(email)) {
+    return undefined;
+  }
+
+  const other = await getThreadById(id);
+  if (!other) {
+    return undefined;
+  }
+
+  return {
+    thread: other.thread,
+    access: "admin_readonly",
+    ownerUserId: other.ownerUserId,
+  };
 }
 
 export async function createThreadForUser(

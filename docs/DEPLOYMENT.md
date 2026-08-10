@@ -120,6 +120,19 @@ pnpm db:migrate    # uses DIRECT_URL ?? DATABASE_URL
 Also apply any hand-written SQL under `supabase/migrations/` in the Supabase
 SQL editor or CLI when noted in release notes (e.g. thread feedback).
 
+For multi-user UI fixtures (leaderboard, admin, demo profiles) against local
+Supabase:
+
+```bash
+pnpm db:seed          # idempotent; keeps your signed-in account
+# or after a wipe:
+supabase db reset     # migrations + seeds/00_multi_user.sql + seed.sql
+```
+
+Demo users use `@example.com` emails (not Workspace login). Sign in with your
+real Google account as usual; open `/leaderboard` or `/admin` to see the seeded
+cohort.
+
 ### 3.5 Google OAuth redirect
 
 In the GCP OAuth client, add:

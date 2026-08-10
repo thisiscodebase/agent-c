@@ -31,6 +31,9 @@ export interface ThreadRecord extends ThreadSummary {
   state: ThreadState | null;
 }
 
+/** Owner can read/write; admins may open another user's thread read-only. */
+export type ThreadViewerAccess = "owner" | "admin_readonly";
+
 export function truncateThreadTitle(text: string, maxLength = 60): string {
   const line = text.trim().split("\n")[0]?.trim() || "New chat";
   if (line.length <= maxLength) {

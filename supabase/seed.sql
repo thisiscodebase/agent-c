@@ -1,4 +1,5 @@
--- Local dev seed. Runs on `supabase db reset` (see [db.seed] in config.toml).
+-- Local dev seed (signed-in account artifacts + sample chat).
+-- Runs after ./seeds/00_multi_user.sql on `supabase db reset` / `pnpm db:seed`.
 -- Everything here is idempotent and attaches to a real signed-in account where
 -- one exists, so a reset against an empty database is a no-op rather than an
 -- error. Artifacts are author-scoped, so seeding the wrong account makes them

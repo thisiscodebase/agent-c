@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "psql \"${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/seeds/00_multi_user.sql -f supabase/seed.sql",
     "doctor": "npx react-doctor@latest"
   },
   "dependencies": {

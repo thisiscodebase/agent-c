@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
-import type { ThreadRecord } from "#shared/types/thread";
+import type { ThreadRecord, ThreadViewerAccess } from "#shared/types/thread";
 import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
 import {
@@ -72,8 +72,17 @@ function ComposerContextTip({
   );
 }
 
-export function ChatPageClient({ chatId, initialThread }: { chatId: string; initialThread: ThreadRecord }) {
-  const { agent, error, isBusy } = useChatSession(chatId, initialThread);
+export function ChatPageClient({
+  chatId,
+  initialThread,
+  access = "owner",
+}: {
+  chatId: string;
+  initialThread: ThreadRecord;
+  access?: ThreadViewerAccess;
+}) {
+  const readOnly = access === "admin_readonly";
+  const { agent, error, isBusy } = useChatSession(chatId, initialThread, { readOnly });
   const reduceMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const usageMeter = useUsageMeter();
@@ -81,20 +90,21 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
   const meterStatus = meter?.status ?? "ok";
 
   useEffect(() => {
-    if (!isBusy) {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.usageMeter });
+    if (readOnly || isBusy) {
+      return;
     }
-  }, [isBusy, queryClient]);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.usageMeter });
+  }, [isBusy, queryClient, readOnly]);
 
   const contextPressure = useMemo(
     () => resolveThreadContextPressure(agent.events),
     [agent.events],
   );
 
-  const showUsageStrip = meterStatus === "warn" || meterStatus === "blocked";
+  const showUsageStrip = !readOnly && (meterStatus === "warn" || meterStatus === "blocked");
   const usageBlocked = meterStatus === "blocked";
 
-  const showPresence = shouldShowAgentPresence(
+  const showPresence = !readOnly && shouldShowAgentPresence(
     agent.data.messages,
     agent.status,
   );
@@ -103,7 +113,7 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
     : null;
 
   function respondToInput(requestId: string, optionId: string) {
-    if (usageBlocked) return;
+    if (readOnly || usageBlocked) return;
     void agent.send({ inputResponses: [{ requestId, optionId }] });
   }
 
@@ -175,23 +185,30 @@ export function ChatPageClient({ chatId, initialThread }: { chatId: string; init
                 <ChatErrorBanner error={error} threadId={chatId} />
 
                 <div className={`${chatInputColumnClass} relative flex flex-col gap-2`}>
+                  {readOnly ? (
+                    <p className="rounded-xl border border-border/60 bg-muted/50 px-3 py-2 text-center text-xs text-muted-foreground">
+                      Admin view — read only. You can&apos;t send messages in another user&apos;s thread.
+                    </p>
+                  ) : null}
                   {showUsageStrip ? (
                     <UsageLimitStrip status={meterStatus} />
                   ) : null}
                   <ComposerContextTip
                     key={chatId}
                     chatId={chatId}
-                    show={contextPressure.showTip}
+                    show={!readOnly && contextPressure.showTip}
                   />
-                  <Composer
-                    disabled={usageBlocked}
-                    onStop={agent.stop}
-                    onSubmit={(message) => {
-                      if (usageBlocked) return;
-                      if (message.trim()) void agent.send({ message });
-                    }}
-                    status={agent.status}
-                  />
+                  {readOnly ? null : (
+                    <Composer
+                      disabled={usageBlocked}
+                      onStop={agent.stop}
+                      onSubmit={(message) => {
+                        if (usageBlocked) return;
+                        if (message.trim()) void agent.send({ message });
+                      }}
+                      status={agent.status}
+                    />
+                  )}
                 </div>
               </div>
             </div>

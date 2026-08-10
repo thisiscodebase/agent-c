@@ -1,19 +1,26 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { requireSessionUserId } from "~~/server/utils/session";
-import { getThreadForUser } from "~~/server/utils/threads";
+import { requireSessionUser } from "~~/server/utils/session";
+import { getThreadForViewer } from "~~/server/utils/threads";
 import { ChatPageClient } from "~/components/chat/chat-page-client";
 
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id }, userId] = await Promise.all([
+  const [{ id }, { userId, email }] = await Promise.all([
     params,
-    requireSessionUserId(await headers()),
+    requireSessionUser(await headers()),
   ]);
 
-  const thread = await getThreadForUser(userId, id);
-  if (!thread) {
+  const resolved = await getThreadForViewer(userId, email, id);
+  if (!resolved) {
     notFound();
   }
 
-  return <ChatPageClient key={id} chatId={id} initialThread={thread} />;
+  return (
+    <ChatPageClient
+      key={id}
+      access={resolved.access}
+      chatId={id}
+      initialThread={resolved.thread}
+    />
+  );
 }

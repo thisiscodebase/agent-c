@@ -201,7 +201,6 @@ export default function AdminToolCategoryPage({
 
         <AdminThreadList
           categoryAttributed
-          metric={metric}
           threads={tool.threads}
         />
       </div>

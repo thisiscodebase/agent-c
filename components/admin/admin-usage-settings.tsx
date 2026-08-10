@@ -36,13 +36,20 @@ export function AdminUsageSettings({
   });
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border px-4 py-3">
-      <p className="text-sm font-medium">Company default monthly cap (USD)</p>
-      <p className="text-xs text-muted-foreground">
+    <div className="w-full min-w-0 rounded-xl bg-card px-4 py-4 ring-1 ring-foreground/10">
+      <div className="flex w-full items-baseline justify-between gap-3">
+        <p className="min-w-0 text-sm text-foreground">
+          Company default monthly cap (USD)
+        </p>
+        <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+          Current: ${settings.defaultLimitUsd}
+        </p>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
         Applies to everyone without a personal override. Change takes effect
         immediately — no redeploy.
       </p>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <Input
           className="max-w-[10rem]"
           inputMode="decimal"
@@ -62,12 +69,9 @@ export function AdminUsageSettings({
         >
           Save default
         </Button>
-        <span className="text-xs text-muted-foreground">
-          Current: ${settings.defaultLimitUsd}
-        </span>
       </div>
       {mutation.isError ? (
-        <p className="text-xs text-destructive">
+        <p className="mt-3 text-xs text-destructive">
           {mutation.error instanceof Error
             ? mutation.error.message
             : "Failed to update"}

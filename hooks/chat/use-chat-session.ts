@@ -21,8 +21,13 @@ import { requestThreadTitleGeneration } from "./use-thread-title";
  * calls this hook with `key={chatId}`, e.g. `<ChatPageClient key={chatId} .../>`.
  * Without that, switching threads will keep showing the first thread's session.
  */
-export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
+export function useChatSession(
+  chatId: string,
+  initialThread?: ThreadRecord,
+  options?: { readOnly?: boolean },
+) {
   const queryClient = useQueryClient();
+  const readOnly = options?.readOnly ?? false;
   const resumeOptions = initialThread ? resumeOptionsFromThread(initialThread) : {};
   const [streamFailure, setStreamFailure] = useState<Error | undefined>(undefined);
 
@@ -30,6 +35,9 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
     initialSession: resumeOptions.initialSession,
     initialEvents: resumeOptions.initialEvents,
     onFinish: (snapshot) => {
+      if (readOnly) {
+        return;
+      }
       void (async () => {
         try {
           await persistThreadState(chatId, snapshot, queryClient);
@@ -90,6 +98,10 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
 
   // Best-effort save if the tab hides/unloads before onFinish settles.
   useEffect(() => {
+    if (readOnly) {
+      return;
+    }
+
     function flush() {
       if (agent.status === "submitted" || agent.status === "streaming") {
         return;
@@ -111,16 +123,17 @@ export function useChatSession(chatId: string, initialThread?: ThreadRecord) {
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [agent, chatId, queryClient]);
+  }, [agent, chatId, queryClient, readOnly]);
 
   const sentPendingRef = useRef(false);
   useEffect(() => {
+    if (readOnly) return;
     if (sentPendingRef.current) return;
     sentPendingRef.current = true;
     const pending = consumePendingMessage(chatId);
     if (pending) void agent.send({ message: pending });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId]);
+  }, [chatId, readOnly]);
 
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const error = streamFailure ?? agent.error;

@@ -132,6 +132,8 @@ export default function AdminUserPage({
           initialMeter={user.meter}
         />
 
+        <AdminThreadList threads={user.threads} />
+
         <ProfileActivityHeatmap data={stats.heatmap} />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -142,8 +144,6 @@ export default function AdminUserPage({
             onChange={setMetric}
           />
         </div>
-
-        <AdminThreadList metric={metric} threads={user.threads} />
 
         <PopularTools linkToAdmin metric={metric} tools={stats.tools} />
 

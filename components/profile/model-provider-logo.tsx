@@ -13,8 +13,9 @@ const PROVIDER_LOGOS: Record<string, ModelLogo> = {
   google: { src: "/icons/google.svg", alt: "Google" },
   gemini: { src: "/icons/google.svg", alt: "Google" },
   openai: { src: "/icons/openai.svg", alt: "OpenAI", invertInLightMode: true },
-  xai: { src: "/icons/grok.svg", alt: "Grok", invertInLightMode: true },
-  grok: { src: "/icons/grok.svg", alt: "Grok", invertInLightMode: true },
+  // Temporary: show Cursor mark for Grok/xAI until branding is finalized.
+  xai: { src: "/icons/cursor.svg", alt: "Grok", invertInLightMode: true },
+  grok: { src: "/icons/cursor.svg", alt: "Grok", invertInLightMode: true },
   cursor: { src: "/icons/cursor.svg", alt: "Cursor", invertInLightMode: true },
 };
 

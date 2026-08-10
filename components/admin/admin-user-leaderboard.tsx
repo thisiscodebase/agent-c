@@ -66,7 +66,7 @@ function AdminLeaderboardRow({
   return (
     <li>
       <Link
-        className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/70"
+        className="flex w-full min-w-0 items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/40"
         href={`/admin/users/${encodeURIComponent(entry.handle)}`}
       >
         <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
@@ -76,7 +76,7 @@ function AdminLeaderboardRow({
           <AvatarImage alt={entry.name} src={entry.image ?? undefined} />
           <AvatarFallback>{userInitial(entry.name)}</AvatarFallback>
         </Avatar>
-        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+        <span className="min-w-0 flex-1 truncate text-sm text-foreground">
           {entry.name}
         </span>
         <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
@@ -112,19 +112,21 @@ export function AdminUserLeaderboard({
         <h2 className="text-sm font-medium">Users</h2>
         <p className="text-xs text-muted-foreground">Open a user to inspect threads</p>
       </div>
-      <div className="grid gap-1 sm:grid-cols-2 sm:gap-x-4">
-        <ol className="flex flex-col gap-1">
-          {left.map((entry) => (
-            <AdminLeaderboardRow key={entry.handle} entry={entry} metric={metric} />
-          ))}
-        </ol>
-        {right.length > 0 ? (
-          <ol className="flex flex-col gap-1">
-            {right.map((entry) => (
+      <div className="w-full min-w-0 overflow-hidden rounded-xl bg-card p-1 ring-1 ring-foreground/10">
+        <div className="grid sm:grid-cols-2 sm:gap-x-1">
+          <ol className="flex flex-col">
+            {left.map((entry) => (
               <AdminLeaderboardRow key={entry.handle} entry={entry} metric={metric} />
             ))}
           </ol>
-        ) : null}
+          {right.length > 0 ? (
+            <ol className="flex flex-col">
+              {right.map((entry) => (
+                <AdminLeaderboardRow key={entry.handle} entry={entry} metric={metric} />
+              ))}
+            </ol>
+          ) : null}
+        </div>
       </div>
     </section>
   );

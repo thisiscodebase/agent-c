@@ -80,13 +80,15 @@ export function AdminUsageLimitEditor({
     <section className="flex flex-col gap-4">
       <UsageMeterCard meter={meter} />
 
-      <div className="flex flex-col gap-2 rounded-xl border px-4 py-3">
-        <p className="text-sm font-medium">Raise / set personal cap (USD)</p>
-        <p className="text-xs text-muted-foreground">
-          Leave blank to use the company default (${meter.defaultLimitUsd}).
-          Current meter: {formatCostUsd(meter.usedUsd)} used.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="w-full min-w-0 rounded-xl bg-card px-4 py-4 ring-1 ring-foreground/10">
+        <div className="flex w-full items-baseline justify-between gap-3">
+          <p className="min-w-0 text-sm text-foreground">User Limit</p>
+          <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+            {formatCostUsd(meter.usedUsd)} used
+          </p>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <Input
             className="max-w-[10rem]"
             inputMode="decimal"
@@ -110,7 +112,7 @@ export function AdminUsageLimitEditor({
               limitMutation.mutate(value);
             }}
           >
-            Save cap
+            Save
           </Button>
           <Button
             disabled={busy || meter.limitOverrideUsd == null}
@@ -118,18 +120,8 @@ export function AdminUsageLimitEditor({
             variant="outline"
             onClick={() => limitMutation.mutate(null)}
           >
-            Use company default
+           Default
           </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2 rounded-xl border px-4 py-3">
-        <p className="text-sm font-medium">Reset this month&apos;s usage</p>
-        <p className="text-xs text-muted-foreground">
-          Clears the soft-meter counter for {meter.periodKey} so the user can
-          keep chatting. Does not delete threads or analytics history.
-        </p>
-        <div>
           <Button
             disabled={busy || meter.usedUsd <= 0}
             type="button"
@@ -145,16 +137,16 @@ export function AdminUsageLimitEditor({
               resetMutation.mutate();
             }}
           >
-            Reset usage to $0
+            Reset usage
           </Button>
         </div>
-      </div>
 
-      {error ? (
-        <p className="text-xs text-destructive">
-          {error instanceof Error ? error.message : "Failed to update"}
-        </p>
-      ) : null}
+        {error ? (
+          <p className="mt-3 text-xs text-destructive">
+            {error instanceof Error ? error.message : "Failed to update"}
+          </p>
+        ) : null}
+      </div>
     </section>
   );
 }

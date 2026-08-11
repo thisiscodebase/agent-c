@@ -11,7 +11,7 @@ import { HUBSPOT_CONNECTOR, HUBSPOT_OAUTH_SCOPES } from "../../shared/connect.js
 export default defineMcpClientConnection({
   url: "https://mcp.hubspot.com",
   description:
-    "HubSpot CRM: search and read companies, deals, contacts, owners, and properties for case-study lookup. Prefer this over guessing CRM facts.",
+    "HubSpot CRM: search and read companies and contacts (emails, notes, forms, owners). Resolve COMPANY first (include database_record_id → Platform UUID); load contacts via company association — never blank-query. Skip deals unless asked.",
   auth: connect({
     connector: HUBSPOT_CONNECTOR,
     tokenParams: { scopes: [...HUBSPOT_OAUTH_SCOPES] },

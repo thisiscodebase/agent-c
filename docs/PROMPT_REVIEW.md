@@ -224,6 +224,36 @@ numbers from your actual Gateway spend; the ones above are placeholders.
 **Risk:** low, but compaction is lossy — set the threshold, then re-read a long thread to confirm
 nothing important is being summarised away.
 
+## C3b. Budget against the cheap pricing tier, not model capacity
+
+Gateway `context_window` is **capacity**, not the window you want to use. Several models step up
+per-token pricing partway through it (`pricing.input_tiers`), and above the step, input, output,
+cache read and cache write all roughly double:
+
+| model | capacity | price cliff | above the cliff |
+| --- | --- | --- | --- |
+| `openai/gpt-5.6-luna` | 1,050,000 | **272,000** | $0.20/M → $0.40/M |
+| `openai/gpt-5.6-terra` | 1,050,000 | **272,000** | $2.00/M → $4.00/M |
+| `openai/gpt-5.6-sol` | 1,050,000 | **272,000** | $5.00/M → $10.00/M |
+| `xai/grok-4.5` | 500,000 | **200,000** | $2.00/M → $4.00/M |
+| `anthropic/claude-sonnet-5` | 1,000,000 | none | flat $2.00/M |
+| `openai/gpt-5.4-nano` | 400,000 | none | flat $0.20/M |
+
+This matters because `compaction.thresholdPercent` is a fraction of the window Eve looks up from the
+Gateway. Left alone, `0.85 × 1,050,000` means a luna thread compacts at ~892k — hundreds of
+thousands of tokens *after* it started paying double.
+
+The fix is the documented `modelContextWindowTokens` escape hatch on the dynamic model selection:
+return the cheap-tier boundary and Eve budgets against that instead. One number,
+`contextWindowForModel()`, now drives both Eve's compaction trigger and the context ring, so "full"
+in the UI means "about to get expensive" rather than "about to fail".
+
+Effective budgets: luna/terra/sol compact at 231,200; grok at 170,000; sonnet-5 keeps its full
+1,000,000 (850,000 trigger) because it prices flat and early compaction would be pure loss.
+
+The production thread that prompted this peaked at **263,393 — 96.8% of the cheap tier, 8,607
+tokens short of paying double.** It now compacts instead.
+
 ## C4. `connection_search` (measure before acting)
 
 23 calls / 418 KB in the corpus, but that corpus predates the rule limiting them. **Do not change

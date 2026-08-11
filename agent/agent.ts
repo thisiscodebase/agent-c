@@ -1,6 +1,7 @@
 import { defineAgent, defineDynamic } from "eve";
 import {
   MODEL_DEFAULTS,
+  contextWindowForModel,
   gatewayPrivacyOptions,
 } from "../shared/models.js";
 import { fetchAgentModelSelection } from "./lib/model-routing-internal.js";
@@ -19,6 +20,10 @@ export default defineAgent({
 
         return {
           model: selection.model,
+          // Budget against the cheap pricing tier, not the model's full
+          // capacity, so compaction fires before a thread crosses into
+          // double-rate tokens (luna: 272k of a 1.05M window).
+          modelContextWindowTokens: contextWindowForModel(selection.model),
           modelOptions: {
             providerOptions: {
               gateway: selection.gateway,

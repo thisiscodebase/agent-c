@@ -29,6 +29,12 @@ export default defineAgent({
     },
   }),
   reasoning: "high",
+  // Threads that fan out across connectors accumulate large tool results;
+  // compacting earlier trades one summarisation call for a smaller resend on
+  // every later turn.
+  compaction: {
+    thresholdPercent: 0.85,
+  },
   modelOptions: {
     providerOptions: {
       gateway: fallbackGateway,

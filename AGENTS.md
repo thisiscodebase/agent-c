@@ -34,6 +34,7 @@ agent-c/
 - [Platform interop](docs/PLATFORM_INTEROP.md) — Platform MCP env + Connect/OIDC production checklist
 - [Environment](docs/ENVIRONMENT.md) — Env vars + Connect provisioning
 - [Customization](docs/CUSTOMIZATION.md) — Diff from upstream template
+- [Prompt review](docs/PROMPT_REVIEW.md) — Instruction/cost analysis and improvement plan
 - [Progress](docs/PROGRESS.md) — Phase status
 - [README](README.md) — Quick start and feature overview
 

@@ -51,6 +51,15 @@ links.
 
 Connection file: `agent/connections/platform.ts` (read-only allow-list).
 
+### Agent calling conventions
+
+Optional Platform filters must be **omitted** when unused. Passing empty
+strings, nil UUIDs (`00000000-…`), or default `has_auth: false` historically
+made tools return empty success payloads that looked like “no data.” Platform
+MCP now treats blank/nil UUID sentinels as absent, but Agent C instructions
+still tell the model to omit unused optionals and to retry once with only
+meaningful fields.
+
 ### On Agent C — web (optional for Platform)
 
 No Platform-specific web env is required for MCP calls (Eve calls Platform

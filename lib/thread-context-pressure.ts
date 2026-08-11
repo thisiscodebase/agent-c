@@ -1,5 +1,11 @@
-/** Approximate context window for the default chat model (gpt-5.6-luna). */
-export const DEFAULT_CHAT_CONTEXT_WINDOW_TOKENS = 200_000;
+import {
+  contextWindowForModel,
+  FALLBACK_CONTEXT_WINDOW_TOKENS,
+  normalizeModelId,
+} from "#shared/models";
+
+/** Fallback window when the thread never reported which model ran. */
+export const DEFAULT_CHAT_CONTEXT_WINDOW_TOKENS = FALLBACK_CONTEXT_WINDOW_TOKENS;
 
 /** Show the composer tip once estimated input is at or above this fraction. */
 export const CONTEXT_PRESSURE_TIP_RATIO = 0.7;
@@ -9,6 +15,17 @@ export type ThreadContextPressure = {
   ratio: number | null;
   showTip: boolean;
   compacted: boolean;
+  /** Model id reported by `session.started`, normalized (no `dynamic:` prefix). */
+  modelId: string | null;
+  /** Real window for that model, not a hardcoded guess. */
+  contextWindowTokens: number;
+  /**
+   * True when the newest usage signal came from `compaction.requested`, whose
+   * `usageInputTokens` is the pre-compaction peak that *triggered* the pass.
+   * `compaction.completed` carries no usage, so no post-compaction figure
+   * exists until the next `step.completed`.
+   */
+  usageFromCompaction: boolean;
 };
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -38,16 +55,39 @@ function readInputTokens(data: Record<string, unknown> | undefined): number | nu
   return null;
 }
 
+/** Model that actually ran, from the `session.started` runtime block. */
+export function resolveThreadModelId(
+  events: readonly unknown[] | undefined,
+): string | null {
+  if (!Array.isArray(events)) {
+    return null;
+  }
+  for (const raw of events) {
+    const event = asRecord(raw);
+    if (event?.type !== "session.started") {
+      continue;
+    }
+    const runtime = asRecord(asRecord(event.data)?.runtime);
+    const modelId = runtime?.modelId;
+    if (typeof modelId === "string" && modelId.length > 0) {
+      return modelId;
+    }
+  }
+  return null;
+}
+
 /**
  * Estimate context pressure from Eve stream events (live or persisted).
- * Prefers the latest step/compaction input token signal.
+ * Prefers the latest step/compaction input token signal, and sizes the window
+ * from the model the thread actually ran on.
  */
 export function resolveThreadContextPressure(
   events: readonly unknown[] | undefined,
-  contextWindowTokens = DEFAULT_CHAT_CONTEXT_WINDOW_TOKENS,
+  contextWindowTokensOverride?: number,
 ): ThreadContextPressure {
   let inputTokens: number | null = null;
   let compacted = false;
+  let usageFromCompaction = false;
 
   if (Array.isArray(events)) {
     for (const raw of events) {
@@ -65,10 +105,16 @@ export function resolveThreadContextPressure(
         const tokens = readInputTokens(asRecord(event.data));
         if (tokens !== null) {
           inputTokens = tokens;
+          usageFromCompaction = event.type === "compaction.requested";
         }
       }
     }
   }
+
+  const rawModelId = resolveThreadModelId(events);
+  const modelId = normalizeModelId(rawModelId);
+  const contextWindowTokens =
+    contextWindowTokensOverride ?? contextWindowForModel(rawModelId);
 
   const ratio =
     inputTokens !== null && contextWindowTokens > 0
@@ -78,5 +124,13 @@ export function resolveThreadContextPressure(
   const showTip =
     compacted || (ratio !== null && ratio >= CONTEXT_PRESSURE_TIP_RATIO);
 
-  return { inputTokens, ratio, showTip, compacted };
+  return {
+    inputTokens,
+    ratio,
+    showTip,
+    compacted,
+    modelId,
+    contextWindowTokens,
+    usageFromCompaction,
+  };
 }

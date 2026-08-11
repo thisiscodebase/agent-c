@@ -32,6 +32,44 @@ export const MODEL_DEFAULTS = {
 /** Models that have no ZDR-compliant Gateway provider today. */
 export const NON_ZDR_MODELS = new Set<string>(["xai/grok-4.5"]);
 
+/**
+ * Context window per model, as reported by the AI Gateway model list
+ * (`https://ai-gateway.vercel.sh/v1/models`, `context_window`). Used to size
+ * the context-usage UI — a hardcoded window misreports fill by whatever factor
+ * it is wrong by (a 200k assumption showed a 263k luna thread as 100% full
+ * when it was at 25%).
+ */
+export const MODEL_CONTEXT_WINDOW_TOKENS: Record<string, number> = {
+  "openai/gpt-5.4-nano": 400_000,
+  "openai/gpt-5.6-luna": 1_050_000,
+  "openai/gpt-5.6-terra": 1_050_000,
+  "openai/gpt-5.6-sol": 1_050_000,
+  "anthropic/claude-sonnet-5": 1_000_000,
+  "xai/grok-4.5": 500_000,
+};
+
+/** Conservative fallback when the running model is unknown or unlisted. */
+export const FALLBACK_CONTEXT_WINDOW_TOKENS = 400_000;
+
+/** Eve reports a dynamically resolved model as `dynamic:<fallback id>`. */
+export function normalizeModelId(modelId: string | null | undefined): string | null {
+  if (typeof modelId !== "string" || modelId.length === 0) {
+    return null;
+  }
+  const id = modelId.startsWith("dynamic:")
+    ? modelId.slice("dynamic:".length)
+    : modelId;
+  return id.length > 0 ? id : null;
+}
+
+export function contextWindowForModel(modelId: string | null | undefined): number {
+  const id = normalizeModelId(modelId);
+  if (!id) {
+    return FALLBACK_CONTEXT_WINDOW_TOKENS;
+  }
+  return MODEL_CONTEXT_WINDOW_TOKENS[id] ?? FALLBACK_CONTEXT_WINDOW_TOKENS;
+}
+
 /** @deprecated Use MODEL_DEFAULTS.chat — kept for transitional imports. */
 export const CHAT_MODEL = MODEL_DEFAULTS.chat;
 

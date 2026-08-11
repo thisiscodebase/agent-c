@@ -108,8 +108,14 @@ export function ChatPageClient({
         events: agent.events,
         messages: agent.data.messages,
         inputTokens: contextPressure.inputTokens,
+        contextWindowTokens: contextPressure.contextWindowTokens,
       }),
-    [agent.data.messages, agent.events, contextPressure.inputTokens],
+    [
+      agent.data.messages,
+      agent.events,
+      contextPressure.inputTokens,
+      contextPressure.contextWindowTokens,
+    ],
   );
 
   const showUsageStrip = !readOnly && (meterStatus === "warn" || meterStatus === "blocked");
@@ -203,7 +209,11 @@ export function ChatPageClient({
                   ) : null}
                   {contextBreakdown && contextBreakdown.ratio >= 0.15 ? (
                     <div className="flex justify-end">
-                      <ContextUsagePanel breakdown={contextBreakdown} />
+                      <ContextUsagePanel
+                        breakdown={contextBreakdown}
+                        modelId={contextPressure.modelId}
+                        usageFromCompaction={contextPressure.usageFromCompaction}
+                      />
                     </div>
                   ) : null}
                   {showUsageStrip ? (

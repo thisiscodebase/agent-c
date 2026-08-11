@@ -137,9 +137,13 @@ function ContextUsageRing({
 export function ContextUsagePanel({
   breakdown,
   className,
+  modelId,
+  usageFromCompaction = false,
 }: {
   breakdown: ThreadContextBreakdown;
   className?: string;
+  modelId?: string | null;
+  usageFromCompaction?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const categories = contextCategoriesForDisplay(breakdown.categories, {
@@ -170,7 +174,10 @@ export function ContextUsagePanel({
           <div className="min-w-0 flex-1">
             <PopoverTitle className="text-sm">Context Usage</PopoverTitle>
             <PopoverDescription className="text-xs">
-              Estimated composition · total from last model step
+              {usageFromCompaction
+                ? "Estimated composition · peak before the last compaction"
+                : "Estimated composition · total from last model step"}
+              {modelId ? ` · ${modelId}` : null}
             </PopoverDescription>
           </div>
           <Button

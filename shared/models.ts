@@ -32,6 +32,72 @@ export const MODEL_DEFAULTS = {
 /** Models that have no ZDR-compliant Gateway provider today. */
 export const NON_ZDR_MODELS = new Set<string>(["xai/grok-4.5"]);
 
+/**
+ * Maximum context window per model, from the AI Gateway model list
+ * (`https://ai-gateway.vercel.sh/v1/models`, `context_window`). This is
+ * capacity, not the window we want to *use* — see MODEL_COST_TIER_TOKENS.
+ */
+export const MODEL_MAX_CONTEXT_WINDOW_TOKENS: Record<string, number> = {
+  "openai/gpt-5.4-nano": 400_000,
+  "openai/gpt-5.6-luna": 1_050_000,
+  "openai/gpt-5.6-terra": 1_050_000,
+  "openai/gpt-5.6-sol": 1_050_000,
+  "anthropic/claude-sonnet-5": 1_000_000,
+  "xai/grok-4.5": 500_000,
+};
+
+/**
+ * Token count at which per-token pricing steps up (Gateway `input_tiers`).
+ * Above it, input, output, cache read and cache write all roughly double —
+ * e.g. luna goes $0.20/M → $0.40/M. Treat this as the working window: running
+ * past it costs twice as much per token for the whole request, so we would
+ * rather compact than cross. Models absent here price flat at any length.
+ */
+export const MODEL_COST_TIER_TOKENS: Record<string, number> = {
+  "openai/gpt-5.6-luna": 272_000,
+  "openai/gpt-5.6-terra": 272_000,
+  "openai/gpt-5.6-sol": 272_000,
+  "xai/grok-4.5": 200_000,
+};
+
+/** Conservative fallback when the running model is unknown or unlisted. */
+export const FALLBACK_CONTEXT_WINDOW_TOKENS = 272_000;
+
+/** Eve reports a dynamically resolved model as `dynamic:<fallback id>`. */
+export function normalizeModelId(modelId: string | null | undefined): string | null {
+  if (typeof modelId !== "string" || modelId.length === 0) {
+    return null;
+  }
+  const id = modelId.startsWith("dynamic:")
+    ? modelId.slice("dynamic:".length)
+    : modelId;
+  return id.length > 0 ? id : null;
+}
+
+/** Hard capacity of the model, for reference and for unlisted-model fallback. */
+export function maxContextWindowForModel(modelId: string | null | undefined): number {
+  const id = normalizeModelId(modelId);
+  if (!id) {
+    return FALLBACK_CONTEXT_WINDOW_TOKENS;
+  }
+  return MODEL_MAX_CONTEXT_WINDOW_TOKENS[id] ?? FALLBACK_CONTEXT_WINDOW_TOKENS;
+}
+
+/**
+ * The window we actually budget against: the cheap pricing tier where the model
+ * has one, otherwise its full capacity. Feeding this to Eve as
+ * `modelContextWindowTokens` makes `compaction.thresholdPercent` a fraction of
+ * the *affordable* window, so long threads compact instead of silently
+ * crossing into double-rate pricing.
+ */
+export function contextWindowForModel(modelId: string | null | undefined): number {
+  const id = normalizeModelId(modelId);
+  if (!id) {
+    return FALLBACK_CONTEXT_WINDOW_TOKENS;
+  }
+  return MODEL_COST_TIER_TOKENS[id] ?? maxContextWindowForModel(id);
+}
+
 /** @deprecated Use MODEL_DEFAULTS.chat — kept for transitional imports. */
 export const CHAT_MODEL = MODEL_DEFAULTS.chat;
 

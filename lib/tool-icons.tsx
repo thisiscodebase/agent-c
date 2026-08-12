@@ -168,6 +168,12 @@ const iconConfigs: Record<string, IconConfig> = {
     // Monochrome black mark → white in dark mode without a second asset
     imgClass: "dark:invert",
   },
+  asana: {
+    kind: "image",
+    src: "/icons/asana.svg",
+    bgClass: "bg-[#F06A6A]/15",
+    alt: "Asana",
+  },
   platform: {
     kind: "image",
     src: "/icons/codebase.jpeg",
@@ -189,6 +195,8 @@ export function getBrandAccentClass(category: string): string {
       return "bg-blue-500";
     case "tally":
       return "bg-[#D915C4]";
+    case "asana":
+      return "bg-[#F06A6A]";
     case "platform":
       return "bg-emerald-500";
     case "todos":

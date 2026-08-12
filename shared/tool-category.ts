@@ -7,6 +7,7 @@ const CONNECTION_CATEGORIES: Record<string, { category: string; label: string }>
   drive: { category: "drive", label: "Google Drive" },
   google: { category: "drive", label: "Google Drive" },
   tally: { category: "tally", label: "Tally" },
+  asana: { category: "asana", label: "Asana" },
   platform: { category: "platform", label: "CodeBase Platform" },
 };
 
@@ -17,6 +18,7 @@ export const TOOL_CATEGORY_KEYS = [
   "notion",
   "drive",
   "tally",
+  "asana",
   "platform",
   "development",
   "todos",
@@ -44,6 +46,8 @@ export function categoryLabel(category: string): string {
       return "Google Drive";
     case "tally":
       return "Tally";
+    case "asana":
+      return "Asana";
     case "platform":
       return "CodeBase Platform";
     case "development":
@@ -108,6 +112,9 @@ export function toolCategory(toolName: string): { category: string; label: strin
   }
   if (name.startsWith("tally__") || name.includes("tally")) {
     return { category: "tally", label: "Tally" };
+  }
+  if (name.startsWith("asana__") || name.includes("asana")) {
+    return { category: "asana", label: "Asana" };
   }
   if (name.startsWith("platform__") || name.includes("platform")) {
     return { category: "platform", label: "CodeBase Platform" };

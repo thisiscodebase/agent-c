@@ -56,6 +56,8 @@ MCP tools via `connection_search`. Drive uses custom tools (Slack-style) for now
   per-user OAuth (hosted Notion MCP does not support bearer tokens).
 - `tally.ts` — Tally hosted MCP (`https://api.tally.so/mcp`), Connect per-user
   OAuth (API key also supported by Tally; we use OAuth).
+- `asana.ts` — Asana hosted MCP V2 (`https://mcp.asana.com/v2/mcp`), Connect
+  per-user OAuth (pre-registered MCP app; no DCR). Write tools blocked for v1.
 - `platform.ts` — CodeBase Platform MCP (env bearer). **Read-only** tool
   allow-list for internal release; write tools omitted until re-enabled.
 - Slack channel retained from upstream (`agent/channels/slack.ts`); search uses

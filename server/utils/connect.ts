@@ -71,6 +71,9 @@ function connectCreateCommand(def: ConnectorDef) {
   if (def.id === "tally") {
     return `vercel connect create https://api.tally.so/mcp --name agent-c`;
   }
+  if (def.id === "asana") {
+    return `vercel connect create https://mcp.asana.com/v2/mcp --name agent-c`;
+  }
   if (def.id === "slack") {
     return `vercel connect create slack --name v`;
   }
@@ -133,7 +136,7 @@ function mapConnectError(error: unknown, def: ConnectorDef): ConnectorStatus {
       message.includes("dynamic client registration")
       || message.includes("registration_endpoint")
     ) {
-      const driveHint = def.id === "drive"
+      const providerHint = def.id === "drive"
         ? [
             "Google Drive does not support dynamic client registration.",
             "Create a GCP OAuth client (drive.readonly scope), then:",
@@ -141,12 +144,20 @@ function mapConnectError(error: unknown, def: ConnectorDef): ConnectorStatus {
             `vercel connect attach ${def.connector}`,
             "See docs/ENVIRONMENT.md for the full Drive MCP setup.",
           ].join("\n")
-        : formatSetupHint(def, "missing");
+        : def.id === "asana"
+          ? [
+              "Asana MCP does not support dynamic client registration.",
+              "Create an MCP app at https://app.asana.com/0/my-apps, then:",
+              connectCreateCommand(def),
+              `vercel connect attach ${def.connector}`,
+              "See docs/ENVIRONMENT.md for the full Asana MCP setup.",
+            ].join("\n")
+          : formatSetupHint(def, "missing");
 
       return {
         state: "setup_required",
         message: `Connector "${def.connector}" needs provider OAuth credentials before users can connect.`,
-        hint: driveHint,
+        hint: providerHint,
       };
     }
 

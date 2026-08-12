@@ -86,6 +86,11 @@ vercel connect attach <notion-uid> --yes
 vercel connect create https://api.tally.so/mcp --name agent-c
 vercel connect attach <tally-uid> --yes
 
+# Asana hosted MCP V2 — create an MCP app in Asana first (no DCR)
+# https://app.asana.com/0/my-apps → Create new app → MCP app
+vercel connect create https://mcp.asana.com/v2/mcp --name agent-c
+vercel connect attach <asana-uid> --yes
+
 # Slack — reuse the existing channel app; expand scopes for Real-time Search
 # (search:read.public, search:read.private, search:read.files, search:read.users)
 # Channel credentials already use slack/agent-c in agent/channels/slack.ts
@@ -96,7 +101,7 @@ vercel env pull
 Update UIDs in `shared/connect.ts` if `vercel connect list` returns different
 values than the provisioned ones (`drivemcp.googleapis.com/agent-c`,
 `mcp.hubspot.com/agent-c`, `mcp.notion.com/agent-c`, `api.tally.so/agent-c`,
-`slack/agent-c`).
+`mcp.asana.com/bole-lantern`, `slack/agent-c`).
 
 ### CodeBase Platform MCP (`eve` + Platform)
 
@@ -164,6 +169,23 @@ consent flow per user.
 Hosted Tally MCP at `https://api.tally.so/mcp` supports OAuth (recommended)
 or API key. Connect brokers per-user OAuth. See
 [Tally MCP docs](https://developers.tally.so/api-reference/mcp).
+
+### Asana
+
+Hosted Asana MCP V2 at `https://mcp.asana.com/v2/mcp` uses OAuth only and
+**does not support dynamic client registration**. Create an MCP app in the
+[Asana developer console](https://app.asana.com/0/my-apps):
+
+1. Create new app → select **MCP app**
+2. Under OAuth, add the redirect URI Connect prints during
+   `vercel connect create` (or the Connect callback shown in the dashboard)
+3. Under **Manage distribution**, allow your workspace(s) (or “Any workspace”)
+4. Copy Client ID + Client secret into the Connect create flow
+5. Do **not** request custom scopes — MCP apps use `default` / omit scopes
+
+MCP tokens only work with the Asana MCP server (not the standard Asana REST
+API). Access is per authorizing user. See
+[Integrating with Asana's MCP Server](https://developers.asana.com/docs/integrating-with-asanas-mcp-server).
 
 ### Slack search
 

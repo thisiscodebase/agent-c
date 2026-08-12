@@ -56,7 +56,7 @@ link) goes through `/api/internal/*` with `INTERNAL_API_SECRET`.
 - Google Cloud OAuth client (Workspace-restricted)
 - Paid **AI Gateway** usage on the Vercel team (hosting Pro ≠ free Gateway
   credits)
-- Optional for full product: HubSpot MCP Auth App, Notion, Tally, Slack app,
+- Optional for full product: HubSpot MCP Auth App, Notion, Tally, Asana, Slack app,
   GCP Drive MCP APIs, CodeBase Platform deploy
 
 ---
@@ -293,6 +293,10 @@ vercel connect attach <notion-uid> --yes
 vercel connect create https://api.tally.so/mcp --name agent-c
 vercel connect attach <tally-uid> --yes
 
+# Asana — MCP app in Asana developer console first (no DCR)
+vercel connect create https://mcp.asana.com/v2/mcp --name agent-c
+vercel connect attach <asana-uid> --yes
+
 vercel connect list
 vercel env pull .env.local
 ```
@@ -375,7 +379,7 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 - [ ] Migrations applied; login persists sessions
 - [ ] Flags: unset → chat + Luna; flip `agent-tier` to `premium` and confirm
       new sessions use Sonnet (or selected premium model)
-- [ ] Integrations: Drive, HubSpot, Notion, Tally, Slack, Platform smoke queries
+- [ ] Integrations: Drive, HubSpot, Notion, Tally, Asana, Slack, Platform smoke queries
 - [ ] Slack mention works with linked account
 - [ ] No invented Platform permalinks (tools return absolute `url`s)
 

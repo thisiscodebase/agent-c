@@ -43,6 +43,8 @@ export function testResultsHeading(connectorId: string) {
       return "Connection";
     case "tally":
       return "Connection";
+    case "asana":
+      return "Connection";
     case "platform":
       return "Connection";
     case "slack":

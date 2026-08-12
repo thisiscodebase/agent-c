@@ -56,6 +56,16 @@ const STARTER_POOL: Starter[] = [
     text: "Summarize the newest Tally form responses and flag outliers",
   },
   {
+    id: "asana-tasks",
+    tool: "asana",
+    text: "What incomplete Asana tasks are due this week?",
+  },
+  {
+    id: "asana-project",
+    tool: "asana",
+    text: "Summarize status for our top Asana delivery project",
+  },
+  {
     id: "platform-sessions",
     tool: "platform",
     text: "Which mentorship sessions are booked for Techscaler this week?",

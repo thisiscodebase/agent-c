@@ -378,6 +378,18 @@ export function getToolDisplayInfo(
     };
   }
 
+  if (name.startsWith("asana__") || name.includes("asana")) {
+    const query = getSearchQuery(input);
+    return {
+      category: "asana",
+      integrationName: "Asana",
+      showCategory: true,
+      runningLabel: query ? `Searching Asana for “${query}”` : "Searching Asana",
+      completedLabel: query ? `Searched Asana for “${query}”` : "Searched Asana",
+      summaryLabel: "Searched Asana",
+    };
+  }
+
   if (name.startsWith("platform__") || name.includes("platform")) {
     const query = getSearchQuery(input);
     return {

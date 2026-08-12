@@ -15,6 +15,7 @@ const BRAND_ICONS: Partial<
   slack: { src: "/icons/slack.svg", alt: "Slack" },
   drive: { src: "/icons/drive.svg", alt: "Google Drive" },
   tally: { src: "/icons/tally.svg", alt: "Tally" },
+  asana: { src: "/icons/asana.svg", alt: "Asana" },
   platform: { src: "/icons/codebase.jpeg", alt: "CodeBase Platform" },
 };
 

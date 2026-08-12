@@ -1,7 +1,7 @@
 # Agent C ↔ Platform MCP interop + Connect (production)
 
 Guide for enabling CodeBase Platform MCP for Agent C, and provisioning the
-other connectors (Drive, HubSpot, Notion, Tally, Slack) via Vercel Connect /
+other connectors (Drive, HubSpot, Notion, Tally, Asana, Slack) via Vercel Connect /
 OIDC in production.
 
 Related: [Environment](ENVIRONMENT.md), [Connect](CONNECT.md).
@@ -13,7 +13,7 @@ Related: [Environment](ENVIRONMENT.md), [Connect](CONNECT.md).
 | Integration | Auth model | Who hosts tools |
 | ----------- | ---------- | --------------- |
 | **Platform MCP** | Shared bearer (`PLATFORM_MCP_TOKEN`) — **not** Connect | CodeBase Platform (`/api/mcp`) |
-| **Drive / HubSpot / Notion / Tally** | Vercel Connect OAuth (per-user or app-scoped) | Provider MCP URLs |
+| **Drive / HubSpot / Notion / Tally / Asana** | Vercel Connect OAuth (per-user or app-scoped) | Provider MCP URLs |
 | **Slack search + Slack channel** | Connect app `slack/agent-c` | Slack APIs |
 
 Platform is app-scoped and read-only for internal release. Connectors that use
@@ -140,6 +140,10 @@ vercel connect attach <notion-uid> --yes
 vercel connect create https://api.tally.so/mcp --name agent-c
 vercel connect attach <tally-uid> --yes
 
+# Asana — MCP app in Asana developer console first (no DCR)
+vercel connect create https://mcp.asana.com/v2/mcp --name agent-c
+vercel connect attach <asana-uid> --yes
+
 # Slack — reuse channel app; expand Real-time Search scopes in the Slack app
 # search:read.public, search:read.private, search:read.files, search:read.users
 vercel connect list
@@ -155,14 +159,15 @@ Update placeholders in `shared/connect.ts` if list returns different UIDs.
 | **HubSpot** | App-scoped (default) | HubSpot → Development → MCP Auth Apps; on first connect approve contacts/companies/deals |
 | **Notion** | Per-user OAuth | Users connect in Settings → Integrations; no Notion bearer on hosted MCP |
 | **Tally** | Per-user OAuth | Users connect in Integrations |
+| **Asana** | Per-user OAuth | MCP app at app.asana.com/0/my-apps (no DCR); allow workspace distribution |
 | **Slack search** | Same `slack/agent-c` Connect app as channel | Expand search scopes; users may need Slack link in Settings |
 
 ### E. Verify in production
 
 1. Open production Agent C → Settings → Integrations.
-2. Connect / Test each connector (Drive, HubSpot, Notion, Tally, Slack).
+2. Connect / Test each connector (Drive, HubSpot, Notion, Tally, Asana, Slack).
 3. Chat smoke: Drive file search, HubSpot company, Notion page, Tally form,
-   Slack search, Platform company list.
+   Asana tasks, Slack search, Platform company list.
 4. If Connect fails only locally: re-run `vercel env pull`. If only in prod:
    confirm project link, Connect attachments, and that the deployment team
    matches the Connect scope.
@@ -188,4 +193,4 @@ Update placeholders in `shared/connect.ts` if list returns different UIDs.
 | `PLATFORM_MCP_URL` | — | ✓ | — |
 | `PLATFORM_MCP_WRITES_ENABLED` | optional (off) | — | — |
 | Connect / OIDC | — | ✓ (runtime) | ✓ (Integrations UI + `vercel env pull` locally) |
-| Drive/HubSpot/Notion/Tally/Slack | — | via Connect UIDs | Connect create/attach + user OAuth where per-user |
+| Drive/HubSpot/Notion/Tally/Asana/Slack | — | via Connect UIDs | Connect create/attach + user OAuth where per-user |

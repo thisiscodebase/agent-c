@@ -20,6 +20,7 @@ const SEARCH_CATEGORIES = new Set([
   "notion",
   "drive",
   "tally",
+  "asana",
   "platform",
 ]);
 

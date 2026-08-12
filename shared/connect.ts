@@ -38,6 +38,12 @@ export const HUBSPOT_OAUTH_SCOPES = [
 export const NOTION_CONNECTOR = "mcp.notion.com/agent-c";
 /** Tally hosted MCP (`https://api.tally.so/mcp`). Update after `vercel connect list` if needed. */
 export const TALLY_CONNECTOR = "api.tally.so/agent-c";
+/**
+ * Asana hosted MCP V2 (`https://mcp.asana.com/v2/mcp`). Requires a pre-registered
+ * Asana MCP OAuth app (no dynamic client registration). Update after
+ * `vercel connect list` if the provisioned UID differs.
+ */
+export const ASANA_CONNECTOR = "mcp.asana.com/bole-lantern";
 /** Same Connect app as the Slack channel (`agent/channels/slack.ts`). */
 export const SLACK_CONNECTOR = "slack/agent-c";
 

@@ -11,7 +11,7 @@
  */
 
 /** Base system prompt (persona + playbook), excluding per-user memory. */
-export const CONTEXT_BASELINE_SYSTEM_TOKENS = 5070;
+export const CONTEXT_BASELINE_SYSTEM_TOKENS = 5400;
 
 /** Local `defineTool` schemas under `agent/tools/`. */
 export const CONTEXT_BASELINE_LOCAL_TOOLS_TOKENS = 2900;
@@ -32,6 +32,7 @@ export const CONTEXT_MCP_CONNECTORS = [
   "hubspot",
   "notion",
   "tally",
+  "asana",
   "platform",
 ] as const;
 

@@ -37,6 +37,9 @@ that.
 - Drive: official Google Drive MCP via Vercel Connect custom OAuth, per-user.
 - HubSpot: official HubSpot MCP (`mcp.hubspot.com`), app-level by default.
 - Notion: official Notion MCP (`mcp.notion.com/mcp`), per-user OAuth.
+- Tally: official Tally MCP (`api.tally.so/mcp`), per-user OAuth.
+- Asana: official Asana MCP V2 (`mcp.asana.com/v2/mcp`), per-user OAuth
+  (pre-registered MCP app; no DCR).
 - Slack: same Connect app as the channel (`slack/agent-c`), expanded Real-time Search
   scopes; reuse upstream's channel wiring.
 

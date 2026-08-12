@@ -1,5 +1,6 @@
 import type { ConnectorDef } from "#shared/types/connector";
 import {
+  ASANA_CONNECTOR,
   DRIVE_CONNECTOR,
   DRIVE_OAUTH_SCOPES,
   HUBSPOT_CONNECTOR,
@@ -10,6 +11,7 @@ import {
   TALLY_CONNECTOR,
 } from "#shared/connect";
 import { createError } from "~~/server/utils/http-error";
+import { testAsanaMcpConnection } from "~~/server/utils/asana-mcp-test";
 import { testNotionMcpConnection } from "~~/server/utils/notion-mcp-test";
 import { testPlatformMcpConnection } from "~~/server/utils/platform-mcp-test";
 
@@ -130,6 +132,23 @@ export const connectors: ConnectorDef[] = [
         "Tally OAuth connected",
         "Use chat to list forms and submissions via MCP (tally__… tools)",
       ],
+    },
+  },
+  {
+    id: "asana",
+    name: "Asana",
+    description:
+      "Search and read tasks, projects, and portfolios you can access in Asana.",
+    connector: ASANA_CONNECTOR,
+    connectionName: "asana",
+    icon: "i-simple-icons-asana",
+    // Asana MCP apps omit scopes (or use `default`); do not request CRM-style scopes.
+    scopes: [],
+    test: {
+      // Connect mints MCP-audienced tokens; chat exercises MCP via Eve.
+      // Do not call app.asana.com REST — those tokens are MCP-only.
+      label: "Check connection",
+      run: async (token) => testAsanaMcpConnection(token),
     },
   },
   {

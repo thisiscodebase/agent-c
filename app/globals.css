@@ -389,11 +389,47 @@
   --ref-mention-mid: #a3e635; /* lime-400 */
 }
 
+.ref-mention[data-service="hubspot"] {
+  --ref-mention: #ff7a59; /* HubSpot brand */
+  --ref-mention-peak: #ffe8e0;
+  --ref-mention-mid: #ff9b7d;
+}
+
+.ref-mention[data-service="asana"] {
+  --ref-mention: #f06a6a; /* Asana brand */
+  --ref-mention-peak: #fde8e8;
+  --ref-mention-mid: #f58a8a;
+}
+
+.ref-mention[data-service="tally"] {
+  --ref-mention: #171717; /* Tally near-black */
+  --ref-mention-peak: #f5f5f5;
+  --ref-mention-mid: #737373;
+}
+
 @media (prefers-color-scheme: dark) {
   .ref-mention {
     --ref-mention: #a3e635; /* lime-400 */
     --ref-mention-peak: #f7fee7; /* lime-50 */
     --ref-mention-mid: #bef264; /* lime-300 */
+  }
+
+  .ref-mention[data-service="hubspot"] {
+    --ref-mention: #ff8f73;
+    --ref-mention-peak: #fff1ec;
+    --ref-mention-mid: #ffb39a;
+  }
+
+  .ref-mention[data-service="asana"] {
+    --ref-mention: #f58a8a;
+    --ref-mention-peak: #fff1f1;
+    --ref-mention-mid: #f8a8a8;
+  }
+
+  .ref-mention[data-service="tally"] {
+    --ref-mention: #f5f5f5;
+    --ref-mention-peak: #262626;
+    --ref-mention-mid: #a3a3a3;
   }
 }
 
@@ -401,6 +437,24 @@
   --ref-mention: #a3e635;
   --ref-mention-peak: #f7fee7;
   --ref-mention-mid: #bef264;
+}
+
+.dark .ref-mention[data-service="hubspot"] {
+  --ref-mention: #ff8f73;
+  --ref-mention-peak: #fff1ec;
+  --ref-mention-mid: #ffb39a;
+}
+
+.dark .ref-mention[data-service="asana"] {
+  --ref-mention: #f58a8a;
+  --ref-mention-peak: #fff1f1;
+  --ref-mention-mid: #f8a8a8;
+}
+
+.dark .ref-mention[data-service="tally"] {
+  --ref-mention: #f5f5f5;
+  --ref-mention-peak: #262626;
+  --ref-mention-mid: #a3a3a3;
 }
 
 .ref-mention-char {

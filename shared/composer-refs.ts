@@ -1,9 +1,14 @@
 /**
- * Composer `@` mentions for connected Drive files and Notion pages.
+ * Composer `@` mentions for connected Drive, Notion, HubSpot, Asana, and Tally.
  * Chips show pretty `@name`; serialization emits stable id markers for the agent.
  */
 
-export type ComposerRefService = "drive" | "notion";
+export type ComposerRefService =
+  | "drive"
+  | "notion"
+  | "hubspot"
+  | "asana"
+  | "tally";
 
 export type ComposerRefItem = {
   id: string;
@@ -27,7 +32,7 @@ export type ComposerRefServiceMeta = {
   iconSrc: string;
 };
 
-/** Services available in the `@` picker (v1). */
+/** Services available in the `@` picker. */
 export const COMPOSER_REF_SERVICES: readonly ComposerRefServiceMeta[] = [
   {
     id: "drive",
@@ -43,11 +48,35 @@ export const COMPOSER_REF_SERVICES: readonly ComposerRefServiceMeta[] = [
     description: "Pages in your workspace",
     iconSrc: "/icons/notion.svg",
   },
+  {
+    id: "hubspot",
+    connectorId: "hubspot",
+    label: "HubSpot",
+    description: "Contacts and companies in CRM",
+    iconSrc: "/icons/hubspot.svg",
+  },
+  {
+    id: "asana",
+    connectorId: "asana",
+    label: "Asana",
+    description: "Tasks and projects you can access",
+    iconSrc: "/icons/asana.svg",
+  },
+  {
+    id: "tally",
+    connectorId: "tally",
+    label: "Tally",
+    description: "Forms in your workspaces",
+    iconSrc: "/icons/tally.svg",
+  },
 ] as const;
 
-/** Matches `[[ref:drive:FILE_ID|Display name]]` (name may contain escaped chars). */
+/**
+ * Matches `[[ref:drive:FILE_ID|Display name]]` (name may contain escaped chars).
+ * HubSpot/Asana ids may include a kind prefix (`contact:123`, `task:456`).
+ */
 export const COMPOSER_REF_MARKER_RE =
-  /\[\[ref:(drive|notion):([^|\]]+)\|((?:\\.|[^\]\\])*)\]\]/g;
+  /\[\[ref:(drive|notion|hubspot|asana|tally):([^|\]]+)\|((?:\\.|[^\]\\])*)\]\]/g;
 
 function escapeRefName(name: string): string {
   return name.replace(/\\/g, "\\\\").replace(/\|/g, "\\|").replace(/]/g, "\\]");
@@ -109,5 +138,11 @@ export function getComposerRefService(
 }
 
 export function isComposerRefService(id: string): id is ComposerRefService {
-  return id === "drive" || id === "notion";
+  return (
+    id === "drive" ||
+    id === "notion" ||
+    id === "hubspot" ||
+    id === "asana" ||
+    id === "tally"
+  );
 }

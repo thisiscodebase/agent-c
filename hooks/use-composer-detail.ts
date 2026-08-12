@@ -34,11 +34,11 @@ async function fetchRefDetail(
   id: string,
   name?: string,
 ): Promise<ComposerRefDetail> {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ id });
   if (name) params.set("name", name);
-  const qs = params.toString();
+  // Query-string id avoids path issues with HubSpot composite ids (`contact:123`).
   const response = await fetch(
-    `/api/composer/refs/${encodeURIComponent(service)}/${encodeURIComponent(id)}${qs ? `?${qs}` : ""}`,
+    `/api/composer/refs/${encodeURIComponent(service)}/item?${params}`,
   );
   if (!response.ok) {
     throw new Error(

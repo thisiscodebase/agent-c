@@ -5,6 +5,7 @@ import {
   getComposerRefService,
   type ComposerRefService,
 } from "#shared/composer-refs";
+import { refMentionColorClass } from "~/components/ui/composer-ref-chips";
 import { useDetailPanel } from "~/hooks/use-detail-panel";
 import { cn } from "~/lib/utils";
 
@@ -49,7 +50,7 @@ function splitRefSegments(text: string): TextSegment[] {
   return segments.length > 0 ? segments : [{ type: "text", value: text }];
 }
 
-/** Render user-message text with `[[ref:...]]` markers as leafy-green @chips. */
+/** Render user-message text with `[[ref:...]]` markers as @chips. */
 export function UserTextWithRefs({ text }: { text: string }) {
   const segments = splitRefSegments(text);
   const { openRef } = useDetailPanel();
@@ -67,9 +68,10 @@ export function UserTextWithRefs({ text }: { text: string }) {
             key={`r-${segment.service}-${segment.id}-${index}`}
             className={cn(
               "ref-mention inline cursor-pointer whitespace-nowrap",
-              "text-lime-700 dark:text-lime-400",
+              refMentionColorClass(segment.service),
               "rounded-sm hover:underline",
             )}
+            data-service={segment.service}
             title={`${meta?.label ?? segment.service}: ${segment.name}`}
             type="button"
             onClick={() => openRef(segment.service, segment.id, segment.name)}

@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isComposerRefService } from "#shared/composer-refs";
+import {
+  asanaFallbackName,
+  formatAsanaRefId,
+  parseAsanaRefId,
+} from "#shared/asana-url";
+import {
+  formatHubspotRefId,
+  hubspotKindLabel,
+  parseHubspotRefId,
+} from "#shared/hubspot-crm-url";
+import { tallyFallbackName } from "#shared/tally-url";
 import { getConnector } from "~~/server/connectors";
 import { mintUserToken, probeStatus } from "~~/server/utils/connect";
 import { fetchAsanaRefDetail } from "~~/server/utils/asana-refs";
@@ -13,21 +24,23 @@ import { createError } from "~~/server/utils/http-error";
 import { requireSessionUserId } from "~~/server/utils/session";
 import { withRoute } from "~~/server/utils/route-handler";
 
-const paramsSchema = z.object({
-  service: z.string().min(1),
+const querySchema = z.object({
   id: z.string().min(1),
+  name: z.string().optional(),
 });
 
-/** @deprecated Prefer `/api/composer/refs/[service]/item?id=…` for composite ids. */
+/**
+ * Detail lookup with id in the query string so composite ids
+ * (`contact:123`, `task:456`) are not mangled by path segment decoding.
+ */
 export const GET = withRoute(async (
   request: Request,
-  context: { params: Promise<{ service: string; id: string }> },
+  context: { params: Promise<{ service: string }> },
 ) => {
   const userId = await requireSessionUserId(request.headers);
-  const raw = await context.params;
-  const parsed = paramsSchema.parse(raw);
+  const { service: rawService } = await context.params;
 
-  if (!isComposerRefService(parsed.service)) {
+  if (!isComposerRefService(rawService)) {
     throw createError({
       statusCode: 400,
       statusMessage: "Invalid service",
@@ -35,18 +48,65 @@ export const GET = withRoute(async (
     });
   }
 
-  const connector = getConnector(parsed.service);
+  const url = new URL(request.url);
+  const parsed = querySchema.parse({
+    id: url.searchParams.get("id") ?? "",
+    name: url.searchParams.get("name") ?? undefined,
+  });
+
+  const connector = getConnector(rawService);
   const status = await probeStatus(connector, userId);
   if (status.state !== "connected") {
+    if (rawService === "hubspot") {
+      const hubspotId = parseHubspotRefId(parsed.id);
+      if (hubspotId) {
+        return NextResponse.json({
+          item: {
+            id: formatHubspotRefId(hubspotId.kind, hubspotId.objectId),
+            name:
+              parsed.name ||
+              `${hubspotKindLabel(hubspotId.kind)} ${hubspotId.objectId}`,
+            mimeType: `hubspot/${hubspotId.kind}`,
+            bodyNote:
+              "Connect HubSpot in Settings → Integrations to load a live preview.",
+          },
+        });
+      }
+    }
+    if (rawService === "asana") {
+      const asanaId = parseAsanaRefId(parsed.id);
+      if (asanaId) {
+        return NextResponse.json({
+          item: {
+            id: formatAsanaRefId(asanaId.kind, asanaId.objectId),
+            name:
+              parsed.name ||
+              asanaFallbackName(asanaId.kind, asanaId.objectId),
+            mimeType: `asana/${asanaId.kind}`,
+            bodyNote:
+              "Connect Asana in Settings → Integrations to load a live preview.",
+          },
+        });
+      }
+    }
+    if (rawService === "tally") {
+      return NextResponse.json({
+        item: {
+          id: parsed.id,
+          name: parsed.name || tallyFallbackName(parsed.id),
+          url: `https://tally.so/r/${parsed.id}`,
+          mimeType: "tally/form",
+          bodyNote:
+            "Connect Tally in Settings → Integrations to load a live preview.",
+        },
+      });
+    }
     throw createError({
       statusCode: 400,
       statusMessage: "Not connected",
       message: `${connector.name} is not connected`,
     });
   }
-
-  const url = new URL(request.url);
-  const fallbackName = url.searchParams.get("name") ?? undefined;
 
   try {
     const token = await mintUserToken(
@@ -55,7 +115,7 @@ export const GET = withRoute(async (
       status.installationId,
     );
 
-    switch (parsed.service) {
+    switch (rawService) {
       case "drive": {
         const item = await getDriveRefDetail(token, parsed.id);
         return NextResponse.json({ item });
@@ -64,7 +124,7 @@ export const GET = withRoute(async (
         const item = await fetchNotionRefDetail(
           token,
           parsed.id,
-          fallbackName,
+          parsed.name,
         );
         return NextResponse.json({ item });
       }
@@ -72,7 +132,7 @@ export const GET = withRoute(async (
         const item = await fetchHubspotRefDetail(
           token,
           parsed.id,
-          fallbackName,
+          parsed.name,
         );
         return NextResponse.json({ item });
       }
@@ -80,7 +140,7 @@ export const GET = withRoute(async (
         const item = await fetchAsanaRefDetail(
           token,
           parsed.id,
-          fallbackName,
+          parsed.name,
         );
         return NextResponse.json({ item });
       }
@@ -88,12 +148,12 @@ export const GET = withRoute(async (
         const item = await fetchTallyRefDetail(
           token,
           parsed.id,
-          fallbackName,
+          parsed.name,
         );
         return NextResponse.json({ item });
       }
       default: {
-        const _exhaustive: never = parsed.service;
+        const _exhaustive: never = rawService;
         return _exhaustive;
       }
     }

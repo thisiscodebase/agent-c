@@ -4,6 +4,7 @@
  */
 
 import type { ComposerRefItem } from "#shared/composer-refs";
+import { parseDriveUrl } from "#shared/drive-url";
 
 const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
 const DRIVE_META_FIELDS =
@@ -79,6 +80,41 @@ function mapMeta(file: DriveFileMeta): ComposerRefItem {
       file.webViewLink ??
       `https://drive.google.com/file/d/${file.id}/view`,
   };
+}
+
+/** Metadata-only lookup for composer paste-to-chip enrichment. */
+export async function getDriveRefMeta(
+  token: string,
+  fileId: string,
+): Promise<ComposerRefItem> {
+  const params = new URLSearchParams({
+    fields: DRIVE_META_FIELDS,
+    supportsAllDrives: "true",
+  });
+  const meta = await driveFetchJson<DriveFileMeta>(
+    token,
+    `${DRIVE_API_BASE}/files/${encodeURIComponent(fileId)}?${params}`,
+  );
+  return mapMeta(meta);
+}
+
+export async function resolveDriveUrl(
+  token: string,
+  rawUrl: string,
+): Promise<ComposerRefItem> {
+  const parsed = parseDriveUrl(rawUrl);
+  if (!parsed) {
+    throw new Error("Not a Google Drive / Docs URL");
+  }
+  try {
+    return await getDriveRefMeta(token, parsed.fileId);
+  } catch {
+    return {
+      id: parsed.fileId,
+      name: parsed.fileId,
+      url: parsed.url,
+    };
+  }
 }
 
 export async function getDriveRefDetail(

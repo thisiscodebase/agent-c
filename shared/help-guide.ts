@@ -17,7 +17,7 @@ export const HELP_GUIDE_MARKDOWN =
 - **New chat** — start a fresh thread when the topic changes. Long threads fill the agent's attention span; a new chat keeps answers sharper.
 - **Search (⌘K)** — jump to a chat, Settings, leaderboard, etc.
 - **Skills** — type \`/\` in chat for shortcuts to powerful tools, like Bid Writer or Case Study modes.
-- **Mentions** — type \`@\` to pull in a specific Drive or Notion file or page for reference.
+- **Mentions** — type \`@\` to pull in a Drive file, Notion page, HubSpot contact/company, Asana task, or Tally form. You can also paste those links to turn them into rich chips.
 
 ## Connectors (Integrations)
 

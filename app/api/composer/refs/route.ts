@@ -11,7 +11,10 @@ import {
   searchDriveRefs,
 } from "~~/server/utils/drive-refs";
 import { throwConnectError } from "~~/server/utils/errors";
+import { searchAsanaRefs } from "~~/server/utils/asana-refs";
+import { searchHubspotRefs } from "~~/server/utils/hubspot-refs";
 import { searchNotionRefs } from "~~/server/utils/notion-refs";
+import { searchTallyRefs } from "~~/server/utils/tally-refs";
 import { createError } from "~~/server/utils/http-error";
 import { requireSessionUserId } from "~~/server/utils/session";
 import { withRoute } from "~~/server/utils/route-handler";
@@ -33,7 +36,7 @@ export const GET = withRoute(async (request: Request) => {
     throw createError({
       statusCode: 400,
       statusMessage: "Invalid service",
-      message: "service must be drive or notion",
+      message: "service must be drive, notion, hubspot, asana, or tally",
     });
   }
 
@@ -57,15 +60,48 @@ export const GET = withRoute(async (request: Request) => {
     let items: ComposerRefItem[];
     let meta: { connecting?: boolean } | undefined;
 
-    if (parsed.service === "drive") {
-      items = parsed.q.trim()
-        ? await searchDriveRefs(token, parsed.q)
-        : await listRecentDriveRefs(token);
-    } else {
-      const notion = await searchNotionRefs(token, parsed.q);
-      items = notion.items;
-      if (notion.session === "new") {
-        meta = { connecting: true };
+    switch (parsed.service) {
+      case "drive": {
+        items = parsed.q.trim()
+          ? await searchDriveRefs(token, parsed.q)
+          : await listRecentDriveRefs(token);
+        break;
+      }
+      case "notion": {
+        const notion = await searchNotionRefs(token, parsed.q);
+        items = notion.items;
+        if (notion.session === "new") {
+          meta = { connecting: true };
+        }
+        break;
+      }
+      case "hubspot": {
+        const hubspot = await searchHubspotRefs(token, parsed.q);
+        items = hubspot.items;
+        if (hubspot.session === "new") {
+          meta = { connecting: true };
+        }
+        break;
+      }
+      case "asana": {
+        const asana = await searchAsanaRefs(token, parsed.q);
+        items = asana.items;
+        if (asana.session === "new") {
+          meta = { connecting: true };
+        }
+        break;
+      }
+      case "tally": {
+        const tally = await searchTallyRefs(token, parsed.q);
+        items = tally.items;
+        if (tally.session === "new") {
+          meta = { connecting: true };
+        }
+        break;
+      }
+      default: {
+        const _exhaustive: never = parsed.service;
+        return _exhaustive;
       }
     }
 

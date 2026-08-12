@@ -5,7 +5,7 @@ import { getComposerRefService } from "#shared/composer-refs";
 import { ArtifactMarkdown } from "~/components/artifacts/artifact-markdown";
 import { ArtifactView } from "~/components/artifacts/artifact-view";
 import { Button } from "~/components/ui/button";
-import { REF_MENTION_COLOR } from "~/components/ui/composer-ref-chips";
+import { refMentionColorClass } from "~/components/ui/composer-ref-chips";
 import { SKILL_MENTION_COLOR } from "~/components/ui/composer-skill-chips";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "~/components/ui/sheet";
 import { Spinner } from "~/components/ui/spinner";
@@ -27,12 +27,20 @@ const MENTION_PANEL_SURFACE = "bg-white dark:bg-black";
 const MENTION_PANEL_CHROME =
   "rounded-lg bg-white/80 backdrop-blur-sm dark:bg-black/80";
 
-function PanelPlaceholder({ children }: { children: React.ReactNode }) {
-  return (
+function PanelPlaceholder({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode;
+  onClose?: () => void;
+}) {
+  const body = (
     <div className="flex h-full items-center justify-center gap-2 p-6 text-sm text-muted-foreground">
       {children}
     </div>
   );
+  if (!onClose) return body;
+  return <PanelChrome onClose={onClose}>{body}</PanelChrome>;
 }
 
 function PanelChrome({
@@ -99,7 +107,7 @@ function ArtifactPanelBody({
 
   if (isLoading) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <Spinner className="size-4" />
         Loading artifact…
       </PanelPlaceholder>
@@ -108,7 +116,7 @@ function ArtifactPanelBody({
 
   if (error || !artifact) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <AlertTriangleIcon className="size-4" />
         {error instanceof Error ? error.message : "Artifact not found"}
       </PanelPlaceholder>
@@ -135,7 +143,7 @@ function SkillPanelBody({
 
   if (isLoading) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <Spinner className="size-4" />
         Loading skill…
       </PanelPlaceholder>
@@ -144,7 +152,7 @@ function SkillPanelBody({
 
   if (error || !skill) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <AlertTriangleIcon className="size-4" />
         {error instanceof Error ? error.message : "Skill not found"}
       </PanelPlaceholder>
@@ -175,7 +183,7 @@ function RefPanelBody({
   name,
   onClose,
 }: {
-  service: "drive" | "notion";
+  service: "drive" | "notion" | "hubspot" | "asana" | "tally";
   id: string;
   name?: string;
   onClose: () => void;
@@ -185,7 +193,7 @@ function RefPanelBody({
 
   if (isLoading) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <Spinner className="size-4" />
         Loading {meta?.label ?? service}…
       </PanelPlaceholder>
@@ -194,7 +202,7 @@ function RefPanelBody({
 
   if (error || !item) {
     return (
-      <PanelPlaceholder>
+      <PanelPlaceholder onClose={onClose}>
         <AlertTriangleIcon className="size-4" />
         {error instanceof Error ? error.message : "Item not found"}
       </PanelPlaceholder>
@@ -232,7 +240,7 @@ function RefPanelBody({
         <h1
           className={cn(
             "mt-3 mb-8 font-artifact-title text-4xl leading-[1.1] font-normal tracking-tight text-balance italic sm:text-5xl",
-            REF_MENTION_COLOR,
+            refMentionColorClass(service),
           )}
         >
           {item.name}

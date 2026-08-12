@@ -3,6 +3,9 @@
  * Uses Streamable HTTP against mcp.notion.com with a Connect-minted token.
  */
 
+import type { ComposerRefItem } from "#shared/composer-refs";
+import { parseNotionUrl } from "#shared/notion-url";
+
 export type NotionRefItem = {
   id: string;
   name: string;
@@ -90,6 +93,42 @@ export async function fetchNotionRefDetail(
       ? undefined
       : "Opened the page, but no readable preview was returned. Use Open in Notion.",
   };
+}
+
+/** Resolve a pasted Notion URL to a composer ref item (metadata for chip). */
+export async function resolveNotionUrl(
+  token: string,
+  rawUrl: string,
+  fallbackName?: string,
+): Promise<ComposerRefItem> {
+  const parsed = parseNotionUrl(rawUrl);
+  if (!parsed) {
+    throw new Error("Not a Notion page URL");
+  }
+
+  try {
+    const detail = await fetchNotionRefDetail(
+      token,
+      parsed.pageId,
+      fallbackName ?? parsed.titleHint,
+    );
+    return {
+      id: detail.id,
+      name: detail.name,
+      url: detail.url ?? parsed.url,
+      mimeType: "notion/page",
+      modifiedAt: detail.modifiedAt,
+      createdAt: detail.createdAt,
+      author: detail.author,
+    };
+  } catch {
+    return {
+      id: parsed.pageId,
+      name: fallbackName || parsed.titleHint || parsed.pageId,
+      url: parsed.url,
+      mimeType: "notion/page",
+    };
+  }
 }
 
 function guessNotionUrl(pageId: string): string | undefined {

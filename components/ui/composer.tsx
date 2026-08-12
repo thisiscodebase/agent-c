@@ -23,6 +23,9 @@ import {
 } from "~/components/ui/composer-skill-chips";
 import {
   RefMentionMenu,
+  createRefChipElement,
+  insertRefChip,
+  updateRefChipElement,
   useRefMentionMenu,
 } from "~/components/ui/composer-ref-chips";
 import { ComposerModePicker } from "~/components/ui/composer-mode-picker";
@@ -30,6 +33,10 @@ import { useDetailPanel } from "~/hooks/use-detail-panel";
 import { useSpeechDictation } from "~/hooks/use-speech-dictation";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { isComposerRefService } from "#shared/composer-refs";
+import {
+  extractComposerPasteRef,
+  shouldChipComposerPaste,
+} from "#shared/composer-paste-refs";
 import { cn } from "~/lib/utils";
 
 /** Prepared for file-attachment UI (not rendered yet). */
@@ -100,6 +107,7 @@ const COMPOSER_PLACEHOLDERS = [
   "What would you like to know?",
   "Type / for skills…",
   "Mention a Drive file with @…",
+  "Paste a Drive, Notion, HubSpot, Asana, or Tally link…",
   "Draft a bid response with /bid-writing…",
   "Search Drive for the latest deck…",
   "What's the status of that HubSpot deal?",
@@ -412,10 +420,74 @@ export function Composer({
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLDivElement>) => {
+      const plain = event.clipboardData.getData("text/plain");
+      const html = event.clipboardData.getData("text/html");
+      const parsed = extractComposerPasteRef({ plain, html });
+
+      if (
+        parsed &&
+        shouldChipComposerPaste({ plain, html, parsed })
+      ) {
+        event.preventDefault();
+        const editor = editorRef.current;
+        if (!editor) return;
+
+        const selection = window.getSelection();
+        const range =
+          selection && selection.rangeCount > 0
+            ? selection.getRangeAt(0)
+            : null;
+
+        // Insert immediately — waiting on resolve used to lose the selection.
+        const chip = range
+          ? insertRefChip(editor, parsed.service, parsed.item, range)
+          : createRefChipElement(parsed.service, parsed.item, {
+              animate: true,
+            });
+        if (!range) {
+          editor.append(chip, document.createTextNode("\u00a0"));
+        }
+        emitChange();
+        resizeEditor();
+
+        void (async () => {
+          try {
+            const res = await fetch("/api/composer/refs/resolve", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: parsed.resolveUrl }),
+            });
+            if (!res.ok) return;
+            const data = (await res.json()) as {
+              service: string;
+              item: { id?: string; name?: string; url?: string };
+            };
+            if (
+              data.service !== parsed.service ||
+              !data.item?.id ||
+              !data.item?.name
+            ) {
+              return;
+            }
+            if (chip.isConnected) {
+              updateRefChipElement(chip, {
+                ...parsed.item,
+                ...data.item,
+                name: data.item.name,
+                id: data.item.id,
+              });
+              emitChange();
+            }
+          } catch {
+            // Keep optimistic chip — id is enough for the agent.
+          }
+        })();
+        return;
+      }
+
+      if (!plain) return;
       event.preventDefault();
-      const text = event.clipboardData.getData("text/plain");
-      if (!text) return;
-      document.execCommand("insertText", false, text);
+      document.execCommand("insertText", false, plain);
       emitChange();
       resizeEditor();
       slash.refresh();

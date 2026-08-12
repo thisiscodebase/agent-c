@@ -24,8 +24,34 @@ import { cn } from "~/lib/utils";
 
 const REF_CHIP_ATTR = "data-ref-chip";
 
-/** Leafy green — leaf of a fresh orange. */
+/** Leafy green — leaf of a fresh orange (Drive / Notion default). */
 export const REF_MENTION_COLOR = "text-lime-700 dark:text-lime-400";
+
+/** HubSpot brand orange (#FF7A59). */
+export const HUBSPOT_REF_MENTION_COLOR =
+  "text-[#FF7A59] dark:text-[#FF8F73]";
+
+/** Asana brand coral (#F06A6A). */
+export const ASANA_REF_MENTION_COLOR = "text-[#F06A6A] dark:text-[#F58A8A]";
+
+/** Tally brand near-black. */
+export const TALLY_REF_MENTION_COLOR =
+  "text-neutral-900 dark:text-neutral-100";
+
+export function refMentionColorClass(
+  service?: ComposerRefService | string,
+): string {
+  switch (service) {
+    case "hubspot":
+      return HUBSPOT_REF_MENTION_COLOR;
+    case "asana":
+      return ASANA_REF_MENTION_COLOR;
+    case "tally":
+      return TALLY_REF_MENTION_COLOR;
+    default:
+      return REF_MENTION_COLOR;
+  }
+}
 
 const REF_INSERT_CHAR_STAGGER_MS = 28;
 const REF_INSERT_CHAR_DURATION_MS = 780;
@@ -130,7 +156,7 @@ export function createRefChipElement(
   mention.className = cn(
     "ref-mention max-w-full whitespace-nowrap",
     "text-base font-normal",
-    REF_MENTION_COLOR,
+    refMentionColorClass(service),
     "cursor-pointer select-none",
   );
   mention.setAttribute("title", `${meta?.label ?? service}: ${item.name}`);
@@ -158,12 +184,34 @@ export function createRefChipElement(
   return mention;
 }
 
+/** Update an existing chip after a background resolve (name / url / id). */
+export function updateRefChipElement(
+  mention: HTMLSpanElement,
+  item: ComposerRefItem,
+): void {
+  if (!isRefChip(mention)) return;
+  const service = mention.dataset.service;
+  const meta = service ? getComposerRefService(service) : undefined;
+  mention.dataset.refId = item.id;
+  mention.dataset.name = item.name;
+  if (item.url) mention.dataset.url = item.url;
+  mention.setAttribute(
+    "title",
+    `${meta?.label ?? service ?? "ref"}: ${item.name}`,
+  );
+
+  const label = mention.querySelector(".ref-mention-label");
+  if (label instanceof HTMLSpanElement) {
+    fillRefLabelChars(label, `@${item.name}`);
+  }
+}
+
 export function insertRefChip(
   root: HTMLElement,
   service: ComposerRefService,
   item: ComposerRefItem,
   replaceRange: Range,
-) {
+): HTMLSpanElement {
   replaceRange.deleteContents();
 
   const chip = createRefChipElement(service, item, { animate: true });
@@ -173,14 +221,16 @@ export function insertRefChip(
   chip.after(space);
 
   const selection = window.getSelection();
-  if (!selection) return;
-  const after = document.createRange();
-  after.setStart(space, space.length);
-  after.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(after);
+  if (selection) {
+    const after = document.createRange();
+    after.setStart(space, space.length);
+    after.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(after);
+  }
 
   root.focus();
+  return chip;
 }
 
 /** Expand a ref chip DOM node to its agent marker. */
@@ -188,7 +238,15 @@ export function serializeRefChip(node: HTMLElement): string {
   const service = node.dataset.service;
   const id = node.dataset.refId;
   const name = node.dataset.name;
-  if ((service === "drive" || service === "notion") && id && name) {
+  if (
+    (service === "drive" ||
+      service === "notion" ||
+      service === "hubspot" ||
+      service === "asana" ||
+      service === "tally") &&
+    id &&
+    name
+  ) {
     return formatRefMarker(service, id, name);
   }
   return name ? `@${name}` : "";
@@ -273,10 +331,22 @@ function itemsLoadingLabel(args: {
   connecting: boolean;
 }): string {
   if (args.connecting) {
+    if (args.service === "hubspot") return "Connecting to HubSpot…";
+    if (args.service === "asana") return "Connecting to Asana…";
+    if (args.service === "tally") return "Connecting to Tally…";
     return "Connecting to Notion…";
   }
   if (args.service === "notion") {
     return args.searching ? "Searching Notion…" : "Loading Notion…";
+  }
+  if (args.service === "hubspot") {
+    return args.searching ? "Searching HubSpot…" : "Loading HubSpot…";
+  }
+  if (args.service === "asana") {
+    return args.searching ? "Searching Asana…" : "Loading Asana…";
+  }
+  if (args.service === "tally") {
+    return args.searching ? "Searching Tally…" : "Loading Tally…";
   }
   return args.searching ? "Searching…" : "Loading…";
 }
@@ -324,7 +394,7 @@ export function RefMentionMenu({
             {level === "services"
               ? `Mention${query ? ` · @${query}` : ""}`
               : connecting
-                ? `${activeServiceMeta?.label ?? "Notion"} · connecting`
+                ? `${activeServiceMeta?.label ?? "Service"} · connecting`
                 : `${activeServiceMeta?.label ?? "Items"}${
                     searching ? ` · search` : " · recent"
                   }`}
@@ -333,7 +403,7 @@ export function RefMentionMenu({
           {level === "services" ? (
             services.length === 0 ? (
               <div className="px-2 py-3 text-sm text-muted-foreground">
-                Connect Drive or Notion in Settings
+                Connect Drive, Notion, HubSpot, Asana, or Tally in Settings
               </div>
             ) : (
               services.map((entry, index) => {
@@ -426,7 +496,15 @@ export function RefMentionMenu({
               })}
               {loading ? (
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  {connecting ? "Connecting to Notion…" : loadingLabel}
+                  {connecting
+                    ? service === "hubspot"
+                      ? "Connecting to HubSpot…"
+                      : service === "asana"
+                        ? "Connecting to Asana…"
+                        : service === "tally"
+                          ? "Connecting to Tally…"
+                          : "Connecting to Notion…"
+                    : loadingLabel}
                 </div>
               ) : null}
             </>
@@ -488,7 +566,17 @@ function RefExplainer({
   const kind =
     service.id === "notion"
       ? "Page"
-      : humanizeMime(item.mimeType) ?? "File";
+      : service.id === "hubspot"
+        ? item.mimeType === "hubspot/company"
+          ? "Company"
+          : "Contact"
+        : service.id === "asana"
+          ? item.mimeType === "asana/project"
+            ? "Project"
+            : "Task"
+          : service.id === "tally"
+            ? "Form"
+            : humanizeMime(item.mimeType) ?? "File";
   const details: string[] = [service.label, kind];
   if (item.author) details.push(item.author);
   if (item.modifiedAt) {
@@ -635,9 +723,12 @@ export function useRefMentionMenu({
       ? recentQuery.error.message
       : null;
 
-  // Notion MCP handshake on cold start (no warm recent cache yet).
+  // MCP handshake on cold start (no warm recent cache yet).
   const connecting =
-    service === "notion" &&
+    (service === "notion" ||
+      service === "hubspot" ||
+      service === "asana" ||
+      service === "tally") &&
     loading &&
     recentItems.length === 0 &&
     !recentQuery.isSuccess;

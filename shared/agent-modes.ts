@@ -52,7 +52,7 @@ export const AGENT_MODES = [
     icon: "glass-water",
     tier: "premium",
     description:
-      "Premium model for deeper synthesis, complex cross-source questions, and large documents.",
+      "Extra juice for deeper synthesis, complex cross-source questions, and large documents.",
     whenToUse:
       "Give a query Juice when you need careful judgment, strong intelligence, or substantial work.",
   },

@@ -1,5 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db, schema } from "~~/server/db/client";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { normalizeAgentPrefs } from "#shared/agent-modes";
 import type {
   ThreadRecord,
   ThreadState,
@@ -24,7 +26,13 @@ function parseThreadState(value: ThreadState | null | undefined): ThreadState | 
   if (!value || typeof value !== "object" || !Array.isArray(value.events)) {
     return null;
   }
-  return value;
+  const agentPrefs = value.agentPrefs
+    ? normalizeAgentPrefs(value.agentPrefs)
+    : undefined;
+  return {
+    ...value,
+    ...(agentPrefs ? { agentPrefs } : {}),
+  };
 }
 
 function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): ThreadState {
@@ -45,6 +53,7 @@ function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): 
     events,
     // Preserve title metadata when clients only patch session/events.
     titleMeta: incoming.titleMeta ?? existing?.titleMeta,
+    agentPrefs: incoming.agentPrefs ?? existing?.agentPrefs,
   };
 }
 
@@ -56,6 +65,19 @@ function applyTitleMeta(
     session: existing?.session ?? { streamIndex: 0 },
     events: existing?.events ?? [],
     titleMeta,
+    agentPrefs: existing?.agentPrefs,
+  };
+}
+
+function applyAgentPrefs(
+  existing: ThreadState | null,
+  agentPrefs: AgentPrefs,
+): ThreadState {
+  return {
+    session: existing?.session ?? { streamIndex: 0 },
+    events: existing?.events ?? [],
+    titleMeta: existing?.titleMeta,
+    agentPrefs: normalizeAgentPrefs(agentPrefs),
   };
 }
 
@@ -145,15 +167,27 @@ export async function getThreadForViewer(
 
 export async function createThreadForUser(
   userId: string,
-  input: { id?: string; title?: string },
+  input: { id?: string; title?: string; agentPrefs?: AgentPrefs },
 ) {
   const id = input.id ?? crypto.randomUUID();
   const title = input.title?.trim() || "New chat";
+  const agentPrefs = input.agentPrefs
+    ? normalizeAgentPrefs(input.agentPrefs)
+    : undefined;
 
   await db.insert(schema.threads).values({
     id,
     userId,
     title: truncateThreadTitle(title),
+    ...(agentPrefs
+      ? {
+          state: {
+            session: { streamIndex: 0 },
+            events: [],
+            agentPrefs,
+          } satisfies ThreadState,
+        }
+      : {}),
   });
 
   const created = await getThreadForUser(userId, id);
@@ -175,6 +209,8 @@ export async function updateThreadForUser(
     state?: ThreadState;
     /** Update title cadence metadata without replacing session/events. */
     titleMeta?: ThreadTitleMeta;
+    /** Update mode/reasoning without replacing session/events. */
+    agentPrefs?: AgentPrefs;
   },
 ) {
   const existing = await getThreadForUser(userId, id);
@@ -188,6 +224,9 @@ export async function updateThreadForUser(
   }
   if (patch.titleMeta !== undefined) {
     nextState = applyTitleMeta(nextState ?? existing.state, patch.titleMeta);
+  }
+  if (patch.agentPrefs !== undefined) {
+    nextState = applyAgentPrefs(nextState ?? existing.state, patch.agentPrefs);
   }
 
   await db.update(schema.threads)

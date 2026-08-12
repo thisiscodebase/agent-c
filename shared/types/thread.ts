@@ -1,3 +1,7 @@
+import type { AgentPrefs } from "../agent-modes";
+
+export type { AgentPrefs };
+
 export interface ThreadSummary {
   id: string;
   title: string;
@@ -25,6 +29,8 @@ export interface ThreadState {
   session: EveSessionCursor;
   events: unknown[];
   titleMeta?: ThreadTitleMeta;
+  /** Per-thread Zest/Juice mode + reasoning effort. */
+  agentPrefs?: AgentPrefs;
 }
 
 export interface ThreadRecord extends ThreadSummary {

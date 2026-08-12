@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { UseEveAgentSnapshot } from "eve/react";
 import type { HandleMessageStreamEvent, SessionState } from "eve/client";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord, ThreadState } from "#shared/types/thread";
 import { queryKeys } from "~/lib/query-keys";
 
@@ -30,6 +32,7 @@ export async function persistThreadState(
   threadId: string,
   snapshot: UseEveAgentSnapshot<unknown>,
   queryClient: QueryClient,
+  agentPrefs?: AgentPrefs,
 ) {
   if (!snapshot.events.length) {
     return;
@@ -42,6 +45,7 @@ export async function persistThreadState(
       streamIndex: snapshot.events.length,
     },
     events: [...snapshot.events],
+    ...(agentPrefs ? { agentPrefs: normalizeAgentPrefs(agentPrefs) } : {}),
   };
 
   const response = await fetch(`/api/threads/${threadId}`, {
@@ -62,4 +66,32 @@ export async function persistThreadState(
   }
 
   void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
+}
+
+/** Persist Zest/Juice + reasoning without touching session/events. */
+export async function saveThreadAgentPrefs(
+  threadId: string,
+  prefs: AgentPrefs,
+  queryClient?: QueryClient,
+) {
+  const agentPrefs = normalizeAgentPrefs(prefs);
+  const response = await fetch(`/api/threads/${threadId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ agentPrefs }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[persist-agent-prefs] failed", {
+      threadId,
+      status: response.status,
+      detail: detail.slice(0, 500),
+    });
+    throw new Error(`Failed to save mode (${response.status})`);
+  }
+
+  if (queryClient) {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
+  }
 }

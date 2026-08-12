@@ -2,7 +2,9 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { DEFAULT_AGENT_PREFS, normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord, ThreadViewerAccess } from "#shared/types/thread";
 import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
@@ -14,6 +16,7 @@ import { ContextPressureStrip } from "~/components/chat/context-pressure-strip";
 import { ContextUsagePanel } from "~/components/chat/context-usage-panel";
 import { UsageLimitStrip } from "~/components/usage/usage-limit-strip";
 import { useChatSession } from "~/hooks/chat/use-chat-session";
+import { saveThreadAgentPrefs } from "~/hooks/chat/use-thread-state";
 import { useUsageMeter } from "~/hooks/use-usage-meter";
 import { queryKeys } from "~/lib/query-keys";
 import { estimateThreadContextBreakdown } from "~/lib/thread-context-breakdown";
@@ -84,12 +87,32 @@ export function ChatPageClient({
   access?: ThreadViewerAccess;
 }) {
   const readOnly = access === "admin_readonly";
-  const { agent, error, isBusy } = useChatSession(chatId, initialThread, { readOnly });
+  const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>(() =>
+    normalizeAgentPrefs(initialThread.state?.agentPrefs ?? DEFAULT_AGENT_PREFS),
+  );
+  const { agent, error, isBusy } = useChatSession(chatId, initialThread, {
+    readOnly,
+    agentPrefs,
+  });
   const reduceMotion = useReducedMotion();
   const queryClient = useQueryClient();
   const usageMeter = useUsageMeter();
   const meter = usageMeter.data?.meter;
   const meterStatus = meter?.status ?? "ok";
+
+  const handleAgentPrefsChange = useCallback(
+    (next: AgentPrefs) => {
+      const prefs = normalizeAgentPrefs(next);
+      setAgentPrefs(prefs);
+      if (readOnly) {
+        return;
+      }
+      void saveThreadAgentPrefs(chatId, prefs, queryClient).catch((error) => {
+        console.error("[persist-agent-prefs] failed", { chatId, error });
+      });
+    },
+    [chatId, queryClient, readOnly],
+  );
 
   useEffect(() => {
     if (readOnly || isBusy) {
@@ -226,7 +249,9 @@ export function ChatPageClient({
                   />
                   {readOnly ? null : (
                     <Composer
+                      agentPrefs={agentPrefs}
                       disabled={usageBlocked}
+                      onAgentPrefsChange={handleAgentPrefsChange}
                       onStop={agent.stop}
                       onSubmit={(message) => {
                         if (usageBlocked) return;

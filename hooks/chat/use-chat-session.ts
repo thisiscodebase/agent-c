@@ -2,7 +2,9 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEveAgent } from "eve/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { DEFAULT_AGENT_PREFS, normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord } from "#shared/types/thread";
 import {
   chatFailureFromEvent,
@@ -12,6 +14,9 @@ import { consumePendingMessage } from "./use-pending-message";
 import { recordStreamEvent } from "./use-stream-log";
 import { persistThreadState, resumeOptionsFromThread } from "./use-thread-state";
 import { requestThreadTitleGeneration } from "./use-thread-title";
+
+export const AGENT_MODE_HEADER = "x-agent-c-mode";
+export const AGENT_REASONING_HEADER = "x-agent-c-reasoning";
 
 /**
  * Wraps `eve/react`'s `useEveAgent` for one chat thread.
@@ -24,23 +29,39 @@ import { requestThreadTitleGeneration } from "./use-thread-title";
 export function useChatSession(
   chatId: string,
   initialThread?: ThreadRecord,
-  options?: { readOnly?: boolean },
+  options?: { readOnly?: boolean; agentPrefs?: AgentPrefs },
 ) {
   const queryClient = useQueryClient();
   const readOnly = options?.readOnly ?? false;
+  const agentPrefs = normalizeAgentPrefs(options?.agentPrefs ?? DEFAULT_AGENT_PREFS);
+  const agentPrefsRef = useRef(agentPrefs);
+
+  useLayoutEffect(() => {
+    agentPrefsRef.current = agentPrefs;
+  }, [agentPrefs]);
+
   const resumeOptions = initialThread ? resumeOptionsFromThread(initialThread) : {};
   const [streamFailure, setStreamFailure] = useState<Error | undefined>(undefined);
 
   const agent = useEveAgent({
     initialSession: resumeOptions.initialSession,
     initialEvents: resumeOptions.initialEvents,
+    headers: () => ({
+      [AGENT_MODE_HEADER]: agentPrefsRef.current.mode,
+      [AGENT_REASONING_HEADER]: agentPrefsRef.current.reasoning,
+    }),
     onFinish: (snapshot) => {
       if (readOnly) {
         return;
       }
       void (async () => {
         try {
-          await persistThreadState(chatId, snapshot, queryClient);
+          await persistThreadState(
+            chatId,
+            snapshot,
+            queryClient,
+            agentPrefsRef.current,
+          );
         }
         catch (error) {
           console.error("[persist-thread] onFinish failed", { chatId, error });
@@ -106,7 +127,12 @@ export function useChatSession(
       if (agent.status === "submitted" || agent.status === "streaming") {
         return;
       }
-      void persistThreadState(chatId, agent, queryClient).catch((error) => {
+      void persistThreadState(
+        chatId,
+        agent,
+        queryClient,
+        agentPrefsRef.current,
+      ).catch((error) => {
         console.error("[persist-thread] flush failed", { chatId, error });
       });
     }

@@ -148,18 +148,69 @@ export function gatewayPrivacyOptions(modelId: string): GatewayPrivacyOptions {
   };
 }
 
+/** Portable reasoning effort for agent turns (nano omits reasoning). */
+export type AgentReasoningLevel = "low" | "medium" | "high";
+
+export const AGENT_REASONING_LEVELS = [
+  "low",
+  "medium",
+  "high",
+] as const satisfies readonly AgentReasoningLevel[];
+
+export function isAgentReasoningLevel(value: unknown): value is AgentReasoningLevel {
+  return value === "low" || value === "medium" || value === "high";
+}
+
 /** Reasoning effort for agent tiers; nano calls omit reasoning. */
-export function reasoningForTier(tier: ModelTier): "high" | undefined {
+export function reasoningForTier(tier: ModelTier): AgentReasoningLevel | undefined {
   if (tier === "nano") {
     return undefined;
   }
   return "high";
 }
 
+/**
+ * Provider-namespaced reasoning options for Gateway calls.
+ * Eve's root `reasoning` field is static, so per-turn effort is applied here;
+ * these take precedence over top-level `reasoning` in the AI SDK.
+ */
+export function reasoningProviderOptions(
+  modelId: string,
+  effort: AgentReasoningLevel,
+): Record<string, Record<string, unknown>> {
+  const id = normalizeModelId(modelId) ?? modelId;
+  if (id.startsWith("openai/")) {
+    return {
+      openai: {
+        reasoningEffort: effort,
+        reasoningSummary: "auto",
+      },
+    };
+  }
+  if (id.startsWith("anthropic/")) {
+    return {
+      anthropic: {
+        thinking: {
+          type: "adaptive",
+          effort,
+        },
+      },
+    };
+  }
+  if (id.startsWith("xai/")) {
+    return {
+      xai: {
+        reasoningEffort: effort,
+      },
+    };
+  }
+  return {};
+}
+
 export type ResolvedModelSelection = {
   tier: AgentTier;
   model: string;
-  reasoning: "high";
+  reasoning: AgentReasoningLevel;
   gateway: GatewayPrivacyOptions;
 };
 
@@ -172,12 +223,13 @@ export type ResolvedNanoSelection = {
 export function buildAgentSelection(
   tier: AgentTier,
   flaggedModel?: string | null,
+  reasoning: AgentReasoningLevel = "high",
 ): ResolvedModelSelection {
   const model = resolveTierModel(tier, flaggedModel);
   return {
     tier,
     model,
-    reasoning: "high",
+    reasoning: isAgentReasoningLevel(reasoning) ? reasoning : "high",
     gateway: gatewayPrivacyOptions(model),
   };
 }

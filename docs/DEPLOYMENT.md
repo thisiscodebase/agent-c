@@ -317,11 +317,18 @@ Per-connector operator notes: [Platform interop §3.D](PLATFORM_INTEROP.md).
 | Tier | Used for | Default model | Reasoning |
 | ---- | -------- | ------------- | --------- |
 | **nano** | Thread titles / light tasks | `openai/gpt-5.4-nano` | — |
-| **chat** | Default Eve sessions | `openai/gpt-5.6-luna` | `high` |
-| **premium** | Heavier work (ops sets `agent-tier`) | `anthropic/claude-sonnet-5` | `high` |
-| **extreme** | Frontier / high-stakes | `openai/gpt-5.6-sol` | `high` |
+| **chat** | Default Eve sessions / composer **Zest** | `openai/gpt-5.6-luna` | per-thread (`low`–`high`, default `high`) |
+| **premium** | Composer **Juice** (or ops `agent-tier`) | `anthropic/claude-sonnet-5` | per-thread (`low`–`high`, default `high`) |
+| **extreme** | Frontier / high-stakes (Flags only) | `openai/gpt-5.6-sol` | per-thread when selected via Flags |
+
+Web composers expose **Zest** / **Juice** (not model IDs). That choice is
+stored on the thread and sent each turn via headers; it **overrides** Flags
+`agent-tier` for that turn while Flags still pick the concrete model inside
+the tier pool. `extreme` is not in the picker. Mid-thread mode switches may
+bust prompt cache for that Eve session.
 
 Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
+[`shared/agent-modes.ts`](../shared/agent-modes.ts),
 [`server/utils/model-routing.ts`](../server/utils/model-routing.ts),
 [`agent/agent.ts`](../agent/agent.ts).
 
@@ -329,12 +336,14 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 
 1. Ensure `FLAGS_SECRET` is set on web.
 2. In Vercel → Flags (or Toolbar Flags Explorer on a preview), set:
-   - `agent-tier` → `chat` | `premium` | `extreme`
+   - `agent-tier` → `chat` | `premium` | `extreme` (fallback when the
+     composer does not send a mode; Slack / non-web still use this)
    - Per-tier model flags when changing within a pool
-3. New Eve sessions pick up the new model on `session.started` (existing
-   sessions keep the model resolved at start).
-4. To use Grok on premium: set `agent-premium-model` to `xai/grok-4.5` and
-   `agent-tier` to `premium`. ZDR is automatically omitted for that model.
+3. Eve resolves the model on `session.started` and again on each
+   `turn.started` (so Zest/Juice changes apply to the next message).
+4. To use Grok on premium: set `agent-premium-model` to `xai/grok-4.5`.
+   Users on Juice (or ops `agent-tier=premium`) pick it up. ZDR is
+   automatically omitted for that model.
 
 ### Privacy
 

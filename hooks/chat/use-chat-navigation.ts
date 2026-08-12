@@ -2,6 +2,8 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord, ThreadSummary } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
 import { toDisplayText } from "#shared/composer-refs";
@@ -26,12 +28,13 @@ export function useChatNavigation() {
     }
   }
 
-  async function startNewChat(message: string) {
+  async function startNewChat(message: string, agentPrefs?: AgentPrefs) {
     const text = message.trim();
     if (!text) return;
 
     const chatId = crypto.randomUUID();
     const displayTitle = toDisplayText(text);
+    const prefs = agentPrefs ? normalizeAgentPrefs(agentPrefs) : undefined;
 
     const response = await fetch("/api/threads", {
       method: "POST",
@@ -39,6 +42,7 @@ export function useChatNavigation() {
       body: JSON.stringify({
         id: chatId,
         title: truncateThreadTitle(displayTitle),
+        ...(prefs ? { agentPrefs: prefs } : {}),
       }),
     });
     if (!response.ok) {

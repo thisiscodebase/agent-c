@@ -4,9 +4,15 @@ export const threadIdParamsSchema = z.object({
   id: z.string().trim().uuid("Thread id must be a UUID"),
 });
 
+export const agentPrefsSchema = z.object({
+  mode: z.enum(["zest", "juice"]),
+  reasoning: z.enum(["low", "medium", "high"]),
+});
+
 export const createThreadBodySchema = z.object({
   id: z.string().trim().uuid().optional(),
   title: z.string().trim().min(1).max(200).optional(),
+  agentPrefs: agentPrefsSchema.optional(),
 });
 
 const eveSessionSchema = z.object({
@@ -25,11 +31,13 @@ export const threadStateSchema = z.object({
   session: eveSessionSchema,
   events: z.array(z.unknown()),
   titleMeta: threadTitleMetaSchema.optional(),
+  agentPrefs: agentPrefsSchema.optional(),
 });
 
 export const patchThreadBodySchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   state: threadStateSchema.optional(),
+  agentPrefs: agentPrefsSchema.optional(),
 });
 
 export const generateTitleBodySchema = z.object({

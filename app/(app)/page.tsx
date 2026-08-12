@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AgentPrefs } from "#shared/agent-modes";
+import { DEFAULT_AGENT_PREFS } from "#shared/agent-modes";
 import { Suggestion, Suggestions } from "~/components/ai-elements/suggestion";
 import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
@@ -89,6 +91,7 @@ function pickPair(offset: number): Starter[] {
 
 export default function HomePage() {
   const { startNewChat } = useChatNavigation();
+  const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>({ ...DEFAULT_AGENT_PREFS });
   const [offset, setOffset] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -118,10 +121,12 @@ export default function HomePage() {
         </div>
 
         <Composer
+          agentPrefs={agentPrefs}
           autoFocus
           className="w-full"
+          onAgentPrefsChange={setAgentPrefs}
           onSubmit={(message) => {
-            if (message.trim()) void startNewChat(message);
+            if (message.trim()) void startNewChat(message, agentPrefs);
           }}
         />
 
@@ -139,7 +144,7 @@ export default function HomePage() {
                 showBackground: false,
               })}
               suggestion={starter.text}
-              onClick={startNewChat}
+              onClick={(text) => void startNewChat(text, agentPrefs)}
             />
           ))}
         </Suggestions>

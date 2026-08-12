@@ -25,8 +25,10 @@ import {
   RefMentionMenu,
   useRefMentionMenu,
 } from "~/components/ui/composer-ref-chips";
+import { ComposerModePicker } from "~/components/ui/composer-mode-picker";
 import { useDetailPanel } from "~/hooks/use-detail-panel";
 import { useSpeechDictation } from "~/hooks/use-speech-dictation";
+import type { AgentPrefs } from "#shared/agent-modes";
 import { isComposerRefService } from "#shared/composer-refs";
 import { cn } from "~/lib/utils";
 
@@ -84,9 +86,14 @@ export type ComposerProps = {
   onAttachClick?: () => void;
   status?: ChatStatus;
   onStop?: () => void;
+  /** Per-thread Zest/Juice mode + reasoning. When set, shows the mode picker. */
+  agentPrefs?: AgentPrefs;
+  onAgentPrefsChange?: (prefs: AgentPrefs) => void;
 };
 
 const LINE_HEIGHT_PX = 24;
+/** Empty / resting composer height (two text lines). */
+const MIN_ROWS = 2;
 
 /** Rotating empty-state hints when no static `placeholder` prop is passed. */
 const COMPOSER_PLACEHOLDERS = [
@@ -156,6 +163,8 @@ export function Composer({
   attachedFiles = [],
   status,
   onStop,
+  agentPrefs,
+  onAgentPrefsChange,
 }: ComposerProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -297,9 +306,10 @@ export function Composer({
     if (!editor) return;
 
     editor.style.height = "0px";
+    const minHeight = LINE_HEIGHT_PX * MIN_ROWS;
     const maxHeight = LINE_HEIGHT_PX * maxRows;
     const nextHeight = Math.min(
-      Math.max(editor.scrollHeight, LINE_HEIGHT_PX),
+      Math.max(editor.scrollHeight, minHeight),
       maxHeight,
     );
     editor.style.height = `${nextHeight}px`;
@@ -500,7 +510,7 @@ export function Composer({
             className={cn(
               "relative w-full resize-none bg-transparent text-base leading-6",
               "text-foreground focus:outline-none",
-              "min-h-6 whitespace-pre-wrap break-words",
+              "min-h-12 whitespace-pre-wrap break-words",
               editorDisabled && "pointer-events-none opacity-50",
             )}
             contentEditable={!editorDisabled}
@@ -512,6 +522,7 @@ export function Composer({
             onPaste={handlePaste}
             role="textbox"
             style={{
+              minHeight: `${LINE_HEIGHT_PX * MIN_ROWS}px`,
               maxHeight: `${LINE_HEIGHT_PX * maxRows}px`,
               overflowY: "auto",
             }}
@@ -519,7 +530,17 @@ export function Composer({
           />
         </div>
 
-        <div className="mt-2 flex items-center justify-end gap-2">
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            {agentPrefs && onAgentPrefsChange ? (
+              <ComposerModePicker
+                disabled={editorDisabled}
+                onChange={onAgentPrefsChange}
+                value={agentPrefs}
+              />
+            ) : null}
+          </div>
+
           <div className="flex shrink-0 items-center gap-0.5">
             {dictationSupported ? (
               <button

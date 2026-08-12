@@ -93,6 +93,31 @@
   );
 }
 
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(chat-composer),
+::view-transition-new(chat-composer) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  height: 100%;
+  overflow: clip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-old(chat-composer),
+  ::view-transition-new(chat-composer),
+  ::view-transition-old(pending-user-message),
+  ::view-transition-new(pending-user-message) {
+    animation: none;
+  }
+}
+
 /* Warm-grey frosted glass for the app sidebar — mostly grey, soft orange cast. */
 .app-sidebar-frost {
   background: oklch(0.975 0.009 55);

@@ -1,3 +1,7 @@
+/** Shared layoutId / view-transition name for the composer card. */
+export const COMPOSER_LAYOUT_ID = "chat-composer";
+export const PENDING_USER_MESSAGE_VT = "pending-user-message";
+
 export const chatPanelPaddingClass = "px-4 sm:px-6";
 export const chatMessageColumnClass = "mx-auto w-full max-w-2xl";
 export const chatInputColumnClass = `mx-auto w-full max-w-3xl ${chatPanelPaddingClass}`;

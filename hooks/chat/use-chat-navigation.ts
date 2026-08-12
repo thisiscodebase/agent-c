@@ -28,20 +28,27 @@ export function useChatNavigation() {
     }
   }
 
-  async function startNewChat(message: string, agentPrefs?: AgentPrefs) {
+  async function startNewChat(
+    message: string,
+    agentPrefs?: AgentPrefs,
+    options?: { chatId?: string },
+  ) {
     const text = message.trim();
     if (!text) return;
 
-    const chatId = crypto.randomUUID();
+    const chatId = options?.chatId ?? crypto.randomUUID();
     const displayTitle = toDisplayText(text);
     const prefs = agentPrefs ? normalizeAgentPrefs(agentPrefs) : undefined;
+    const optimisticTitle = truncateThreadTitle(displayTitle);
+
+    setPendingMessage(chatId, text);
 
     const response = await fetch("/api/threads", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: chatId,
-        title: truncateThreadTitle(displayTitle),
+        title: optimisticTitle,
         ...(prefs ? { agentPrefs: prefs } : {}),
       }),
     });
@@ -57,7 +64,6 @@ export function useChatNavigation() {
     queryClient.setQueryData<ThreadListResponse>(queryKeys.threads, (old) => ({
       threads: [thread, ...(old?.threads ?? []).filter((entry) => entry.id !== chatId)],
     }));
-    setPendingMessage(chatId, text);
 
     // Fire-and-forget: replace truncated first-line title with a nano-model title.
     void requestThreadTitleGeneration(
@@ -66,7 +72,7 @@ export function useChatNavigation() {
       queryClient,
     );
 
-    await queryClient.invalidateQueries({ queryKey: queryKeys.threads });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
     navigate(`/chat/${chatId}`);
   }
 

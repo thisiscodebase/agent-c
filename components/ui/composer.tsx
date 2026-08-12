@@ -2,6 +2,7 @@
 
 import type { ChatStatus } from "ai";
 import { ArrowUpIcon, MicIcon, SquareIcon, XIcon } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   type CSSProperties,
   type ClipboardEvent,
@@ -38,6 +39,7 @@ import {
   shouldChipComposerPaste,
 } from "#shared/composer-paste-refs";
 import { cn } from "~/lib/utils";
+import { COMPOSER_LAYOUT_ID } from "~/components/chat/chat-layout";
 
 /** Prepared for file-attachment UI (not rendered yet). */
 export type UploadedFile = {
@@ -174,6 +176,7 @@ export function Composer({
   agentPrefs,
   onAgentPrefsChange,
 }: ComposerProps) {
+  const reduceMotion = useReducedMotion();
   const editorRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [isComposing, setIsComposing] = useState(false);
@@ -519,7 +522,7 @@ export function Composer({
 
   return (
     <form className={cn("w-full", className)} onSubmit={handleSubmit}>
-      <div
+      <motion.div
         ref={cardRef}
         className={cn(
           "relative rounded-3xl border border-black/5 bg-white px-4 pt-3 pb-3",
@@ -529,6 +532,10 @@ export function Composer({
           "hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1)]",
           "focus-within:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1)]",
         )}
+        layout={!reduceMotion ? "position" : false}
+        layoutId={COMPOSER_LAYOUT_ID}
+        style={{ viewTransitionName: COMPOSER_LAYOUT_ID }}
+        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
       >
         <SkillSlashMenu
           activeIndex={slash.activeIndex}
@@ -661,7 +668,7 @@ export function Composer({
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {dictationError ? (
         <p

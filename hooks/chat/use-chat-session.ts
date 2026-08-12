@@ -152,7 +152,7 @@ export function useChatSession(
   }, [agent, chatId, queryClient, readOnly]);
 
   const sentPendingRef = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (readOnly) return;
     if (sentPendingRef.current) return;
     sentPendingRef.current = true;

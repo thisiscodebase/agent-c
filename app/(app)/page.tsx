@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { LayoutGroup } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import type { EveMessage } from "eve/react";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { DEFAULT_AGENT_PREFS } from "#shared/agent-modes";
+import { createOptimisticUserMessage } from "#shared/optimistic-user-message";
 import { Suggestion, Suggestions } from "~/components/ai-elements/suggestion";
+import { ChatThreadView } from "~/components/chat/chat-thread-view";
 import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
+import {
+  clearPendingMessage,
+  setPendingMessage,
+} from "~/hooks/chat/use-pending-message";
 import { getToolCategoryIcon } from "~/lib/tool-icons";
 import { cn } from "~/lib/utils";
 
@@ -94,8 +103,14 @@ export default function HomePage() {
   const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>({ ...DEFAULT_AGENT_PREFS });
   const [offset, setOffset] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [launch, setLaunch] = useState<{ chatId: string; message: string } | null>(
+    null,
+  );
+  const [restoreValue, setRestoreValue] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    if (launch) return;
+
     let fadeTimeout: number | undefined;
     const id = window.setInterval(() => {
       setVisible(false);
@@ -109,46 +124,89 @@ export default function HomePage() {
       window.clearInterval(id);
       if (fadeTimeout !== undefined) window.clearTimeout(fadeTimeout);
     };
-  }, []);
+  }, [launch]);
+
+  const launchChat = useCallback(
+    (message: string) => {
+      const text = message.trim();
+      if (!text || launch) return;
+
+      const chatId = crypto.randomUUID();
+      setRestoreValue(undefined);
+      setPendingMessage(chatId, text);
+      setLaunch({ chatId, message: text });
+      void startNewChat(text, agentPrefs, { chatId }).catch((error) => {
+        clearPendingMessage();
+        setLaunch(null);
+        setRestoreValue(text);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to start chat",
+        );
+      });
+    },
+    [agentPrefs, launch, startNewChat],
+  );
 
   const starters = pickPair(offset);
 
   return (
     <DetailPanelHost>
-      <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-6 p-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold text-orange-600">🍊 Agent C</h1>
-        </div>
-
-        <Composer
-          agentPrefs={agentPrefs}
-          autoFocus
-          className="w-full"
-          onAgentPrefsChange={setAgentPrefs}
-          onSubmit={(message) => {
-            if (message.trim()) void startNewChat(message, agentPrefs);
-          }}
-        />
-
-        <Suggestions
-          className={cn(
-            "min-h-10 transition-opacity duration-300 ease-in-out",
-            visible ? "opacity-100" : "opacity-0",
-          )}
-        >
-          {starters.map((starter) => (
-            <Suggestion
-              key={starter.id}
-              icon={getToolCategoryIcon(starter.tool, {
-                size: 14,
-                showBackground: false,
-              })}
-              suggestion={starter.text}
-              onClick={(text) => void startNewChat(text, agentPrefs)}
+      <LayoutGroup id="new-chat-composer">
+        {launch ? (
+          <div className="h-full min-w-0">
+            <ChatThreadView
+              agentPrefs={agentPrefs}
+              animateInitialUser
+              composerDisabled
+              messages={[
+                createOptimisticUserMessage(
+                  launch.message,
+                  `pending-user-${launch.chatId}`,
+                ) as EveMessage,
+              ]}
+              onAgentPrefsChange={setAgentPrefs}
+              status="submitted"
             />
-          ))}
-        </Suggestions>
-      </div>
+          </div>
+        ) : (
+          <div className="mx-auto flex h-full max-w-2xl flex-col items-center justify-center gap-6 p-6">
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold text-orange-600">🍊 Agent C</h1>
+            </div>
+
+            <Composer
+              key={restoreValue ? `restore-${restoreValue}` : "home"}
+              agentPrefs={agentPrefs}
+              autoFocus
+              className="w-full"
+              defaultValue={restoreValue}
+              onAgentPrefsChange={setAgentPrefs}
+              onSubmit={(message) => {
+                if (message.trim()) launchChat(message);
+              }}
+            />
+
+            <Suggestions
+              className={cn(
+                "min-h-10 transition-opacity duration-300 ease-in-out",
+                visible ? "opacity-100" : "opacity-0",
+              )}
+            >
+              {starters.map((starter) => (
+                <Suggestion
+                  key={starter.id}
+                  icon={getToolCategoryIcon(starter.tool, {
+                    size: 14,
+                    showBackground: false,
+                  })}
+                  suggestion={starter.text}
+                  onClick={(text) => launchChat(text)}
+                />
+              ))}
+            </Suggestions>
+          </div>
+        )}
+      </LayoutGroup>
     </DetailPanelHost>
   );
 }

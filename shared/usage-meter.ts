@@ -65,7 +65,11 @@ export function usageMeterPercent(usedUsd: number, limitUsd: number): number {
 }
 
 export function isAppUserId(userId: string | null | undefined): userId is string {
-  return Boolean(userId && !userId.startsWith("eve:"));
+  return Boolean(
+    userId
+    && !userId.startsWith("eve:")
+    && !userId.startsWith("slack:"),
+  );
 }
 
 export const USAGE_LIMIT_REACHED_MESSAGE =

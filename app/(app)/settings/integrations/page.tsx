@@ -125,8 +125,8 @@ function SlackLinkCard() {
       <SettingsRow
         description={
           isLinked
-            ? "Your Slack account is linked. Search uses the Slack search connector above once authorized."
-            : "Link your Slack account to chat with Agent C in Slack (separate from Slack search OAuth)."
+            ? "Your Slack account is linked. Mentions and DMs use your profile and count toward usage."
+            : "Required to chat with Agent C in Slack. Generate a code, then DM the bot link YOURCODE (separate from Slack search OAuth)."
         }
         leading={getToolCategoryIcon("slack", {
           size: 18,

@@ -1,5 +1,6 @@
 import { defineDynamic, defineInstructions } from "eve/instructions";
 import type { DynamicResolveContext } from "eve/instructions";
+import { isAppUserId } from "../shared/usage-meter.js";
 import { getBaseInstructions } from "./lib/base-instructions.js";
 import { buildUserContextPrompt, fetchUserContext } from "./lib/memory-internal.js";
 
@@ -8,7 +9,7 @@ export default defineDynamic({
     "session.started": async (_event, ctx: DynamicResolveContext) => {
       const base = getBaseInstructions();
       const userId = ctx.session.auth.current?.principalId;
-      if (!userId || userId.startsWith("eve:")) {
+      if (!isAppUserId(userId)) {
         return defineInstructions({ markdown: base });
       }
 

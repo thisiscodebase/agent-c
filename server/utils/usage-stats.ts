@@ -1,4 +1,4 @@
-import type { ThreadState } from "#shared/types/thread";
+import { isSlackThreadId, type ThreadState } from "#shared/types/thread";
 import {
   categoryLabel,
   toolCategory,
@@ -265,6 +265,15 @@ function buildThreadFlags(
   return flags;
 }
 
+function threadSource(
+  thread: ThreadUsageInput,
+): "web" | "slack" {
+  if (thread.state?.source === "slack" || isSlackThreadId(thread.id)) {
+    return "slack";
+  }
+  return "web";
+}
+
 export interface ThreadUsageInput {
   id: string;
   title?: string;
@@ -512,6 +521,7 @@ export function aggregateUsageStats(
       threadStats.push({
         threadId: thread.id,
         title: thread.title?.trim() || "Untitled",
+        source: threadSource(thread),
         totalTokens: threadTokens,
         totalCostUsd: threadCost,
         toolCalls: threadToolCalls,
@@ -778,6 +788,7 @@ export function aggregateToolCategoryDetail(
       matchingThreads.push({
         threadId: thread.id,
         title: thread.title?.trim() || "Untitled",
+        source: threadSource(thread),
         totalTokens: threadTokens,
         totalCostUsd: threadCost,
         toolCalls: threadToolCalls,

@@ -36,10 +36,10 @@ export const HELP_GUIDE_MARKDOWN =
 
 Two different things:
 
-1. **Slack account link** — lets you DM / @mention Agent C in Slack. Generate a code in the web app settings, then DM the Agent C on slack \`link YOURCODE\`.
+1. **Slack account link** — **required** to DM / @mention Agent C in Slack (otherwise the bot will ask you to link first). Generate a code in the web app settings, then DM Agent C \`link YOURCODE\`. Linked Slack chats count toward the leaderboard.
 2. **Slack search** — separate permission so the *web app* can search Slack for you.
 
-You may want one, both, or neither.
+You need the account link to talk to Agent C in Slack. Slack search is optional.
 
 ## Docs
 

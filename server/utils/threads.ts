@@ -1,15 +1,18 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, like, not } from "drizzle-orm";
 import { db, schema } from "~~/server/db/client";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { normalizeAgentPrefs } from "#shared/agent-modes";
-import type {
-  ThreadRecord,
-  ThreadState,
-  ThreadSummary,
-  ThreadTitleMeta,
-  ThreadViewerAccess,
+import {
+  appendThreadEventsState,
+  DEFAULT_SLACK_THREAD_TITLE,
+  SLACK_THREAD_ID_PREFIX,
+  truncateThreadTitle,
+  type ThreadRecord,
+  type ThreadState,
+  type ThreadSummary,
+  type ThreadTitleMeta,
+  type ThreadViewerAccess,
 } from "#shared/types/thread";
-import { truncateThreadTitle } from "#shared/types/thread";
 import { isAdminEmail } from "~~/server/utils/admin";
 import { createError } from "~~/server/utils/http-error";
 
@@ -54,6 +57,7 @@ function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): 
     // Preserve title metadata when clients only patch session/events.
     titleMeta: incoming.titleMeta ?? existing?.titleMeta,
     agentPrefs: incoming.agentPrefs ?? existing?.agentPrefs,
+    source: incoming.source ?? existing?.source,
   };
 }
 
@@ -66,6 +70,7 @@ function applyTitleMeta(
     events: existing?.events ?? [],
     titleMeta,
     agentPrefs: existing?.agentPrefs,
+    source: existing?.source,
   };
 }
 
@@ -78,6 +83,7 @@ function applyAgentPrefs(
     events: existing?.events ?? [],
     titleMeta: existing?.titleMeta,
     agentPrefs: normalizeAgentPrefs(agentPrefs),
+    source: existing?.source,
   };
 }
 
@@ -100,7 +106,10 @@ function rowToRecord(row: typeof schema.threads.$inferSelect): ThreadRecord {
 export async function listThreadsForUser(userId: string): Promise<ThreadSummary[]> {
   const rows = await db.select()
     .from(schema.threads)
-    .where(eq(schema.threads.userId, userId))
+    .where(and(
+      eq(schema.threads.userId, userId),
+      not(like(schema.threads.id, `${SLACK_THREAD_ID_PREFIX}%`)),
+    ))
     .orderBy(desc(schema.threads.updatedAt))
     .limit(LIST_LIMIT);
 
@@ -256,4 +265,84 @@ export async function deleteThreadForUser(userId: string, id: string) {
     ));
 
   return true;
+}
+
+export async function appendChannelThreadEvents(input: {
+  userId: string;
+  threadId: string;
+  sessionId: string;
+  continuationToken?: string;
+  source: "slack";
+  title?: string;
+  events: unknown[];
+}): Promise<void> {
+  if (input.events.length === 0) {
+    return;
+  }
+
+  const [owner] = await db
+    .select({ id: schema.user.id })
+    .from(schema.user)
+    .where(eq(schema.user.id, input.userId))
+    .limit(1);
+
+  if (!owner) {
+    throw createError({ statusCode: 404, statusMessage: "User not found" });
+  }
+
+  const title = input.title ? truncateThreadTitle(input.title) : DEFAULT_SLACK_THREAD_TITLE;
+  const emptyState = appendThreadEventsState(
+    null,
+    [],
+    { sessionId: input.sessionId, continuationToken: input.continuationToken },
+    input.source,
+  );
+
+  await db.transaction(async (tx) => {
+    await tx.insert(schema.threads).values({
+      id: input.threadId,
+      userId: input.userId,
+      title,
+      state: emptyState,
+    }).onConflictDoNothing();
+
+    const [existing] = await tx
+      .select()
+      .from(schema.threads)
+      .where(eq(schema.threads.id, input.threadId))
+      .limit(1)
+      .for("update");
+
+    if (!existing) {
+      throw createError({ statusCode: 500, statusMessage: "Failed to persist thread" });
+    }
+    if (existing.userId !== input.userId) {
+      throw createError({ statusCode: 409, statusMessage: "Thread belongs to another user" });
+    }
+
+    const nextState = appendThreadEventsState(
+      parseThreadState(existing.state),
+      input.events,
+      {
+        sessionId: input.sessionId,
+        continuationToken: input.continuationToken,
+        streamIndex: 0,
+      },
+      input.source,
+    );
+
+    const replacePlaceholderTitle = existing.title === DEFAULT_SLACK_THREAD_TITLE
+      || existing.title.startsWith(`${DEFAULT_SLACK_THREAD_TITLE} · `);
+
+    await tx.update(schema.threads)
+      .set({
+        updatedAt: new Date(),
+        state: nextState,
+        ...(replacePlaceholderTitle && input.title ? { title } : {}),
+      })
+      .where(and(
+        eq(schema.threads.id, input.threadId),
+        eq(schema.threads.userId, input.userId),
+      ));
+  });
 }

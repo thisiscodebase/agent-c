@@ -5,6 +5,7 @@ import {
   gatewayPrivacyOptions,
   reasoningProviderOptions,
 } from "../shared/models.js";
+import { isAppUserId } from "../shared/usage-meter.js";
 import {
   fetchAgentModelSelection,
   selectionFromAuthAttributes,
@@ -26,8 +27,7 @@ async function resolveDynamicModel(
   },
 ) {
   const principalId = ctx.session.auth.current?.principalId;
-  const userId =
-    principalId && !principalId.startsWith("eve:") ? principalId : undefined;
+  const userId = isAppUserId(principalId) ? principalId : undefined;
   const fromAuth = selectionFromAuthAttributes(
     ctx.session.auth.current?.attributes,
   );

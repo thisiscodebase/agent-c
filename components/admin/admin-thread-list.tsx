@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { UsageThreadFlag, UsageThreadStat } from "#shared/types/usage-stats";
+import { isSlackThreadId } from "#shared/types/thread";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { formatCostUsd, formatTokenCount } from "~/lib/format-usage";
 
@@ -49,13 +50,17 @@ function threadActivityLine(thread: UsageThreadStat): string {
   return `${turns} turn${turns === 1 ? "" : "s"} · ${steps} step${steps === 1 ? "" : "s"} · ${tools} tool${tools === 1 ? "" : "s"}`;
 }
 
+function isSlackThread(thread: UsageThreadStat): boolean {
+  return thread.source === "slack" || isSlackThreadId(thread.threadId);
+}
+
 function sortHint(sort: ThreadSort, categoryAttributed: boolean): string {
   if (sort === "recent") {
-    return "Sorted by most recent — open a chat to inspect activity";
+    return "Sorted by most recent — open a web chat to inspect, or review Slack rows here";
   }
   return categoryAttributed
-    ? "Sorted by cost attributed to this tool — open a chat to inspect"
-    : "Sorted by spend — open a chat to inspect activity";
+    ? "Sorted by cost attributed to this tool — open a web chat to inspect"
+    : "Sorted by spend — open a web chat to inspect activity";
 }
 
 export function AdminThreadList({
@@ -122,41 +127,61 @@ export function AdminThreadList({
       <ol className="flex flex-col gap-2">
         {ranked.map((thread, index) => {
           const flags = thread.flags ?? [];
+          const slack = isSlackThread(thread);
+          const rowClassName =
+            "flex w-full min-w-0 items-start gap-3 rounded-xl bg-card px-4 py-4 ring-1 ring-foreground/10";
+
+          const body = (
+            <>
+              <span className="mt-0.5 w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                  <span className="truncate">{thread.title}</span>
+                  {slack ? (
+                    <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      Slack
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {formatUpdated(thread.updatedAt)} · {threadActivityLine(thread)}
+                </p>
+                {flags.length > 0 ? (
+                  <p className="mt-2 flex flex-wrap gap-1">
+                    {flags.map((flag) => (
+                      <span
+                        key={flag}
+                        className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        {flagLabel(flag)}
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
+              </div>
+              <div className="shrink-0 text-right text-sm tabular-nums text-muted-foreground">
+                <p>{formatCostUsd(threadCost(thread, categoryAttributed))}</p>
+                <p className="text-xs">
+                  {formatTokenCount(threadTokens(thread, categoryAttributed))}
+                </p>
+              </div>
+            </>
+          );
 
           return (
             <li key={thread.threadId}>
-              <Link
-                className="flex w-full min-w-0 items-start gap-3 rounded-xl bg-card px-4 py-4 ring-1 ring-foreground/10 transition-colors hover:bg-muted/40"
-                href={`/chat/${thread.threadId}`}
-              >
-                <span className="mt-0.5 w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground">
-                  {index + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-foreground">{thread.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatUpdated(thread.updatedAt)} · {threadActivityLine(thread)}
-                  </p>
-                  {flags.length > 0 ? (
-                    <p className="mt-2 flex flex-wrap gap-1">
-                      {flags.map((flag) => (
-                        <span
-                          key={flag}
-                          className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                        >
-                          {flagLabel(flag)}
-                        </span>
-                      ))}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="shrink-0 text-right text-sm tabular-nums text-muted-foreground">
-                  <p>{formatCostUsd(threadCost(thread, categoryAttributed))}</p>
-                  <p className="text-xs">
-                    {formatTokenCount(threadTokens(thread, categoryAttributed))}
-                  </p>
-                </div>
-              </Link>
+              {slack ? (
+                <div className={rowClassName}>{body}</div>
+              ) : (
+                <Link
+                  className={`${rowClassName} transition-colors hover:bg-muted/40`}
+                  href={`/chat/${thread.threadId}`}
+                >
+                  {body}
+                </Link>
+              )}
             </li>
           );
         })}

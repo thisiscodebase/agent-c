@@ -32,6 +32,17 @@ export const threadStateSchema = z.object({
   events: z.array(z.unknown()),
   titleMeta: threadTitleMetaSchema.optional(),
   agentPrefs: agentPrefsSchema.optional(),
+  source: z.enum(["web", "slack"]).optional(),
+});
+
+export const appendThreadEventsBodySchema = z.object({
+  userId: z.string().trim().min(1),
+  threadId: z.string().trim().min(1).max(200),
+  sessionId: z.string().trim().min(1),
+  continuationToken: z.string().trim().min(1).optional(),
+  source: z.enum(["slack"]),
+  title: z.string().trim().min(1).max(200).optional(),
+  events: z.array(z.unknown()).min(1).max(20),
 });
 
 export const patchThreadBodySchema = z.object({

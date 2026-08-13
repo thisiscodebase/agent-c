@@ -51,6 +51,8 @@ export interface UsageThreadCategoryStat {
 export interface UsageThreadStat {
   threadId: string;
   title: string;
+  /** Originating channel when known (`slack` vs in-app web chat). */
+  source?: "web" | "slack";
   totalTokens: number;
   totalCostUsd: number;
   toolCalls: number;

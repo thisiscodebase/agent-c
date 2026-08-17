@@ -406,6 +406,22 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 | Flags always default | `FLAGS_SECRET` missing; flag keys not created; evaluation error → defaults |
 | Eve can’t reach web | `BETTER_AUTH_URL` wrong on eve; use public HTTPS origin in production |
 | DB connection errors under load | Use pooled `DATABASE_URL` (`:6543`), not direct, for the app |
+| Chat finished in UI but `threads.state.events` empty / row missing | Browser never PATCHed; check **web** logs for `[agent-c persist]` (see below). Server ingest from the Eve hook is the system of record. |
+
+### Thread persistence logs (`[agent-c persist]`)
+
+Chat transcripts are mirrored into Postgres from two places. Failures often look
+"silent" if you only open one log stream:
+
+| Where it runs | What you see in Vercel | Prefix |
+| ------------- | ---------------------- | ------ |
+| **Web** (Next.js) `/api/internal/threads/events`, `PATCH /api/threads/:id` | Function logs for the **web** deployment | `[agent-c persist]` |
+| **Eve** Build Output service (persist hook) | Logs for the **Eve** service, not Next.js functions | `[agent-c persist] hook failed` |
+| Browser `console.error` | Never in Vercel — client only | `[agent-c persist] client …` |
+
+Filter both the web and Eve log streams for `[agent-c persist]`. The web route
+logs ingest creates/failures and when a client PATCH would have shrunk the
+event log (merge keeps the longer log).
 
 ---
 

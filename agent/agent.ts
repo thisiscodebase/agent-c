@@ -11,8 +11,6 @@ import {
   selectionFromAuthAttributes,
 } from "./lib/model-routing-internal.js";
 
-const fallbackGateway = gatewayPrivacyOptions(MODEL_DEFAULTS.chat);
-
 async function resolveDynamicModel(
   _event: unknown,
   ctx: {
@@ -45,7 +43,7 @@ async function resolveDynamicModel(
     modelContextWindowTokens: contextWindowForModel(selection.model),
     modelOptions: {
       providerOptions: {
-        gateway: selection.gateway,
+        gateway: selection.gateway ?? gatewayPrivacyOptions(MODEL_DEFAULTS.chat),
         ...reasoningOptions,
       },
     },
@@ -53,8 +51,9 @@ async function resolveDynamicModel(
 }
 
 export default defineAgent({
+  // Dynamic models have no compiled fallback (eve ≥0.33); resolvers must
+  // always return a concrete selection.
   model: defineDynamic({
-    fallback: MODEL_DEFAULTS.chat,
     events: {
       "session.started": resolveDynamicModel,
       "turn.started": resolveDynamicModel,
@@ -68,10 +67,5 @@ export default defineAgent({
   // every later turn.
   compaction: {
     thresholdPercent: 0.85,
-  },
-  modelOptions: {
-    providerOptions: {
-      gateway: fallbackGateway,
-    },
   },
 });

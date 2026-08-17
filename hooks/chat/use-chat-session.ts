@@ -17,6 +17,7 @@ import { requestThreadTitleGeneration } from "./use-thread-title";
 
 export const AGENT_MODE_HEADER = "x-agent-c-mode";
 export const AGENT_REASONING_HEADER = "x-agent-c-reasoning";
+export const AGENT_THREAD_ID_HEADER = "x-agent-c-thread-id";
 
 /**
  * Wraps `eve/react`'s `useEveAgent` for one chat thread.
@@ -49,6 +50,7 @@ export function useChatSession(
     headers: () => ({
       [AGENT_MODE_HEADER]: agentPrefsRef.current.mode,
       [AGENT_REASONING_HEADER]: agentPrefsRef.current.reasoning,
+      [AGENT_THREAD_ID_HEADER]: chatId,
     }),
     onFinish: (snapshot) => {
       if (readOnly) {
@@ -64,7 +66,7 @@ export function useChatSession(
           );
         }
         catch (error) {
-          console.error("[persist-thread] onFinish failed", { chatId, error });
+          console.error("[agent-c persist] onFinish failed", { chatId, error });
           showChatErrorToast(
             error instanceof Error ? error : new Error("Failed to save chat"),
             chatId,
@@ -117,23 +119,24 @@ export function useChatSession(
     }
   }, [agent.status]);
 
-  // Best-effort save if the tab hides/unloads before onFinish settles.
+  // Best-effort save if the tab hides/unloads — including mid-stream so we at
+  // least keep sessionId + whatever events the client already has.
   useEffect(() => {
     if (readOnly) {
       return;
     }
 
     function flush() {
-      if (agent.status === "submitted" || agent.status === "streaming") {
-        return;
-      }
+      const streaming =
+        agent.status === "submitted" || agent.status === "streaming";
       void persistThreadState(
         chatId,
         agent,
         queryClient,
         agentPrefsRef.current,
+        { keepalive: true, skipInvalidate: streaming },
       ).catch((error) => {
-        console.error("[persist-thread] flush failed", { chatId, error });
+        console.error("[agent-c persist] client flush failed", { chatId, error });
       });
     }
 
@@ -157,7 +160,7 @@ export function useChatSession(
     if (sentPendingRef.current) return;
     sentPendingRef.current = true;
     const pending = consumePendingMessage(chatId);
-    if (pending) void agent.send({ message: pending });
+    if (pending) void agent.send(pending);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, readOnly]);
 

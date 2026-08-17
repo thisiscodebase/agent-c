@@ -11,6 +11,10 @@ export interface ThreadSummary {
 
 export interface EveSessionCursor {
   sessionId?: string;
+  /**
+   * @deprecated Eve ≥0.31 addresses sessions by id only. Retained so older
+   * Postgres rows still parse; new writes omit this field.
+   */
   continuationToken?: string;
   streamIndex: number;
 }
@@ -119,6 +123,37 @@ export function truncateThreadTitle(text: string, maxLength = 60): string {
   }
 
   return `${line.slice(0, maxLength - 1)}…`;
+}
+
+/**
+ * Eve wraps Slack inbound text in an XML envelope. The first line is
+ * `<slack_message>`; the real prompt lives inside `<content>…</content>`.
+ */
+export function extractSlackMessageContent(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const match = trimmed.match(/<content>\s*([\s\S]*?)\s*<\/content>/i);
+  if (match?.[1]) {
+    return match[1].trim();
+  }
+
+  if (trimmed.startsWith("<slack_message>")) {
+    return "";
+  }
+
+  return trimmed;
+}
+
+/** Title for a Slack-originated thread, using envelope content when present. */
+export function slackThreadTitleFromMessageText(raw: string): string | undefined {
+  const content = extractSlackMessageContent(raw);
+  if (!content) {
+    return undefined;
+  }
+  return truncateThreadTitle(`${DEFAULT_SLACK_THREAD_TITLE}: ${content}`);
 }
 
 /** Whether refine title generation should run for this user-message count. */

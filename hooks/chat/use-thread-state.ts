@@ -1,50 +1,64 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { UseEveAgentSnapshot } from "eve/react";
-import type { HandleMessageStreamEvent, SessionState } from "eve/client";
+import type { ClientSessionState, MessageStreamEvent } from "eve/client";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { normalizeAgentPrefs } from "#shared/agent-modes";
+import { resumeOptionsFromThread as resumeFromShared } from "#shared/resume-thread";
 import type { ThreadRecord, ThreadState } from "#shared/types/thread";
 import { queryKeys } from "~/lib/query-keys";
 
 interface ResumeOptions {
-  initialSession?: SessionState;
-  initialEvents?: readonly HandleMessageStreamEvent[];
+  initialSession?: ClientSessionState;
+  initialEvents?: readonly MessageStreamEvent[];
 }
 
 export function resumeOptionsFromThread(thread: ThreadRecord): ResumeOptions {
-  const events = thread.state?.events;
-  if (!events?.length) {
-    return {};
-  }
-
-  const session = thread.state?.session ?? { streamIndex: 0 };
-
+  const options = resumeFromShared(thread);
   return {
-    initialSession: {
-      ...session,
-      streamIndex: Math.max(session.streamIndex ?? 0, events.length),
-    },
-    initialEvents: events as readonly HandleMessageStreamEvent[],
+    ...(options.initialSession
+      ? { initialSession: options.initialSession }
+      : {}),
+    ...(options.initialEvents
+      ? { initialEvents: options.initialEvents as readonly MessageStreamEvent[] }
+      : {}),
   };
 }
 
+export type PersistThreadStateOptions = {
+  /** Prefer keepalive for pagehide / visibility flush during streaming. */
+  keepalive?: boolean;
+  /**
+   * When true, skip invalidateQueries (unload paths). Default invalidates.
+   */
+  skipInvalidate?: boolean;
+};
+
+/**
+ * Persist Eve snapshot to Postgres. Writes sessionId even when events are still
+ * empty so we can rewind the Eve stream if the transcript PATCH never lands.
+ */
 export async function persistThreadState(
   threadId: string,
   snapshot: UseEveAgentSnapshot<unknown>,
   queryClient: QueryClient,
   agentPrefs?: AgentPrefs,
+  options?: PersistThreadStateOptions,
 ) {
-  if (!snapshot.events.length) {
+  const hasEvents = snapshot.events.length > 0;
+  const sessionId = snapshot.session?.sessionId;
+  if (!hasEvents && !sessionId) {
     return;
   }
 
   const state: ThreadState = {
     session: {
-      sessionId: snapshot.session.sessionId,
-      continuationToken: snapshot.session.continuationToken,
-      streamIndex: snapshot.events.length,
+      ...(sessionId ? { sessionId } : {}),
+      streamIndex: hasEvents
+        ? snapshot.events.length
+        : (snapshot.session?.streamIndex ?? 0),
     },
-    events: [...snapshot.events],
+    events: hasEvents ? [...snapshot.events] : [],
+    source: "web",
     ...(agentPrefs ? { agentPrefs: normalizeAgentPrefs(agentPrefs) } : {}),
   };
 
@@ -52,20 +66,24 @@ export async function persistThreadState(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ state }),
+    ...(options?.keepalive ? { keepalive: true } : {}),
   });
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    console.error("[persist-thread] failed", {
+    console.error("[agent-c persist] client PATCH failed", {
       threadId,
       status: response.status,
       eventCount: snapshot.events.length,
+      sessionId,
       detail: detail.slice(0, 500),
     });
     throw new Error(`Failed to persist chat (${response.status})`);
   }
 
-  void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
+  if (!options?.skipInvalidate) {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
+  }
 }
 
 /** Persist Zest/Juice + reasoning without touching session/events. */

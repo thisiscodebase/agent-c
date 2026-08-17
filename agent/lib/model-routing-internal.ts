@@ -1,17 +1,18 @@
-import type { AgentModeId, AgentReasoningEffort } from "../../shared/agent-modes.js";
-import { modeToTier } from "../../shared/agent-modes.js";
 import type {
   AgentReasoningLevel,
   AgentTier,
   ResolvedModelSelection,
 } from "../../shared/models.js";
 import { buildAgentSelection } from "../../shared/models.js";
+import { selectionFromAuthAttributes } from "../../shared/model-routing.js";
 import { appOrigin, internalHeaders } from "./internal-api.js";
 
 export type FetchAgentModelSelectionOptions = {
   tier?: AgentTier;
   reasoning?: AgentReasoningLevel;
 };
+
+export { selectionFromAuthAttributes };
 
 export async function fetchAgentModelSelection(
   userId?: string,
@@ -48,23 +49,4 @@ export async function fetchAgentModelSelection(
   } catch {
     return buildAgentSelection(fallbackTier, null, fallbackReasoning);
   }
-}
-
-export function selectionFromAuthAttributes(attributes: unknown): {
-  tier: AgentTier;
-  reasoning: AgentReasoningLevel;
-} {
-  const record =
-    attributes && typeof attributes === "object"
-      ? (attributes as Record<string, unknown>)
-      : {};
-  const mode = record.agentMode as AgentModeId | undefined;
-  const reasoning = record.agentReasoning as AgentReasoningEffort | undefined;
-  return {
-    tier: mode === "juice" || mode === "zest" ? modeToTier(mode) : "chat",
-    reasoning:
-      reasoning === "low" || reasoning === "medium" || reasoning === "high"
-        ? reasoning
-        : "high",
-  };
 }

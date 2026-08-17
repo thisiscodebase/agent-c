@@ -17,6 +17,7 @@ export const createThreadBodySchema = z.object({
 
 const eveSessionSchema = z.object({
   sessionId: z.string().trim().min(1).optional(),
+  /** @deprecated Eve ≥0.31 uses fixed session ids; kept for reading older rows. */
   continuationToken: z.string().trim().min(1).optional(),
   streamIndex: z.number().int().min(0),
 });
@@ -39,8 +40,9 @@ export const appendThreadEventsBodySchema = z.object({
   userId: z.string().trim().min(1),
   threadId: z.string().trim().min(1).max(200),
   sessionId: z.string().trim().min(1),
+  /** @deprecated Eve ≥0.31; accepted for older callers. */
   continuationToken: z.string().trim().min(1).optional(),
-  source: z.enum(["slack"]),
+  source: z.enum(["web", "slack"]),
   title: z.string().trim().min(1).max(200).optional(),
   events: z.array(z.unknown()).min(1).max(20),
 });

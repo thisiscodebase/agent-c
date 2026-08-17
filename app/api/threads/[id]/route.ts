@@ -31,12 +31,27 @@ export const PATCH = withRoute(async (request: Request, { params }: RouteParams)
   const userId = await requireSessionUserId(request.headers);
   const body = patchThreadBodySchema.parse(await request.json());
 
-  const thread = await updateThreadForUser(userId, id, body);
-  if (!thread) {
+  const result = await updateThreadForUser(userId, id, body);
+  if (!result) {
+    console.warn("[agent-c persist] PATCH rejected — thread not found", {
+      userId,
+      threadId: id,
+      hasState: body.state !== undefined,
+      eventCount: body.state?.events.length,
+    });
     throw createError({ statusCode: 404, statusMessage: "Thread not found" });
   }
 
-  return NextResponse.json({ thread });
+  if (result.merge?.keptLongerLog) {
+    console.info("[agent-c persist] PATCH kept longer stored event log", {
+      userId,
+      threadId: id,
+      incomingEventCount: result.merge.incomingEventCount,
+      storedEventCount: result.merge.storedEventCount,
+    });
+  }
+
+  return NextResponse.json({ thread: result.thread });
 });
 
 export const DELETE = withRoute(async (request: Request, { params }: RouteParams) => {

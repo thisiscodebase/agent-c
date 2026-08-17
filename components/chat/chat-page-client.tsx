@@ -159,7 +159,7 @@ export function ChatPageClient({
 
   function respondToInput(requestId: string, optionId: string) {
     if (readOnly || usageBlocked) return;
-    void agent.send({ inputResponses: [{ requestId, optionId }] });
+    void agent.respond([{ requestId, optionId }]);
   }
 
   return (
@@ -175,13 +175,15 @@ export function ChatPageClient({
               agentPrefs={agentPrefs}
               disabled={usageBlocked}
               onAgentPrefsChange={handleAgentPrefsChange}
-              onStop={agent.stop}
+              onStop={() => {
+                void agent.cancel();
+              }}
               onSubmit={(message) => {
                 if (usageBlocked) return;
                 const text = message.trim();
                 if (!text) return;
                 setLocalUser(createOptimisticUserMessage(text) as EveMessage);
-                void agent.send({ message: text });
+                void agent.send(text);
               }}
               status={displayStatus}
             />

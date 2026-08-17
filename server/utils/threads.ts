@@ -3,6 +3,11 @@ import { db, schema } from "~~/server/db/client";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { normalizeAgentPrefs } from "#shared/agent-modes";
 import {
+  applyAgentPrefs,
+  applyTitleMeta,
+  mergeThreadState,
+} from "#shared/thread-state-merge";
+import {
   appendThreadEventsState,
   DEFAULT_SLACK_THREAD_TITLE,
   SLACK_THREAD_ID_PREFIX,
@@ -35,55 +40,6 @@ function parseThreadState(value: ThreadState | null | undefined): ThreadState | 
   return {
     ...value,
     ...(agentPrefs ? { agentPrefs } : {}),
-  };
-}
-
-function mergeThreadState(existing: ThreadState | null, incoming: ThreadState): ThreadState {
-  const session = incoming.session;
-  const existingEvents = existing?.events ?? [];
-  // Title-only writers historically sent `events: []` and could race a successful
-  // persist, wiping the transcript. Never shrink the durable event log.
-  const events = incoming.events.length >= existingEvents.length
-    ? incoming.events
-    : existingEvents;
-
-  return {
-    session: {
-      sessionId: session.sessionId ?? existing?.session.sessionId,
-      continuationToken: session.continuationToken ?? existing?.session.continuationToken,
-      streamIndex: Math.max(session.streamIndex, existing?.session.streamIndex ?? 0),
-    },
-    events,
-    // Preserve title metadata when clients only patch session/events.
-    titleMeta: incoming.titleMeta ?? existing?.titleMeta,
-    agentPrefs: incoming.agentPrefs ?? existing?.agentPrefs,
-    source: incoming.source ?? existing?.source,
-  };
-}
-
-function applyTitleMeta(
-  existing: ThreadState | null,
-  titleMeta: ThreadTitleMeta,
-): ThreadState {
-  return {
-    session: existing?.session ?? { streamIndex: 0 },
-    events: existing?.events ?? [],
-    titleMeta,
-    agentPrefs: existing?.agentPrefs,
-    source: existing?.source,
-  };
-}
-
-function applyAgentPrefs(
-  existing: ThreadState | null,
-  agentPrefs: AgentPrefs,
-): ThreadState {
-  return {
-    session: existing?.session ?? { streamIndex: 0 },
-    events: existing?.events ?? [],
-    titleMeta: existing?.titleMeta,
-    agentPrefs: normalizeAgentPrefs(agentPrefs),
-    source: existing?.source,
   };
 }
 
@@ -221,15 +177,38 @@ export async function updateThreadForUser(
     /** Update mode/reasoning without replacing session/events. */
     agentPrefs?: AgentPrefs;
   },
-) {
+): Promise<
+  | {
+      thread: ThreadRecord;
+      merge: {
+        incomingEventCount: number;
+        storedEventCount: number;
+        keptLongerLog: boolean;
+      } | null;
+    }
+  | undefined
+> {
   const existing = await getThreadForUser(userId, id);
   if (!existing) {
     return undefined;
   }
 
   let nextState: ThreadState | undefined;
+  let merge: {
+    incomingEventCount: number;
+    storedEventCount: number;
+    keptLongerLog: boolean;
+  } | null = null;
+
   if (patch.state !== undefined) {
+    const storedEventCount = existing.state?.events.length ?? 0;
+    const incomingEventCount = patch.state.events.length;
     nextState = mergeThreadState(existing.state, patch.state);
+    merge = {
+      incomingEventCount,
+      storedEventCount,
+      keptLongerLog: incomingEventCount < storedEventCount,
+    };
   }
   if (patch.titleMeta !== undefined) {
     nextState = applyTitleMeta(nextState ?? existing.state, patch.titleMeta);
@@ -249,7 +228,11 @@ export async function updateThreadForUser(
       eq(schema.threads.userId, userId),
     ));
 
-  return getThreadForUser(userId, id);
+  const thread = await getThreadForUser(userId, id);
+  if (!thread) {
+    return undefined;
+  }
+  return { thread, merge };
 }
 
 export async function deleteThreadForUser(userId: string, id: string) {
@@ -271,13 +254,12 @@ export async function appendChannelThreadEvents(input: {
   userId: string;
   threadId: string;
   sessionId: string;
-  continuationToken?: string;
-  source: "slack";
+  source: "web" | "slack";
   title?: string;
   events: unknown[];
-}): Promise<void> {
+}): Promise<{ created: boolean }> {
   if (input.events.length === 0) {
-    return;
+    return { created: false };
   }
 
   const [owner] = await db
@@ -290,21 +272,24 @@ export async function appendChannelThreadEvents(input: {
     throw createError({ statusCode: 404, statusMessage: "User not found" });
   }
 
-  const title = input.title ? truncateThreadTitle(input.title) : DEFAULT_SLACK_THREAD_TITLE;
+  const defaultTitle = input.source === "slack" ? DEFAULT_SLACK_THREAD_TITLE : "New chat";
+  const title = input.title ? truncateThreadTitle(input.title) : defaultTitle;
   const emptyState = appendThreadEventsState(
     null,
     [],
-    { sessionId: input.sessionId, continuationToken: input.continuationToken },
+    { sessionId: input.sessionId },
     input.source,
   );
 
-  await db.transaction(async (tx) => {
-    await tx.insert(schema.threads).values({
+  return await db.transaction(async (tx) => {
+    const inserted = await tx.insert(schema.threads).values({
       id: input.threadId,
       userId: input.userId,
       title,
       state: emptyState,
-    }).onConflictDoNothing();
+    }).onConflictDoNothing().returning({ id: schema.threads.id });
+
+    const created = inserted.length > 0;
 
     const [existing] = await tx
       .select()
@@ -325,14 +310,16 @@ export async function appendChannelThreadEvents(input: {
       input.events,
       {
         sessionId: input.sessionId,
-        continuationToken: input.continuationToken,
         streamIndex: 0,
       },
       input.source,
     );
 
-    const replacePlaceholderTitle = existing.title === DEFAULT_SLACK_THREAD_TITLE
-      || existing.title.startsWith(`${DEFAULT_SLACK_THREAD_TITLE} · `);
+    const replacePlaceholderTitle = input.source === "slack"
+      && (
+        existing.title === DEFAULT_SLACK_THREAD_TITLE
+        || existing.title.startsWith(`${DEFAULT_SLACK_THREAD_TITLE} · `)
+      );
 
     await tx.update(schema.threads)
       .set({
@@ -344,5 +331,7 @@ export async function appendChannelThreadEvents(input: {
         eq(schema.threads.id, input.threadId),
         eq(schema.threads.userId, input.userId),
       ));
+
+    return { created };
   });
 }

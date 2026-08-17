@@ -1,4 +1,4 @@
-import { CONNECT_USER_ISSUER } from "#shared/connect";
+import { CONNECT_USER_ISSUER } from "./connect.ts";
 
 export function buildAppSessionAuth(
   appUserId: string,

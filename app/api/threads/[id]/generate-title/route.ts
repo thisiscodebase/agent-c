@@ -72,7 +72,7 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
       titleMeta: nextMeta,
     });
 
-    return NextResponse.json({ thread: updated });
+    return NextResponse.json({ thread: updated?.thread ?? thread });
   }
 
   const turns = extractTitleTurnsFromEvents(thread.state?.events ?? []);
@@ -112,5 +112,5 @@ export const POST = withRoute(async (request: Request, { params }: RouteParams) 
     titleMeta: nextMeta,
   });
 
-  return NextResponse.json({ thread: updated });
+  return NextResponse.json({ thread: updated?.thread ?? thread });
 });

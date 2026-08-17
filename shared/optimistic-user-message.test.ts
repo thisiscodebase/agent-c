@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   createOptimisticUserMessage,
+  hasUserMessageText,
   mergeOptimisticUserMessage,
   userMessageText,
 } from "./optimistic-user-message.ts";
@@ -66,5 +67,14 @@ describe("mergeOptimisticUserMessage", () => {
       }),
       "Hi there",
     );
+  });
+});
+
+describe("hasUserMessageText", () => {
+  it("matches exact user text already in the thread", () => {
+    const user = createOptimisticUserMessage("Hello", "u1");
+    assert.equal(hasUserMessageText([user], "Hello"), true);
+    assert.equal(hasUserMessageText([user], "Other"), false);
+    assert.equal(hasUserMessageText([], "Hello"), false);
   });
 });

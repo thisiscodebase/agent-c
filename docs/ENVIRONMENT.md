@@ -234,6 +234,8 @@ Defaults when Flags are unset or evaluation fails:
 | `agent-premium-model` | `anthropic/claude-sonnet-5` |
 | `agent-extreme-model` | `openai/gpt-5.6-sol` |
 
-Premium allowlist also includes `xai/grok-4.5` and `openai/gpt-5.6-terra`.
-Selecting Grok disables per-request ZDR automatically (keeps no prompt
-training). Chat / premium / extreme agent calls use reasoning effort `high`.
+Premium / chat / extreme / nano model flags accept **any** AI Gateway
+`provider/model` string. Catalog lists in code are Explorer shortcuts only.
+Selecting an `xai/…` model disables per-request ZDR automatically (keeps no
+prompt training). Chat / premium / extreme agent calls use reasoning effort
+`high`.

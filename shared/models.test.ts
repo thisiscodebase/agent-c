@@ -6,6 +6,7 @@ import {
   contextWindowForModel,
   FALLBACK_CONTEXT_WINDOW_TOKENS,
   gatewayPrivacyOptions,
+  isGatewayModelId,
   maxContextWindowForModel,
   MODEL_DEFAULTS,
   normalizeModelId,
@@ -25,13 +26,17 @@ describe("normalizeModelId / context windows", () => {
     assert.equal(contextWindowForModel("openai/gpt-5.6-luna"), 272_000);
     assert.equal(maxContextWindowForModel("openai/gpt-5.6-luna"), 1_050_000);
     assert.equal(contextWindowForModel("anthropic/claude-sonnet-5"), 1_000_000);
+    assert.equal(FALLBACK_CONTEXT_WINDOW_TOKENS, 200_000);
     assert.equal(contextWindowForModel("unknown/model"), FALLBACK_CONTEXT_WINDOW_TOKENS);
   });
 });
 
 describe("gateway privacy + tier resolution", () => {
-  it("omits ZDR for grok while keeping no-training", () => {
+  it("omits ZDR for xAI while keeping no-training", () => {
     assert.deepEqual(gatewayPrivacyOptions("xai/grok-4.5"), {
+      disallowPromptTraining: true,
+    });
+    assert.deepEqual(gatewayPrivacyOptions("xai/grok-5"), {
       disallowPromptTraining: true,
     });
     assert.deepEqual(gatewayPrivacyOptions("openai/gpt-5.6-luna"), {
@@ -40,11 +45,17 @@ describe("gateway privacy + tier resolution", () => {
     });
   });
 
-  it("resolves flagged models within pool and falls back to defaults", () => {
+  it("accepts any Gateway provider/model from Flags, not just the catalog pool", () => {
     assert.equal(resolveAgentTier("premium"), "premium");
     assert.equal(resolveAgentTier("nope"), "chat");
+    assert.equal(isGatewayModelId("openai/gpt-5.6-luna"), true);
+    assert.equal(isGatewayModelId("xai/grok-5"), true);
+    assert.equal(isGatewayModelId("not-in-pool"), false);
     assert.equal(resolveTierModel("chat", "openai/gpt-5.6-luna"), "openai/gpt-5.6-luna");
+    assert.equal(resolveTierModel("premium", "openai/gpt-5.6-sol"), "openai/gpt-5.6-sol");
+    assert.equal(resolveTierModel("premium", "xai/grok-5"), "xai/grok-5");
     assert.equal(resolveTierModel("chat", "not-in-pool"), MODEL_DEFAULTS.chat);
+    assert.equal(resolveTierModel("chat", "  "), MODEL_DEFAULTS.chat);
   });
 
   it("builds agent and nano selections with gateway options", () => {

@@ -7,10 +7,6 @@ import {
   MODEL_DEFAULTS,
   MODEL_POOLS,
   type AgentTier,
-  type ChatModelId,
-  type ExtremeModelId,
-  type NanoModelId,
-  type PremiumModelId,
 } from "~~/shared/models";
 
 type Entities = {
@@ -43,37 +39,40 @@ export const agentTier = flag<AgentTier, Entities>({
   options: AGENT_TIERS.map((value) => ({ value, label: value })),
 });
 
-export const agentNanoModel = flag<NanoModelId, Entities>({
+export const agentNanoModel = flag<string, Entities>({
   key: "agent-nano-model",
-  description: "Model for nano-tier work (thread titles, light classification).",
+  description:
+    "AI Gateway model id for nano-tier work (thread titles). Any `provider/model` string; catalog options are shortcuts.",
   adapter: vercelAdapter(),
   identify,
   defaultValue: MODEL_DEFAULTS.nano,
   options: modelOptions(MODEL_POOLS.nano),
 });
 
-export const agentChatModel = flag<ChatModelId, Entities>({
+export const agentChatModel = flag<string, Entities>({
   key: "agent-chat-model",
-  description: "Model for the chat tier (default agent sessions).",
+  description:
+    "AI Gateway model id for the chat tier (Zest). Any `provider/model` string; catalog options are shortcuts.",
   adapter: vercelAdapter(),
   identify,
   defaultValue: MODEL_DEFAULTS.chat,
   options: modelOptions(MODEL_POOLS.chat),
 });
 
-export const agentPremiumModel = flag<PremiumModelId, Entities>({
+export const agentPremiumModel = flag<string, Entities>({
   key: "agent-premium-model",
   description:
-    "Model for the premium tier. Grok 4.5 keeps no-training but disables ZDR automatically.",
+    "AI Gateway model id for the premium tier (Juice). Any `provider/model` string; catalog options are shortcuts. xAI models omit ZDR automatically.",
   adapter: vercelAdapter(),
   identify,
   defaultValue: MODEL_DEFAULTS.premium,
   options: modelOptions(MODEL_POOLS.premium),
 });
 
-export const agentExtremeModel = flag<ExtremeModelId, Entities>({
+export const agentExtremeModel = flag<string, Entities>({
   key: "agent-extreme-model",
-  description: "Model for the extreme tier (frontier / high-stakes work).",
+  description:
+    "AI Gateway model id for the extreme tier. Any `provider/model` string; catalog options are shortcuts.",
   adapter: vercelAdapter(),
   identify,
   defaultValue: MODEL_DEFAULTS.extreme,

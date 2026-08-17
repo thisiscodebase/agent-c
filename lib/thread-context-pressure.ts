@@ -3,6 +3,7 @@ import {
   FALLBACK_CONTEXT_WINDOW_TOKENS,
   normalizeModelId,
 } from "#shared/models";
+import { readEventModelId } from "#shared/usage-model";
 
 /** Fallback window when the thread never reported which model ran. */
 export const DEFAULT_CHAT_CONTEXT_WINDOW_TOKENS = FALLBACK_CONTEXT_WINDOW_TOKENS;
@@ -15,7 +16,7 @@ export type ThreadContextPressure = {
   ratio: number | null;
   showTip: boolean;
   compacted: boolean;
-  /** Model id reported by `session.started`, normalized (no `dynamic:` prefix). */
+  /** Model id reported by the stream, normalized (no `dynamic:` prefix). */
   modelId: string | null;
   /** Real window for that model, not a hardcoded guess. */
   contextWindowTokens: number;
@@ -55,25 +56,25 @@ function readInputTokens(data: Record<string, unknown> | undefined): number | nu
   return null;
 }
 
-/** Model that actually ran, from the `session.started` runtime block. */
+/** Model that actually ran — last `step.started` / compaction, else `session.started`. */
 export function resolveThreadModelId(
   events: readonly unknown[] | undefined,
 ): string | null {
   if (!Array.isArray(events)) {
     return null;
   }
+  let modelId: string | null = null;
   for (const raw of events) {
     const event = asRecord(raw);
-    if (event?.type !== "session.started") {
+    if (!event || typeof event.type !== "string") {
       continue;
     }
-    const runtime = asRecord(asRecord(event.data)?.runtime);
-    const modelId = runtime?.modelId;
-    if (typeof modelId === "string" && modelId.length > 0) {
-      return modelId;
+    const fromEvent = readEventModelId(event.type, asRecord(event.data));
+    if (fromEvent) {
+      modelId = fromEvent;
     }
   }
-  return null;
+  return modelId;
 }
 
 /**

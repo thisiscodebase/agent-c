@@ -4,6 +4,7 @@ import {
   toolCategory,
   toolCategoryForCall,
 } from "#shared/tool-category";
+import { creditedModelIdsFromEvents, readEventModelId } from "#shared/usage-model";
 import type {
   AdminToolCategoryDetail,
   PublicUserUsageStats,
@@ -183,9 +184,8 @@ function toolNameLabel(toolName: string): string {
 }
 
 function modelLabel(modelId: string): string {
-  const cleaned = modelId.replace(/^dynamic:/, "");
-  const slash = cleaned.lastIndexOf("/");
-  const raw = slash >= 0 ? cleaned.slice(slash + 1) : cleaned;
+  const slash = modelId.lastIndexOf("/");
+  const raw = slash >= 0 ? modelId.slice(slash + 1) : modelId;
   return raw
     .split("-")
     .map((part) => {
@@ -368,7 +368,6 @@ export function aggregateUsageStats(
     let threadStart: number | null = null;
     let threadEnd: number | null = null;
     let currentModelId: string | null = null;
-    const modelsInThread = new Set<string>();
     let sawActivity = false;
 
     let threadTokens = 0;
@@ -389,15 +388,9 @@ export function aggregateUsageStats(
         threadEnd = threadEnd === null ? at : Math.max(threadEnd, at);
       }
 
-      if (event.type === "session.started") {
-        const runtime = event.data?.runtime;
-        if (runtime && typeof runtime === "object") {
-          const modelId = (runtime as { modelId?: unknown }).modelId;
-          if (typeof modelId === "string" && modelId.length > 0) {
-            currentModelId = modelId;
-            modelsInThread.add(modelId);
-          }
-        }
+      const eventModelId = readEventModelId(event.type, event.data);
+      if (eventModelId) {
+        currentModelId = eventModelId;
       }
 
       if (event.type === "turn.started") {
@@ -501,7 +494,7 @@ export function aggregateUsageStats(
       markAgentDay(day, thread.id);
     }
 
-    for (const modelId of modelsInThread) {
+    for (const modelId of creditedModelIdsFromEvents(events)) {
       modelAgents.set(modelId, (modelAgents.get(modelId) ?? 0) + 1);
       if (!modelTokens.has(modelId)) {
         modelTokens.set(modelId, 0);

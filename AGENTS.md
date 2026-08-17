@@ -109,7 +109,8 @@ and [`shared/models.ts`](shared/models.ts)):
 | `agent-extreme-model` | `openai/gpt-5.6-sol` |
 
 Eve resolves the agent model on `session.started` via
-`/api/internal/model-routing`. Requests set Gateway
+`/api/internal/model-routing`. Model flags accept any AI Gateway
+`provider/model` string (no code deploy). Requests set Gateway
 `disallowPromptTraining: true` and `zeroDataRetention: true`, except
-`xai/grok-4.5` which omits ZDR (no ZDR provider) while keeping no-training.
+`xai/…` models which omit ZDR (no ZDR provider) while keeping no-training.
 Agent tiers use `reasoning: "high"`.

@@ -6,6 +6,7 @@ export type AgentTier = Exclude<ModelTier, "nano">;
 
 export const AGENT_TIERS = ["chat", "premium", "extreme"] as const satisfies readonly AgentTier[];
 
+/** Catalog shortcuts for Flags Explorer. Runtime accepts any Gateway `provider/model`. */
 export const MODEL_POOLS = {
   nano: ["openai/gpt-5.4-nano"] as const,
   chat: ["openai/gpt-5.6-luna"] as const,
@@ -13,6 +14,7 @@ export const MODEL_POOLS = {
     "anthropic/claude-sonnet-5",
     "xai/grok-4.5",
     "openai/gpt-5.6-terra",
+    "openai/gpt-5.6-sol",
   ] as const,
   extreme: ["openai/gpt-5.6-sol"] as const,
 } as const;
@@ -29,7 +31,10 @@ export const MODEL_DEFAULTS = {
   extreme: "openai/gpt-5.6-sol",
 } as const satisfies Record<ModelTier, string>;
 
-/** Models that have no ZDR-compliant Gateway provider today. */
+/** Providers that have no ZDR-compliant Gateway route today. */
+export const NON_ZDR_PROVIDERS = new Set<string>(["xai"]);
+
+/** @deprecated Use NON_ZDR_PROVIDERS — kept for transitional imports. */
 export const NON_ZDR_MODELS = new Set<string>(["xai/grok-4.5"]);
 
 /**
@@ -61,7 +66,7 @@ export const MODEL_COST_TIER_TOKENS: Record<string, number> = {
 };
 
 /** Conservative fallback when the running model is unknown or unlisted. */
-export const FALLBACK_CONTEXT_WINDOW_TOKENS = 272_000;
+export const FALLBACK_CONTEXT_WINDOW_TOKENS = 200_000;
 
 /** Eve reports a dynamically resolved model as `dynamic:<fallback id>`. */
 export function normalizeModelId(modelId: string | null | undefined): string | null {
@@ -113,13 +118,25 @@ export function isAgentTier(value: unknown): value is AgentTier {
   return value === "chat" || value === "premium" || value === "extreme";
 }
 
+/**
+ * AI Gateway id (`provider/model`). Flags may set any live Gateway string;
+ * the in-repo pools are catalog shortcuts, not an allowlist.
+ */
+const GATEWAY_MODEL_ID_RE =
+  /^[a-z0-9][a-z0-9.-]*\/[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+
+export function isGatewayModelId(value: unknown): value is string {
+  return typeof value === "string" && GATEWAY_MODEL_ID_RE.test(value.trim());
+}
+
 export function isInPool(tier: ModelTier, modelId: string): boolean {
   return (MODEL_POOLS[tier] as readonly string[]).includes(modelId);
 }
 
 export function resolveTierModel(tier: ModelTier, flaggedModel?: string | null): string {
-  if (flaggedModel && isInPool(tier, flaggedModel)) {
-    return flaggedModel;
+  const id = typeof flaggedModel === "string" ? flaggedModel.trim() : "";
+  if (isGatewayModelId(id)) {
+    return id;
   }
   return MODEL_DEFAULTS[tier];
 }
@@ -132,7 +149,13 @@ export function resolveAgentTier(flaggedTier?: string | null): AgentTier {
 }
 
 export function modelSupportsZdr(modelId: string): boolean {
-  return !NON_ZDR_MODELS.has(modelId);
+  const id = (normalizeModelId(modelId) ?? modelId).trim();
+  const slash = id.indexOf("/");
+  const provider = (slash > 0 ? id.slice(0, slash) : id).toLowerCase();
+  if (NON_ZDR_PROVIDERS.has(provider)) {
+    return false;
+  }
+  return !NON_ZDR_MODELS.has(id);
 }
 
 /** Per-request AI Gateway privacy filters (free; ZDR omitted for non-ZDR models). */

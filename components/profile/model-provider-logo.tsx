@@ -1,3 +1,4 @@
+import { modelProviderFromId } from "#shared/usage-model";
 import { cn } from "~/lib/utils";
 
 type ModelLogo = {
@@ -19,13 +20,7 @@ const PROVIDER_LOGOS: Record<string, ModelLogo> = {
   cursor: { src: "/icons/cursor.svg", alt: "Cursor", invertInLightMode: true },
 };
 
-export function modelProviderFromId(modelId: string): string {
-  const slash = modelId.indexOf("/");
-  if (slash > 0) {
-    return modelId.slice(0, slash).toLowerCase();
-  }
-  return modelId.toLowerCase();
-}
+export { modelProviderFromId };
 
 export function logoForModelId(modelId: string): ModelLogo | null {
   const provider = modelProviderFromId(modelId);

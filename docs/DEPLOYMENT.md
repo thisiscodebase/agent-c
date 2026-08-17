@@ -223,15 +223,21 @@ Explorer). Keys and defaults:
 | Flag key | Default | Allowed values |
 | -------- | ------- | -------------- |
 | `agent-tier` | `chat` | `chat`, `premium`, `extreme` |
-| `agent-nano-model` | `openai/gpt-5.4-nano` | nano pool |
-| `agent-chat-model` | `openai/gpt-5.6-luna` | chat pool |
-| `agent-premium-model` | `anthropic/claude-sonnet-5` | `anthropic/claude-sonnet-5`, `xai/grok-4.5`, `openai/gpt-5.6-terra` |
-| `agent-extreme-model` | `openai/gpt-5.6-sol` | extreme pool |
+| `agent-nano-model` | `openai/gpt-5.4-nano` | any AI Gateway `provider/model` |
+| `agent-chat-model` | `openai/gpt-5.6-luna` | any AI Gateway `provider/model` |
+| `agent-premium-model` | `anthropic/claude-sonnet-5` | any AI Gateway `provider/model` |
+| `agent-extreme-model` | `openai/gpt-5.6-sol` | any AI Gateway `provider/model` |
+
+Catalog entries in [`shared/models.ts`](../shared/models.ts) are **shortcuts**
+for Flags Explorer, not an allowlist. Paste a new Gateway id (for example
+`xai/grok-5`) as the flag value — no code deploy required. Invalid strings
+fall back to the tier default. Unknown models use a 200k context budget until
+listed in the window maps.
 
 Discovery endpoint: `GET https://<host>/.well-known/vercel/flags`.
 
-Invalid flag values fall back to catalog defaults. Eve resolves the agent model
-once per session via `GET /api/internal/model-routing`.
+Eve resolves the agent model on `session.started` and `turn.started` via
+`GET /api/internal/model-routing`.
 
 #### Platform MCP (eve + Platform app)
 
@@ -341,9 +347,10 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
    - Per-tier model flags when changing within a pool
 3. Eve resolves the model on `session.started` and again on each
    `turn.started` (so Zest/Juice changes apply to the next message).
-4. To use Grok on premium: set `agent-premium-model` to `xai/grok-4.5`.
-   Users on Juice (or ops `agent-tier=premium`) pick it up. ZDR is
-   automatically omitted for that model.
+4. To use Grok on premium: set `agent-premium-model` to `xai/grok-4.5` (or
+   a newer `xai/…` id). Users on Juice pick it up. ZDR is omitted for all
+   xAI models.
+5. To use Sol on Juice: set `agent-premium-model` to `openai/gpt-5.6-sol`.
 
 ### Privacy
 

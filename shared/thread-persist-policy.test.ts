@@ -21,6 +21,7 @@ describe("shouldPersistEvent", () => {
   });
 
   it("only persists the Slack stats allowlist", () => {
+    assert.equal(shouldPersistEvent("step.started", "slack"), true);
     assert.equal(shouldPersistEvent("step.completed", "slack"), true);
     assert.equal(shouldPersistEvent("message.completed", "slack"), false);
     assert.equal(shouldPersistEvent("action.result", "slack"), false);

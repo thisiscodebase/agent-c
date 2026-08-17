@@ -21,6 +21,7 @@ export const SLACK_PERSISTED_EVENT_TYPES = new Set<string>([
   "turn.started",
   "message.received",
   "actions.requested",
+  "step.started",
   "step.completed",
 ]);
 

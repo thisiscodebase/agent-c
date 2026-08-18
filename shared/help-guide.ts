@@ -29,6 +29,8 @@ export const HELP_GUIDE_MARKDOWN =
 | **HubSpot** | CRM companies, deals, contacts |
 | **Notion** | Search/read Notion pages and databases *you* can access |
 | **Tally** | Forms and submissions |
+| **Asana** | Tasks, projects, and portfolios *you* can access |
+| **Retool** | List/inspect Retool apps and resources; query connected data |
 | **Slack search** | Search Slack with your permissions |
 | **CodeBase Platform** | Read-only Platform context (shared service access) |
 
@@ -71,7 +73,7 @@ Your chat threads aren’t a shared company feed. Teammates don’t browse each 
 
 **Can Agent C do things I can’t?**
 
-For Drive, Notion, HubSpot, and Slack search: no — those connections are yours. If you can’t open the file or see the record, neither can it.
+For Drive, Notion, HubSpot, Slack search, Tally, Asana, and Retool: no — those connections are yours. If you can’t open the file or see the record, neither can it.
 
 **CodeBase Platform** is different: it uses shared teamwide read-onlyaccess.
 
@@ -101,13 +103,13 @@ We also request **zero data retention (ZDR)** on providers that support it via t
 
 1. Your browser → Agent C (our internal app / infra)
 2. Agent C → model provider via Vercel AI Gateway (for the LLM call)
-3. Agent C → connected systems (Drive, Notion, HubSpot, Slack, etc.) only when a tool runs, using that connector’s credentials
+3. Agent C → connected systems (Drive, Notion, HubSpot, Slack, Tally, Asana, Retool, etc.) only when a tool runs, using that connector’s credentials
 
 Chats and Docs are stored in our database so the product works. Model providers get the prompt/context needed to answer that turn, under the privacy flags above.
 
 **How are connectors secured?**
 
-OAuth (or equivalent) through Vercel Connect where applicable. Per-user connectors (Drive, Notion, HubSpot, Slack search, Tally) keep the source system’s ACLs. Platform uses a shared service token — an explicit trust tradeoff where the agent is part of the access boundary. Users can revoke their own OAuth links anytime.
+OAuth (or equivalent) through Vercel Connect where applicable. Per-user connectors (Drive, Notion, HubSpot, Slack search, Tally, Asana, Retool) keep the source system’s ACLs. Platform uses a shared service token — an explicit trust tradeoff where the agent is part of the access boundary. Users can revoke their own OAuth links anytime.
 
 Message Dylan if you have any questions.
 `;

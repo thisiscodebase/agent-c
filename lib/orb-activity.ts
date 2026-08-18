@@ -21,6 +21,7 @@ const SEARCH_CATEGORIES = new Set([
   "drive",
   "tally",
   "asana",
+  "retool",
   "platform",
 ]);
 

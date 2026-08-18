@@ -390,6 +390,18 @@ export function getToolDisplayInfo(
     };
   }
 
+  if (name.startsWith("retool__") || name.includes("retool")) {
+    const query = getSearchQuery(input);
+    return {
+      category: "retool",
+      integrationName: "Retool",
+      showCategory: true,
+      runningLabel: query ? `Querying Retool for “${query}”` : "Querying Retool",
+      completedLabel: query ? `Queried Retool for “${query}”` : "Queried Retool",
+      summaryLabel: "Queried Retool",
+    };
+  }
+
   if (name.startsWith("platform__") || name.includes("platform")) {
     const query = getSearchQuery(input);
     return {

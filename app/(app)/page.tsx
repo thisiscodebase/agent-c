@@ -77,6 +77,16 @@ const STARTER_POOL: Starter[] = [
     text: "Summarize status for our top Asana delivery project",
   },
   {
+    id: "retool-apps",
+    tool: "retool",
+    text: "List our Retool apps and flag anything recently updated",
+  },
+  {
+    id: "retool-resources",
+    tool: "retool",
+    text: "What data resources are connected in Retool?",
+  },
+  {
     id: "platform-sessions",
     tool: "platform",
     text: "Which mentorship sessions are booked for Techscaler this week?",

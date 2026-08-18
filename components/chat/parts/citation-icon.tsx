@@ -16,6 +16,7 @@ const BRAND_ICONS: Partial<
   drive: { src: "/icons/drive.svg", alt: "Google Drive" },
   tally: { src: "/icons/tally.svg", alt: "Tally" },
   asana: { src: "/icons/asana.svg", alt: "Asana" },
+  retool: { src: "/icons/retool.svg", alt: "Retool" },
   platform: { src: "/icons/codebase.jpeg", alt: "CodeBase Platform" },
 };
 

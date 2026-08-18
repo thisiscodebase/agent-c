@@ -34,6 +34,10 @@ describe("toolCategory", () => {
       category: "asana",
       label: "Asana",
     });
+    assert.deepEqual(toolCategory("retool__retool_list_apps"), {
+      category: "retool",
+      label: "Retool",
+    });
     assert.deepEqual(toolCategory("platform__query"), {
       category: "platform",
       label: "CodeBase Platform",

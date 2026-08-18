@@ -174,6 +174,13 @@ const iconConfigs: Record<string, IconConfig> = {
     bgClass: "bg-[#F06A6A]/15",
     alt: "Asana",
   },
+  retool: {
+    kind: "image",
+    src: "/icons/retool.svg",
+    bgClass: "bg-neutral-500/15",
+    alt: "Retool",
+    imgClass: "dark:invert",
+  },
   platform: {
     kind: "image",
     src: "/icons/codebase.jpeg",
@@ -197,6 +204,8 @@ export function getBrandAccentClass(category: string): string {
       return "bg-[#D915C4]";
     case "asana":
       return "bg-[#F06A6A]";
+    case "retool":
+      return "bg-neutral-800 dark:bg-neutral-200";
     case "platform":
       return "bg-emerald-500";
     case "todos":

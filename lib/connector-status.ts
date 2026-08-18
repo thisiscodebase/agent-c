@@ -45,6 +45,8 @@ export function testResultsHeading(connectorId: string) {
       return "Connection";
     case "asana":
       return "Connection";
+    case "retool":
+      return "Connection";
     case "platform":
       return "Connection";
     case "slack":

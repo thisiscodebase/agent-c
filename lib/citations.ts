@@ -9,6 +9,7 @@ export type CitationSource =
   | "drive"
   | "tally"
   | "asana"
+  | "retool"
   | "platform"
   | "unknown";
 
@@ -81,6 +82,13 @@ const CONNECTOR_HOST_PATTERNS: Array<{
       h === "app.asana.com"
       || h === "asana.com"
       || h.endsWith(".asana.com"),
+  },
+  {
+    source: "retool",
+    test: (h) =>
+      h === "retool.com"
+      || h.endsWith(".retool.com")
+      || h === "thisiscodebase.retool.com",
   },
   {
     source: "platform",
@@ -157,6 +165,9 @@ export function classifyCitationSource(
   if (name.startsWith("asana__") || name.includes("asana")) {
     return "asana";
   }
+  if (name.startsWith("retool__") || name.includes("retool")) {
+    return "retool";
+  }
   if (name.startsWith("platform__") || name.includes("platform")) {
     return "platform";
   }
@@ -195,6 +206,8 @@ export function getCitationLabel(citation: Citation): string {
       return "Tally";
     case "asana":
       return "Asana";
+    case "retool":
+      return "Retool";
     case "platform":
       return "Platform";
     case "web":
@@ -216,6 +229,7 @@ export function getCitationTintClass(source: CitationSource): string {
     case "drive":
     case "tally":
     case "asana":
+    case "retool":
     case "platform":
       return getBrandTintClass(source);
     case "web":
@@ -238,6 +252,7 @@ export function getCitationTextClass(source: CitationSource): string {
     case "drive":
     case "tally":
     case "asana":
+    case "retool":
     case "platform":
       return getBrandTextClass(source);
     case "web":

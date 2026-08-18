@@ -143,7 +143,7 @@ without the storage layer needing to know which one gets used.
 
 Two different retrieval problems, handled differently:
 
-- **External sources (Drive, HubSpot, Notion, Tally, Asana, Slack)** — queried live via MCP
+- **External sources (Drive, HubSpot, Notion, Tally, Asana, Retool, Slack)** — queried live via MCP
   connector tool calls, or thin custom tools (Slack search, temporary Drive
   REST) against each service's own search API, not pre-indexed by us. Building
   and maintaining a federated indexing pipeline per external source is a large,
@@ -175,6 +175,7 @@ for provisioning, pricing, and DIY comparison.
 | Notion          | Official Notion MCP (`https://mcp.notion.com/mcp`) via Vercel Connect                         | **Per-user**        | Hosted Notion MCP is OAuth-only (no bearer/integration token on this endpoint). See `agent/connections/notion.ts`.                                                                     |
 | Tally           | Official Tally MCP (`https://api.tally.so/mcp`) via Vercel Connect                            | **Per-user**        | OAuth (recommended) or API key. Forms + submissions. See `agent/connections/tally.ts`.                                                                                                 |
 | Asana           | Official Asana MCP V2 (`https://mcp.asana.com/v2/mcp`) via Vercel Connect                     | **Per-user**        | Pre-registered MCP OAuth app required (no DCR). Read/search tools; writes blocked for v1. See `agent/connections/asana.ts`.                                                           |
+| Retool          | Official Retool MCP (`https://thisiscodebase.retool.com/mcp`) via Vercel Connect              | **Per-user**        | Org-specific Streamable HTTP + OAuth (`mcp:read` / `mcp:write`). Resource queries allowed; mutations blocked until confirmed. See `agent/connections/retool.ts`.                     |
 
 ### Auth model for connectors
 

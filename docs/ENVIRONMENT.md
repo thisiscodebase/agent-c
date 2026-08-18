@@ -91,6 +91,10 @@ vercel connect attach <tally-uid> --yes
 vercel connect create https://mcp.asana.com/v2/mcp --name agent-c
 vercel connect attach <asana-uid> --yes
 
+# Retool hosted MCP (org-specific Streamable HTTP + OAuth)
+vercel connect create https://thisiscodebase.retool.com/mcp --name agent-c
+vercel connect attach <retool-uid> --yes
+
 # Slack — reuse the existing channel app; expand scopes for Real-time Search
 # (search:read.public, search:read.private, search:read.files, search:read.users)
 # Channel credentials already use slack/agent-c in agent/channels/slack.ts
@@ -101,7 +105,7 @@ vercel env pull
 Update UIDs in `shared/connect.ts` if `vercel connect list` returns different
 values than the provisioned ones (`drivemcp.googleapis.com/agent-c`,
 `mcp.hubspot.com/agent-c`, `mcp.notion.com/agent-c`, `api.tally.so/agent-c`,
-`mcp.asana.com/bole-lantern`, `slack/agent-c`).
+`mcp.asana.com/bole-lantern`, `thisiscodebase.retool.com/agent-c`, `slack/agent-c`).
 
 ### CodeBase Platform MCP (`eve` + Platform)
 
@@ -186,6 +190,15 @@ Hosted Asana MCP V2 at `https://mcp.asana.com/v2/mcp` uses OAuth only and
 MCP tokens only work with the Asana MCP server (not the standard Asana REST
 API). Access is per authorizing user. See
 [Integrating with Asana's MCP Server](https://developers.asana.com/docs/integrating-with-asanas-mcp-server).
+
+### Retool
+
+Hosted Retool MCP at `https://thisiscodebase.retool.com/mcp` uses Streamable
+HTTP + OAuth 2.0. Connect brokers per-user consent. Request `mcp:read` and
+`mcp:write` (`mcp:write` is required for `retool_execute_resource_ts`). Do
+not request `mcp:admin` by default. Mutation / app-building tools are blocked
+in `agent/connections/retool.ts` until the integration is confirmed. See
+[Retool MCP](https://docs.retool.com/org-users/guides/mcp).
 
 ### Slack search
 

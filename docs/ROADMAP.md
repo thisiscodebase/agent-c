@@ -40,6 +40,7 @@ that.
 - Tally: official Tally MCP (`api.tally.so/mcp`), per-user OAuth.
 - Asana: official Asana MCP V2 (`mcp.asana.com/v2/mcp`), per-user OAuth
   (pre-registered MCP app; no DCR).
+- Retool: official Retool MCP (`thisiscodebase.retool.com/mcp`), per-user OAuth.
 - Slack: same Connect app as the channel (`slack/agent-c`), expanded Real-time Search
   scopes; reuse upstream's channel wiring.
 

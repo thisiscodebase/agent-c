@@ -9,6 +9,9 @@ import {
   HUBSPOT_CONNECTOR,
   NOTION_CONNECTOR,
   PLATFORM_CONNECTOR,
+  RETOOL_CONNECTOR,
+  RETOOL_MCP_URL,
+  RETOOL_OAUTH_SCOPES,
   SLACK_CONNECTOR,
   TALLY_CONNECTOR,
 } from "./connect.ts";
@@ -26,11 +29,15 @@ describe("connect UIDs + issuer", () => {
     assert.equal(NOTION_CONNECTOR, "mcp.notion.com/agent-c");
     assert.equal(TALLY_CONNECTOR, "api.tally.so/agent-c");
     assert.equal(ASANA_CONNECTOR, "mcp.asana.com/bole-lantern");
+    assert.equal(RETOOL_CONNECTOR, "thisiscodebase.retool.com/agent-c");
+    assert.equal(RETOOL_MCP_URL, "https://thisiscodebase.retool.com/mcp");
     assert.equal(SLACK_CONNECTOR, "slack/agent-c");
     assert.equal(PLATFORM_CONNECTOR, "platform-mcp/env");
     assert.ok(
       DRIVE_OAUTH_SCOPES.includes("https://www.googleapis.com/auth/drive.readonly"),
     );
+    assert.ok(RETOOL_OAUTH_SCOPES.includes("mcp:read"));
+    assert.ok(RETOOL_OAUTH_SCOPES.includes("mcp:write"));
   });
 });
 

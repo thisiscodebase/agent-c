@@ -74,6 +74,9 @@ function connectCreateCommand(def: ConnectorDef) {
   if (def.id === "asana") {
     return `vercel connect create https://mcp.asana.com/v2/mcp --name agent-c`;
   }
+  if (def.id === "retool") {
+    return `vercel connect create https://thisiscodebase.retool.com/mcp --name agent-c`;
+  }
   if (def.id === "slack") {
     return `vercel connect create slack --name v`;
   }

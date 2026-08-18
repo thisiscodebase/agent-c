@@ -30,6 +30,7 @@ Produce a scannable cross-source activity briefing for CodeBase — live connect
    | Platform | Focus includes programmes, mentorship, or bookings | `platform__search_sessions` (and related get_* tools) scoped to today / focus companies. Read-only. |
    | Notion | Only if focus names specific docs/notes, or work is docs-heavy | `notion__notion-search` once; fetch at most one page if a hit is clearly in-window. |
    | Tally | Only if the user asks about forms/surveys in the briefing | Skip by default. |
+   | Retool | Only if the user asks about Retool apps or resources | Skip by default. |
 
 3. **Synthesise** after two sources return useful signal. Stop widening. State gaps plainly ("HubSpot not searched", "no Slack hits for X").
 

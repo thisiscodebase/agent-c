@@ -58,6 +58,9 @@ MCP tools via `connection_search`. Drive uses custom tools (Slack-style) for now
   OAuth (API key also supported by Tally; we use OAuth).
 - `asana.ts` — Asana hosted MCP V2 (`https://mcp.asana.com/v2/mcp`), Connect
   per-user OAuth (pre-registered MCP app; no DCR). Write tools blocked for v1.
+- `retool.ts` — Retool hosted MCP (`https://thisiscodebase.retool.com/mcp`),
+  Connect per-user OAuth (`mcp:read` / `mcp:write`). Resource queries allowed;
+  mutation tools blocked until confirmed.
 - `platform.ts` — CodeBase Platform MCP (env bearer). **Read-only** tool
   allow-list for internal release; write tools omitted until re-enabled.
 - Slack channel retained from upstream (`agent/channels/slack.ts`); search uses

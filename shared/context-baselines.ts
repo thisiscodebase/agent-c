@@ -33,6 +33,7 @@ export const CONTEXT_MCP_CONNECTORS = [
   "notion",
   "tally",
   "asana",
+  "retool",
   "platform",
 ] as const;
 

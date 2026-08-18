@@ -7,6 +7,8 @@ import {
   HUBSPOT_OAUTH_SCOPES,
   NOTION_CONNECTOR,
   PLATFORM_CONNECTOR,
+  RETOOL_CONNECTOR,
+  RETOOL_OAUTH_SCOPES,
   SLACK_CONNECTOR,
   TALLY_CONNECTOR,
 } from "#shared/connect";
@@ -14,6 +16,7 @@ import { createError } from "~~/server/utils/http-error";
 import { testAsanaMcpConnection } from "~~/server/utils/asana-mcp-test";
 import { testNotionMcpConnection } from "~~/server/utils/notion-mcp-test";
 import { testPlatformMcpConnection } from "~~/server/utils/platform-mcp-test";
+import { testRetoolMcpConnection } from "~~/server/utils/retool-mcp-test";
 
 export const connectors: ConnectorDef[] = [
   {
@@ -149,6 +152,21 @@ export const connectors: ConnectorDef[] = [
       // Do not call app.asana.com REST — those tokens are MCP-only.
       label: "Check connection",
       run: async (token) => testAsanaMcpConnection(token),
+    },
+  },
+  {
+    id: "retool",
+    name: "Retool",
+    description:
+      "List and inspect Retool apps and resources; query connected resources.",
+    connector: RETOOL_CONNECTOR,
+    connectionName: "retool",
+    icon: "i-simple-icons-retool",
+    scopes: [...RETOOL_OAUTH_SCOPES],
+    test: {
+      // Connect mints MCP-audienced tokens; chat exercises MCP via Eve.
+      label: "Check connection",
+      run: async (token) => testRetoolMcpConnection(token),
     },
   },
   {

@@ -30,7 +30,7 @@ User question
 
 | Layer          | What it is                                         | Examples in this repo                                                          |
 | -------------- | -------------------------------------------------- | ------------------------------------------------------------------------------ |
-| **MCP server** | Remote tool host — schemas, search/read/write APIs | `drivemcp.googleapis.com`, `mcp.hubspot.com`, `mcp.notion.com`, `api.tally.so`, `mcp.asana.com` |
+| **MCP server** | Remote tool host — schemas, search/read/write APIs | `drivemcp.googleapis.com`, `mcp.hubspot.com`, `mcp.notion.com`, `api.tally.so`, `mcp.asana.com`, `thisiscodebase.retool.com` |
 | **Connect**    | OAuth + token vault + refresh + per-user grants    | `connect(DRIVE_CONNECTOR)`, Settings → Integrations, `connectSlackCredentials` |
 
 MCP URLs tell the agent **where** to call. Connect tells the agent **how to
@@ -38,7 +38,7 @@ authenticate** safely for each user (or once for the whole app).
 
 Without something like Connect (or a DIY equivalent), you still need:
 
-- Browser OAuth consent per user (Drive, Notion, Tally, Asana, Slack search)
+- Browser OAuth consent per user (Drive, Notion, Tally, Asana, Retool, Slack search)
 - Encrypted storage of access + refresh tokens
 - Refresh before expiry (HubSpot refresh tokens are single-use)
 - Revocation and “connected?” status for the Integrations UI
@@ -50,7 +50,7 @@ Without something like Connect (or a DIY equivalent), you still need:
 
 | Capability               | Where it lives                                                                  |
 | ------------------------ | ------------------------------------------------------------------------------- |
-| Per-user OAuth           | Drive, Notion, Tally, Asana, Slack search (`server/utils/connect.ts`, Integrations UI) |
+| Per-user OAuth           | Drive, Notion, Tally, Asana, Retool, Slack search (`server/utils/connect.ts`, Integrations UI) |
 | App-scoped shared token  | HubSpot default (`authMode: "app"` in `server/connectors.ts`)                   |
 | Eve connection auth      | `agent/connections/*.ts` — `auth: connect(...)`                                 |
 | Inline tool auth         | `agent/tools/search_slack.ts` — `ctx.getToken(connect(...))`                    |
@@ -100,6 +100,10 @@ vercel connect attach <tally-uid> --yes
 vercel connect create https://mcp.asana.com/v2/mcp --name agent-c
 vercel connect attach <asana-uid> --yes
 
+# Retool (org-specific MCP)
+vercel connect create https://thisiscodebase.retool.com/mcp --name agent-c
+vercel connect attach <retool-uid> --yes
+
 # Slack — reuse existing slack/agent-c; expand search scopes in dashboard
 vercel connect list
 vercel env pull
@@ -125,6 +129,7 @@ Official references:
 - [Google Drive MCP](https://developers.google.com/workspace/drive/api/guides/configure-mcp-server)
 - [HubSpot MCP](https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-the-remote-hubspot-mcp-server)
 - [Notion MCP](https://developers.notion.com/guides/mcp/get-started-with-mcp)
+- [Retool MCP](https://docs.retool.com/org-users/guides/mcp)
 
 ---
 
@@ -281,6 +286,7 @@ HubSpot single-use refresh tokens).
 | **Notion**        | `https://mcp.notion.com/mcp`             | Per-user OAuth only         | No — hosted MCP rejects bearer/integration tokens         |
 | **Tally**         | `https://api.tally.so/mcp`               | Per-user OAuth              | Possible: API key `tly-…` in env, but loses per-user ACLs |
 | **Asana**         | `https://mcp.asana.com/v2/mcp`           | Per-user OAuth only         | No — MCP tokens are MCP-only; no DCR (pre-register app)   |
+| **Retool**        | `https://thisiscodebase.retool.com/mcp`  | Per-user OAuth              | No — org-specific hosted MCP; OAuth only                  |
 | **Slack search**  | `assistant.search.context` API           | Per-user token on `slack/agent-c` | Possible but duplicates Slack app work                    |
 | **Slack channel** | Events API (not MCP)                     | Bot token + webhook verify  | Env vars + manual signature verification                  |
 
@@ -300,6 +306,7 @@ agent/connections/hubspot.ts MCP + connect({ principalType: "app" })
 agent/connections/notion.ts  MCP + connect(NOTION_CONNECTOR)
 agent/connections/tally.ts   MCP + connect(TALLY_CONNECTOR)
 agent/connections/asana.ts   MCP + connect(ASANA_CONNECTOR)
+agent/connections/retool.ts  MCP + connect(RETOOL_CONNECTOR)
 agent/tools/search_slack.ts  ctx.getToken(connect(SLACK_CONNECTOR))
 agent/channels/slack.ts      connectSlackCredentials("slack/agent-c")
 components/chat/parts/authorization-part.tsx   In-chat OAuth link

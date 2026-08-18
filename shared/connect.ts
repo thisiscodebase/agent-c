@@ -44,6 +44,14 @@ export const TALLY_CONNECTOR = "api.tally.so/agent-c";
  * `vercel connect list` if the provisioned UID differs.
  */
 export const ASANA_CONNECTOR = "mcp.asana.com/bole-lantern";
+/**
+ * Retool hosted MCP (`https://thisiscodebase.retool.com/mcp`). Org-specific
+ * Streamable HTTP + OAuth (`mcp:read` / `mcp:write`). Update after
+ * `vercel connect list` if the provisioned UID differs.
+ */
+export const RETOOL_MCP_URL = "https://thisiscodebase.retool.com/mcp";
+export const RETOOL_CONNECTOR = "thisiscodebase.retool.com/agent-c";
+export const RETOOL_OAUTH_SCOPES = ["mcp:read", "mcp:write"] as const;
 /** Same Connect app as the Slack channel (`agent/channels/slack.ts`). */
 export const SLACK_CONNECTOR = "slack/agent-c";
 

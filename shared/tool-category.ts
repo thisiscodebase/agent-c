@@ -8,6 +8,7 @@ const CONNECTION_CATEGORIES: Record<string, { category: string; label: string }>
   google: { category: "drive", label: "Google Drive" },
   tally: { category: "tally", label: "Tally" },
   asana: { category: "asana", label: "Asana" },
+  retool: { category: "retool", label: "Retool" },
   platform: { category: "platform", label: "CodeBase Platform" },
 };
 
@@ -19,6 +20,7 @@ export const TOOL_CATEGORY_KEYS = [
   "drive",
   "tally",
   "asana",
+  "retool",
   "platform",
   "development",
   "todos",
@@ -48,6 +50,8 @@ export function categoryLabel(category: string): string {
       return "Tally";
     case "asana":
       return "Asana";
+    case "retool":
+      return "Retool";
     case "platform":
       return "CodeBase Platform";
     case "development":
@@ -115,6 +119,9 @@ export function toolCategory(toolName: string): { category: string; label: strin
   }
   if (name.startsWith("asana__") || name.includes("asana")) {
     return { category: "asana", label: "Asana" };
+  }
+  if (name.startsWith("retool__") || name.includes("retool")) {
+    return { category: "retool", label: "Retool" };
   }
   if (name.startsWith("platform__") || name.includes("platform")) {
     return { category: "platform", label: "CodeBase Platform" };

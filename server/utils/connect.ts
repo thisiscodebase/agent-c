@@ -22,9 +22,20 @@ function envToken(def: ConnectorDef): string | null {
 }
 
 function envMcpUrl(def: ConnectorDef): string | null {
-  const key = def.mcpUrlEnv ?? "PLATFORM_MCP_URL";
-  const url = process.env[key]?.trim();
+  if (!def.mcpUrlEnv) return null;
+  const url = process.env[def.mcpUrlEnv]?.trim();
   return url && url.length > 0 ? url : null;
+}
+
+function envSetupHint(def: ConnectorDef): string {
+  const keys = [def.staticTokenEnv, def.mcpUrlEnv].filter(
+    (key): key is string => Boolean(key),
+  );
+  const listed = keys.length > 0 ? keys.join(" and ") : "the connector env vars";
+  return [
+    `Set ${listed} on the Eve runtime and web (Settings → Integrations).`,
+    "No OAuth connect step — restart after updating env.",
+  ].join("\n");
 }
 
 function userSubjects(userId: string): ConnectTokenSubject[] {
@@ -224,7 +235,8 @@ export async function probeStatus(def: ConnectorDef, userId: string): Promise<Co
   if (authMode(def) === "env") {
     const token = envToken(def);
     const url = envMcpUrl(def);
-    if (token && url) {
+    const urlOk = !def.mcpUrlEnv || Boolean(url);
+    if (token && urlOk) {
       return {
         state: "connected",
         label: "Configured via env",
@@ -232,11 +244,8 @@ export async function probeStatus(def: ConnectorDef, userId: string): Promise<Co
     }
     return {
       state: "setup_required",
-      message: "Platform MCP is not configured",
-      hint: [
-        `Set ${def.staticTokenEnv ?? "PLATFORM_MCP_TOKEN"} and ${def.mcpUrlEnv ?? "PLATFORM_MCP_URL"} on the Eve runtime (and matching token on CodeBase Platform).`,
-        "No OAuth connect step — restart after updating env.",
-      ].join("\n"),
+      message: `${def.name} is not configured`,
+      hint: envSetupHint(def),
     };
   }
 
@@ -278,7 +287,7 @@ export async function startConnectFlow(
 ) {
   if (authMode(def) === "env") {
     throw new Error(
-      "CodeBase Platform MCP is configured via env vars — there is no OAuth connect flow.",
+      `${def.name} is configured via env vars — there is no OAuth connect flow.`,
     );
   }
 
@@ -323,7 +332,7 @@ export async function revokeConnection(
 ): Promise<void> {
   if (authMode(def) === "env") {
     throw new Error(
-      "CodeBase Platform MCP is configured via env vars — unset PLATFORM_MCP_TOKEN to disable.",
+      `${def.name} is configured via env vars — unset ${def.staticTokenEnv ?? "the API key env var"} to disable.`,
     );
   }
 

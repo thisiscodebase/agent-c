@@ -160,9 +160,11 @@ Run Platform on another port (e.g. `3001`) and set on Eve:
 ```bash
 PLATFORM_MCP_URL=http://localhost:3001/api/mcp
 PLATFORM_MCP_TOKEN=<same as Platform>
+COMPANIES_HOUSE_API_KEY=<Companies House public data API key>
 ```
 
-See [Platform interop](PLATFORM_INTEROP.md) for Platform-side vars.
+See [Platform interop](PLATFORM_INTEROP.md) for Platform-side vars. Companies
+House needs the same key on Eve (tools) and web (Integrations test).
 
 ---
 
@@ -248,6 +250,12 @@ Eve resolves the agent model on `session.started` and `turn.started` via
 | `PLATFORM_WORKSPACE_ID` | Platform only |
 | `PLATFORM_MCP_PUBLIC_ORIGIN` | Platform only (permalinks) |
 | `PLATFORM_MCP_WRITES_ENABLED` | Platform only — leave off for internal release |
+
+#### Companies House (eve + web)
+
+| Variable | Where |
+| -------- | ----- |
+| `COMPANIES_HOUSE_API_KEY` | Agent C **eve** (tools) and **web** (Integrations test) |
 
 #### Connect
 
@@ -399,7 +407,7 @@ Code: [`flags.ts`](../flags.ts), [`shared/models.ts`](../shared/models.ts),
 - [ ] Migrations applied; login persists sessions
 - [ ] Flags: unset → chat + Luna; flip `agent-tier` to `premium` and confirm
       new sessions use Sonnet (or selected premium model)
-- [ ] Integrations: Drive, HubSpot, Notion, Tally, Asana, Retool, Slack, Platform smoke queries
+- [ ] Integrations: Drive, HubSpot, Notion, Tally, Asana, Retool, Slack, Platform, Companies House smoke queries
 - [ ] Slack mention works with linked account
 - [ ] No invented Platform permalinks (tools return absolute `url`s)
 

@@ -10,6 +10,7 @@ const CONNECTION_CATEGORIES: Record<string, { category: string; label: string }>
   asana: { category: "asana", label: "Asana" },
   retool: { category: "retool", label: "Retool" },
   platform: { category: "platform", label: "CodeBase Platform" },
+  companies_house: { category: "companies_house", label: "Companies House" },
 };
 
 /** Known popular-tool category keys (URL slug safe). */
@@ -22,6 +23,7 @@ export const TOOL_CATEGORY_KEYS = [
   "asana",
   "retool",
   "platform",
+  "companies_house",
   "development",
   "todos",
   "memory",
@@ -54,6 +56,8 @@ export function categoryLabel(category: string): string {
       return "Retool";
     case "platform":
       return "CodeBase Platform";
+    case "companies_house":
+      return "Companies House";
     case "development":
       return "Code";
     case "todos":
@@ -125,6 +129,15 @@ export function toolCategory(toolName: string): { category: string; label: strin
   }
   if (name.startsWith("platform__") || name.includes("platform")) {
     return { category: "platform", label: "CodeBase Platform" };
+  }
+  if (
+    name === "search_companies_house"
+    || name === "get_company_profile"
+    || name === "get_company_officers"
+    || name === "list_company_filings"
+    || name.includes("companies_house")
+  ) {
+    return { category: "companies_house", label: "Companies House" };
   }
   if (name === "connection_search" || name.includes("connection_search")) {
     return { category: "connections", label: "Connections" };

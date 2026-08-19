@@ -61,3 +61,10 @@ export const SLACK_CONNECTOR = "slack/agent-c";
  * Sentinel UID for the Integrations registry only.
  */
 export const PLATFORM_CONNECTOR = "platform-mcp/env";
+
+/**
+ * Companies House Public Data API — app-scoped API key (not Vercel Connect).
+ * Set `COMPANIES_HOUSE_API_KEY` on Eve (tools) and web (Integrations test).
+ * Sentinel UID for the Integrations registry only.
+ */
+export const COMPANIES_HOUSE_CONNECTOR = "companies-house/env";

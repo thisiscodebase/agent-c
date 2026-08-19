@@ -289,6 +289,7 @@ HubSpot single-use refresh tokens).
 | **Retool**        | `https://thisiscodebase.retool.com/mcp`  | Per-user OAuth              | No — org-specific hosted MCP; OAuth only                  |
 | **Slack search**  | `assistant.search.context` API           | Per-user token on `slack/agent-c` | Possible but duplicates Slack app work                    |
 | **Slack channel** | Events API (not MCP)                     | Bot token + webhook verify  | Env vars + manual signature verification                  |
+| **Companies House** | Public Data REST API                  | Shared API key (env)        | No Connect — public data, no per-user ACL                 |
 
 ---
 
@@ -308,6 +309,7 @@ agent/connections/tally.ts   MCP + connect(TALLY_CONNECTOR)
 agent/connections/asana.ts   MCP + connect(ASANA_CONNECTOR)
 agent/connections/retool.ts  MCP + connect(RETOOL_CONNECTOR)
 agent/tools/search_slack.ts  ctx.getToken(connect(SLACK_CONNECTOR))
+agent/tools/search_companies_house.ts  REST + COMPANIES_HOUSE_API_KEY  # not Connect
 agent/channels/slack.ts      connectSlackCredentials("slack/agent-c")
 components/chat/parts/authorization-part.tsx   In-chat OAuth link
 ```

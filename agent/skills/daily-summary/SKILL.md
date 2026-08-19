@@ -20,17 +20,12 @@ Produce a scannable cross-source activity briefing for CodeBase — live connect
    - `work_context` — role / team cues that steer which sources matter
    - If focus is empty, brief from live activity alone and note that no active focus is saved.
 
-2. **Gather live signal in parallel** (soft budget **≤4 tool steps**; prefer parallel). Choose sources from focus + role — do **not** spray every connector:
+2. **Gather live signal in parallel** via specialists in **one** message (soft budget **≤2 subagent calls** plus at most one follow-up). Pack focus names, the date window, and role cues into each `message`. Do **not** spray every connector yourself — `search_slack` dumps belong in `slack-scan`, not this thread:
 
    | Source | When | How |
    | --- | --- | --- |
-   | Drive | Default for file activity | `list_recent_drive` (pageSize ~10). Keep items whose `modifiedTime` falls in the window. |
-   | Slack | Default for chatter / mentions of focus names | `search_slack` with focus company/person names plus a date cue (today's date or `after:YYYY-MM-DD`). Prefer messages; limit ~10. |
-   | HubSpot | Focus includes companies, contacts, or CRM work | `connection_search` once if tools unknown; search COMPANY by focus names (include `database_record_id`); contacts via `associatedWith` company id. Never blank-query contacts, deals, notes, or emails. Skip DEAL unless focus is deal-specific. |
-   | Platform | Focus includes programmes, mentorship, or bookings | `platform__search_sessions` (and related get_* tools) scoped to today / focus companies. Read-only. |
-   | Notion | Only if focus names specific docs/notes, or work is docs-heavy | `notion__notion-search` once; fetch at most one page if a hit is clearly in-window. |
-   | Tally | Only if the user asks about forms/surveys in the briefing | Skip by default. |
-   | Retool | Only if the user asks about Retool apps or resources | Skip by default. |
+   | Drive / HubSpot / Platform / Notion / Tally / Retool | Per the table below, batched into **one** `researcher` call | Tell `researcher` which sources to hit and the window. Drive: recent files in-window. HubSpot: COMPANY by focus names (`database_record_id`); contacts via association — never blank-query; skip DEAL unless focus is deal-specific. Platform: sessions scoped to today / focus companies. Notion: only if focus names docs; at most one fetch. Tally/Retool: only if the user asked. |
+   | Slack | Default for chatter / mentions of focus names | **`slack-scan`** with focus company/person names plus a date cue (today's date or `after:YYYY-MM-DD`). Prefer messages; limit ~10. Do not `search_slack` on the parent. |
 
 3. **Synthesise** after two sources return useful signal. Stop widening. State gaps plainly ("HubSpot not searched", "no Slack hits for X").
 

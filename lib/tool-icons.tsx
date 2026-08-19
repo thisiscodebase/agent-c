@@ -38,6 +38,8 @@ type ImageIconConfig = {
    * dark-mode treatment (e.g. `dark:invert`) instead of a separate asset.
    */
   imgClass?: string;
+  /** Extra img classes when the icon sits on the brand tint (e.g. white-on-color). */
+  onTintImgClass?: string;
   /** Foreground for text drawn on the brand tint (highlights / chips). */
   textClass?: string;
 };
@@ -187,6 +189,14 @@ const iconConfigs: Record<string, IconConfig> = {
     bgClass: "bg-emerald-500/15",
     alt: "CodeBase Platform",
   },
+  companies_house: {
+    kind: "image",
+    src: "/icons/gov-uk.svg",
+    bgClass: "bg-[#1D70B8]",
+    alt: "Companies House",
+    onTintImgClass: "brightness-0 invert",
+    textClass: "text-white",
+  },
 };
 
 /** Solid accent fill for progress bars / meters matching the tool brand. */
@@ -208,6 +218,8 @@ export function getBrandAccentClass(category: string): string {
       return "bg-neutral-800 dark:bg-neutral-200";
     case "platform":
       return "bg-emerald-500";
+    case "companies_house":
+      return "bg-[#1D70B8]";
     case "todos":
       return "bg-amber-500";
     case "development":
@@ -249,10 +261,14 @@ export function getBrandTextClass(category: string): string {
 }
 
 /** Optional `<img>` classes for brand marks (e.g. dark:invert). */
-export function getBrandImgClass(category: string): string | undefined {
+export function getBrandImgClass(
+  category: string,
+  options: { onTint?: boolean } = {},
+): string | undefined {
   const config = iconConfigs[normalizeCategory(category)];
-  if (config?.kind === "image") return config.imgClass;
-  return undefined;
+  if (config?.kind !== "image") return undefined;
+  const onTint = options.onTint ?? true;
+  return cn(config.imgClass, onTint && config.onTintImgClass) || undefined;
 }
 
 function normalizeCategory(name: string): string {
@@ -325,7 +341,11 @@ export function getToolCategoryIcon(
       <IconShell bgClass={config.bgClass} showBackground={showBackground} size={size} className={className}>
         <img
           alt={config.alt}
-          className={cn("object-contain", config.imgClass)}
+          className={cn(
+            "object-contain",
+            config.imgClass,
+            showBackground && config.onTintImgClass,
+          )}
           height={size}
           src={config.src}
           width={size}

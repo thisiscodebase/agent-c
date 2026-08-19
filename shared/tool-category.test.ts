@@ -42,6 +42,14 @@ describe("toolCategory", () => {
       category: "platform",
       label: "CodeBase Platform",
     });
+    assert.deepEqual(toolCategory("search_companies_house"), {
+      category: "companies_house",
+      label: "Companies House",
+    });
+    assert.deepEqual(toolCategory("get_company_profile"), {
+      category: "companies_house",
+      label: "Companies House",
+    });
   });
 
   it("maps built-ins and unknown tools", () => {

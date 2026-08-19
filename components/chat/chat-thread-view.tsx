@@ -41,6 +41,7 @@ export function ChatThreadView({
   composerDisabled,
   composer,
   footerBeforeComposer,
+  footerOverlayEnd,
   footerAfterComposer,
   footerSpacerClass,
 }: {
@@ -59,6 +60,8 @@ export function ChatThreadView({
   /** When set, replaces the default composer. */
   composer?: ReactNode;
   footerBeforeComposer?: ReactNode;
+  /** Sits on the presence / jump-to-bottom row, trailing edge of the composer column. */
+  footerOverlayEnd?: ReactNode;
   /** Secondary panel stacked under the composer (chat lab HUD). */
   footerAfterComposer?: ReactNode;
   footerSpacerClass?: string;
@@ -86,49 +89,65 @@ export function ChatThreadView({
           <div className="relative">
             <div aria-hidden className={chatFooterFadeClass} />
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center">
-              <div className="relative flex items-center justify-center">
-                <AnimatePresence initial={false}>
-                  {orbActivity ? (
-                    <motion.div
-                      key="agent-presence"
-                      initial={
-                        reduceMotion ? false : { opacity: 0, y: 8, scale: 0.96 }
-                      }
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={
-                        reduceMotion
-                          ? undefined
-                          : { opacity: 0, y: 6, scale: 0.96 }
-                      }
-                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <AgentPresence
-                        label={orbActivity.label}
-                        paused={orbActivity.state === "listening"}
-                        state={orbActivity.state}
-                      />
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10">
+              <div
+                className={cn(
+                  chatInputColumnClass,
+                  "grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center",
+                )}
+              >
+                <div />
+                <div className="relative flex items-center justify-center">
+                  <AnimatePresence initial={false}>
+                    {orbActivity ? (
+                      <motion.div
+                        key="agent-presence"
+                        initial={
+                          reduceMotion ? false : { opacity: 0, y: 8, scale: 0.96 }
+                        }
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={
+                          reduceMotion
+                            ? undefined
+                            : { opacity: 0, y: 6, scale: 0.96 }
+                        }
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <AgentPresence
+                          label={orbActivity.label}
+                          paused={orbActivity.state === "listening"}
+                          state={orbActivity.state}
+                        />
+                      </motion.div>
+                    ) : null}
+                  </AnimatePresence>
 
-                <MessageScrollerButton
+                  <MessageScrollerButton
+                    className={cn(
+                      "pointer-events-auto z-10",
+                      orbActivity
+                        ? [
+                            "!absolute !inset-auto !left-full !ml-2 !top-1/2",
+                            "!-translate-y-1/2 !translate-x-0",
+                            "data-[direction=end]:!bottom-auto",
+                            "data-[direction=end]:data-[active=false]:!translate-x-1 data-[direction=end]:data-[active=false]:!translate-y-[-40%]",
+                          ]
+                        : [
+                            "!static !inset-auto !translate-x-0",
+                            "data-[direction=end]:!bottom-auto",
+                            "data-[direction=end]:data-[active=false]:!translate-y-2",
+                          ],
+                    )}
+                  />
+                </div>
+                <div
                   className={cn(
-                    "pointer-events-auto z-10",
-                    orbActivity
-                      ? [
-                          "!absolute !inset-auto !left-full !ml-2 !top-1/2",
-                          "!-translate-y-1/2 !translate-x-0",
-                          "data-[direction=end]:!bottom-auto",
-                          "data-[direction=end]:data-[active=false]:!translate-x-1 data-[direction=end]:data-[active=false]:!translate-y-[-40%]",
-                        ]
-                      : [
-                          "!static !inset-auto !translate-x-0",
-                          "data-[direction=end]:!bottom-auto",
-                          "data-[direction=end]:data-[active=false]:!translate-y-2",
-                        ],
+                    "flex items-center justify-end",
+                    footerOverlayEnd ? "pointer-events-auto" : "pointer-events-none",
                   )}
-                />
+                >
+                  {footerOverlayEnd}
+                </div>
               </div>
             </div>
           </div>

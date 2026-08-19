@@ -134,6 +134,21 @@ On **Agent C Eve runtime**:
 Connection file: `agent/connections/platform.ts` (read-only tool allow-list).
 Integrations UI shows status from env (no OAuth Connect/Revoke).
 
+### Companies House (`eve` + `web`)
+
+Not Vercel Connect — shared app-scoped API key against the
+[Companies House Public Data API](https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference)
+(HTTP Basic; key as username). Register an API Key application at the
+[Developer Hub](https://developer.company-information.service.gov.uk/).
+
+On **Eve** (tools) and **web** (Settings → Integrations status/test):
+
+- `COMPANIES_HOUSE_API_KEY` — public-data API key
+
+Rate limit: 600 requests / 5 minutes per key. Chat uses four REST tools
+(`search_companies_house`, `get_company_profile`, `get_company_officers`,
+`list_company_filings`) — no hosted MCP, no per-user OAuth.
+
 ### Drive (GCP)
 
 Drive MCP requires a Google Cloud project with:

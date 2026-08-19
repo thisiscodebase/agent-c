@@ -49,6 +49,8 @@ export function testResultsHeading(connectorId: string) {
       return "Connection";
     case "platform":
       return "Connection";
+    case "companies_house":
+      return "Company";
     case "slack":
       return "Messages";
     default:

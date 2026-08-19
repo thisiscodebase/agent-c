@@ -18,6 +18,7 @@ const BRAND_ICONS: Partial<
   asana: { src: "/icons/asana.svg", alt: "Asana" },
   retool: { src: "/icons/retool.svg", alt: "Retool" },
   platform: { src: "/icons/codebase.jpeg", alt: "CodeBase Platform" },
+  companies_house: { src: "/icons/gov-uk.svg", alt: "Companies House" },
 };
 
 export function CitationIcon({
@@ -26,6 +27,7 @@ export function CitationIcon({
   className,
   stacked = false,
   showBackground = true,
+  onTint,
 }: {
   citation: Citation;
   size?: number;
@@ -33,11 +35,19 @@ export function CitationIcon({
   /** Overlapping stack style for footer / multi-source pills. */
   stacked?: boolean;
   showBackground?: boolean;
+  /**
+   * Invert/tint the brand mark as if it sits on the brand shell.
+   * Defaults to `showBackground`. Pass true when a parent already draws the
+   * tint (inline citation chips) so monochrome logos still go white-on-color.
+   */
+  onTint?: boolean;
 }) {
   const [faviconFailed, setFaviconFailed] = useState(false);
   const brand = BRAND_ICONS[citation.source];
   const tint = getCitationTintClass(citation.source);
-  const imgClass = getBrandImgClass(citation.source);
+  const imgClass = getBrandImgClass(citation.source, {
+    onTint: onTint ?? showBackground,
+  });
 
   if (brand) {
     return (

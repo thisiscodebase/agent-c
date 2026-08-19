@@ -194,15 +194,6 @@ export function ChatPageClient({
             <ChatErrorBanner error={error} threadId={chatId} />
             {readOnly ? null : (
               <>
-                {contextBreakdown && contextBreakdown.ratio >= 0.15 ? (
-                  <div className="flex justify-end">
-                    <ContextUsagePanel
-                      breakdown={contextBreakdown}
-                      modelId={contextPressure.modelId}
-                      usageFromCompaction={contextPressure.usageFromCompaction}
-                    />
-                  </div>
-                ) : null}
                 {showUsageStrip ? <UsageLimitStrip status={meterStatus} /> : null}
                 <ComposerContextTip
                   key={chatId}
@@ -212,6 +203,17 @@ export function ChatPageClient({
               </>
             )}
           </>
+        }
+        footerOverlayEnd={
+          readOnly || !contextBreakdown || contextBreakdown.ratio < 0.15
+            ? null
+            : (
+              <ContextUsagePanel
+                breakdown={contextBreakdown}
+                modelId={contextPressure.modelId}
+                usageFromCompaction={contextPressure.usageFromCompaction}
+              />
+            )
         }
         messages={messages}
         onRespond={respondToInput}

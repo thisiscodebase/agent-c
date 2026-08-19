@@ -13,6 +13,7 @@ Related: [Environment](ENVIRONMENT.md), [Connect](CONNECT.md).
 | Integration | Auth model | Who hosts tools |
 | ----------- | ---------- | --------------- |
 | **Platform MCP** | Shared bearer (`PLATFORM_MCP_TOKEN`) — **not** Connect | CodeBase Platform (`/api/mcp`) |
+| **Companies House** | Shared API key (`COMPANIES_HOUSE_API_KEY`) — **not** Connect | Companies House Public Data REST |
 | **Drive / HubSpot / Notion / Tally / Asana / Retool** | Vercel Connect OAuth (per-user or app-scoped) | Provider MCP URLs |
 | **Slack search + Slack channel** | Connect app `slack/agent-c` | Slack APIs |
 

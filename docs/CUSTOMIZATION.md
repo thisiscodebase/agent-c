@@ -40,6 +40,9 @@ code:
 - `search_drive.ts` / `list_recent_drive.ts` / `read_drive_file.ts` — temporary
   Drive API v3 REST tools (same Connect OAuth as Integrations). Hosted Drive MCP
   bypassed until Google’s data plane works.
+- `search_companies_house.ts` / `get_company_profile.ts` /
+  `get_company_officers.ts` / `list_company_filings.ts` — Companies House Public
+  Data API (shared `COMPANIES_HOUSE_API_KEY`). Not Connect / not MCP.
 - Phase 4 (not yet): `search_artifacts.ts`, `generate_report.ts`.
 
 Live HubSpot / Notion / Tally lookup is folded into connection files
@@ -65,6 +68,8 @@ MCP tools via `connection_search`. Drive uses custom tools (Slack-style) for now
   allow-list for internal release; write tools omitted until re-enabled.
 - Slack channel retained from upstream (`agent/channels/slack.ts`); search uses
   the **same** Connect app with expanded scopes via `search_slack.ts`.
+- Companies House is **not** an MCP connection — REST tools + env API key (same
+  Integrations `authMode: "env"` pattern as Platform, without an MCP URL).
 
 Registry + Integrations UI: [`server/connectors.ts`](../server/connectors.ts),
 UIDs in [`shared/connect.ts`](../shared/connect.ts).
@@ -104,4 +109,6 @@ login provider.
   (`mcp.hubspot.com`), not Composio or generic REST-only OAuth.
 - **Drive**: temporary Drive API v3 REST tools (`search_drive`, etc.) via
   Connect OAuth — hosted Drive MCP bypassed until Google’s data plane works.
+- **Companies House**: first-party REST tools + shared API key. Do not adopt
+  unofficial MCP servers (AGPL, stdio, 45+ tools).
 - **Notion**: added as a Phase 3 lookup source via hosted Notion MCP.

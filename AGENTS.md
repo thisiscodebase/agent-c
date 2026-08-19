@@ -60,6 +60,9 @@ Live lookup sources (MCP / search tools), registered in
 - Slack search — `agent/tools/search_slack.ts` on Connect app `slack/agent-c`
 - CodeBase Platform — `PLATFORM_MCP_URL` + shared bearer (app-scoped env; see
   [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md)). Read-only for internal release.
+- Companies House — REST tools (`search_companies_house`, `get_company_profile`,
+  `get_company_officers`, `list_company_filings`) via shared `COMPANIES_HOUSE_API_KEY`
+  (not Connect; public data).
 
 UIDs: [`shared/connect.ts`](shared/connect.ts). Provision Connect connectors via
 `vercel connect` — see [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).

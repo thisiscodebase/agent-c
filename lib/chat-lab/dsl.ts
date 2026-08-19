@@ -112,6 +112,41 @@ function defaultSubagentInnerBeats(name: string): SubagentInnerBeat[] {
       { kind: "write", text: "Thursday call on; March backups unconfirmed." },
     ];
   }
+  if (name.includes("research")) {
+    return [
+      { kind: "reason", text: "Need Platform, CRM, and coverage notes in one pass." },
+      {
+        kind: "tool",
+        toolName: "hubspot__search_crm_objects",
+        input: { query: "Acme", objectType: "COMPANY" },
+        output: { results: [{ name: "Acme Corp", owner: "Sam Rivera" }] },
+      },
+      {
+        kind: "tool",
+        toolName: "platform__search_companies",
+        input: { q: "Acme" },
+        output: { booked: 6, pending: 2 },
+      },
+      {
+        kind: "tool",
+        toolName: "search_drive",
+        input: { query: "Acme QBR" },
+        output: { files: [{ name: "Acme QBR notes.docx" }] },
+      },
+      {
+        kind: "tool",
+        toolName: "get_company_profile",
+        input: { company_number: "SC123456" },
+        output: {
+          company_number: "SC123456",
+          company_name: "ACME ROBOTICS LTD",
+          company_status: "active",
+          url: "https://find-and-update.company-information.service.gov.uk/company/SC123456",
+        },
+      },
+      { kind: "write", text: "Customer stage, Thursday renewal; March coverage is thin." },
+    ];
+  }
   return [
     { kind: "reason", text: "Working the assigned task." },
     { kind: "write", text: "Done." },
@@ -256,6 +291,7 @@ export type ScenarioBuilder = {
     task: string;
     result: string;
     callId?: string;
+    innerBeats?: readonly SubagentInnerBeat[];
   }) => ScenarioBuilder;
   /** Dispatch several subagents at once; complete them in array order. */
   subagentBatch: (
@@ -264,6 +300,7 @@ export type ScenarioBuilder = {
       task: string;
       result: string;
       callId?: string;
+      innerBeats?: readonly SubagentInnerBeat[];
     }[],
   ) => ScenarioBuilder;
   artifactCall: (args: {
@@ -522,7 +559,7 @@ export function createScenarioBuilder(options?: {
       }
       const innerQueues = prepared.map((agent) => ({
         agent,
-        beats: defaultSubagentInnerBeats(agent.name),
+        beats: [...(agent.innerBeats ?? defaultSubagentInnerBeats(agent.name))],
       }));
       let beatIndex = 0;
       while (innerQueues.some((queue) => queue.beats.length > 0)) {

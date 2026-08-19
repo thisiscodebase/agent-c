@@ -175,7 +175,7 @@ describe("chat-lab checkpoints and parts", () => {
           part.type === "dynamic-tool"
           && part.toolMetadata?.eve?.kind === "subagent-call",
       );
-    assert.ok(tools.length >= 3);
+    assert.ok(tools.length >= 2);
     assert.ok(tools.every((part) => part.type === "dynamic-tool" && part.state === "output-available"));
 
     const names = new Set(
@@ -185,7 +185,9 @@ describe("chat-lab checkpoints and parts", () => {
           : [],
       ),
     );
-    assert.ok(names.size >= 3);
+    assert.ok(names.has("researcher"));
+    assert.ok(names.has("slack-scan"));
+    assert.equal(names.size, 2);
 
     const startedAt = scenario.events.reduce(
       (last, event, index) => (event.type === "subagent.started" ? index : last),
@@ -201,7 +203,7 @@ describe("chat-lab checkpoints and parts", () => {
           && part.toolMetadata?.eve?.kind === "subagent-call"
           && (part.state === "input-available" || part.state === "input-streaming"),
       );
-    assert.ok(live.length >= 3);
+    assert.ok(live.length >= 2);
     const liveNames = new Set(
       live.flatMap((part) =>
         part.type === "dynamic-tool" && part.toolMetadata?.eve?.name

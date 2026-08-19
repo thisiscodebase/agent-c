@@ -11,10 +11,9 @@ You are strictly data-led. Quantify outputs, outcomes, unit costs, reach, comple
 ## Procedure
 
 1. Gather the tender question(s), evaluation criteria, and any buyer constraints the user provided. Ask for clarification only when a requirement is missing or ambiguous; otherwise make reasonable assumptions and state them.
-2. Load evidence in order (see `references/evidence-map.md`). Soft budget: **≤4 Drive reads** before drafting — do not dump the Shared Drive into context.
-   - Always: `read_drive_file` on the Std BD Pack Doc id (or `search_drive` for "Std BD Pack" in the Business Development Shared Drive if the id fails).
-   - As needed: programme summaries, pathways outcomes, costing template, Staff CV folder.
-   - Topic-matched prior proposals on the same Shared Drive (prefer successful / SPF / theme match).
+2. Load evidence in order (see `references/evidence-map.md`). Soft budget: **≤4 Drive reads** before drafting — do not dump the Shared Drive into this thread.
+   - Always: `read_drive_file` on the Std BD Pack Doc id yourself (or `search_drive` for "Std BD Pack" in the Business Development Shared Drive if the id fails). A single known file is not a subagent job.
+   - Broader evidence (programme summaries, pathways outcomes, costing template, Staff CV folder, topic-matched prior proposals) → one `researcher` call. Add `slack-scan` only if narrative evidence is missing. Pack the tender theme and Drive locations into `message`.
 3. Apply EMCCA rules from `references/emcca-feedback.md` on every delivery answer.
 4. Structure each tender question per `references/response-structure.md`.
 5. Save the draft with `create_artifact` (`type: "report"`, metadata e.g. `{ kind: "bid_draft" }`). Do **not** present it as submission-ready — human owns the bid. Say what you saved in one short line; do not paste the full document body into chat.

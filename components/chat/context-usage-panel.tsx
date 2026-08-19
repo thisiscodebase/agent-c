@@ -28,15 +28,6 @@ const CATEGORY_BAR_CLASS: Record<ContextCategoryKey, string> = {
   other: "bg-sky-600",
 };
 
-const CATEGORY_STROKE: Record<ContextCategoryKey, string> = {
-  system: "stroke-zinc-400 dark:stroke-zinc-500",
-  tools: "stroke-violet-500",
-  mcp: "stroke-fuchsia-500",
-  skills: "stroke-amber-700",
-  conversation: "stroke-orange-500",
-  other: "stroke-sky-600",
-};
-
 const RING_SIZE = 22;
 const RING_STROKE = 2.5;
 const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
@@ -89,8 +80,7 @@ function ContextUsageRing({
   breakdown: ThreadContextBreakdown;
 }) {
   const usedRatio = Math.min(1, Math.max(0, breakdown.ratio));
-  const segments = contextCategoriesForDisplay(breakdown.categories);
-  let offset = 0;
+  const length = usedRatio * RING_CIRCUMFERENCE;
 
   return (
     <svg
@@ -108,28 +98,18 @@ function ContextUsageRing({
         className="stroke-muted"
         strokeWidth={RING_STROKE}
       />
-      {segments.map(({ key, tokens }) => {
-        const share =
-          breakdown.inputTokens > 0 ? tokens / breakdown.inputTokens : 0;
-        const length = usedRatio * share * RING_CIRCUMFERENCE;
-        if (length <= 0) return null;
-        const dashOffset = -offset;
-        offset += length;
-        return (
-          <circle
-            key={key}
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            fill="none"
-            className={CATEGORY_STROKE[key]}
-            strokeWidth={RING_STROKE}
-            strokeLinecap="butt"
-            strokeDasharray={`${length} ${RING_CIRCUMFERENCE - length}`}
-            strokeDashoffset={dashOffset}
-          />
-        );
-      })}
+      {length > 0 ? (
+        <circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          fill="none"
+          className="stroke-muted-foreground"
+          strokeWidth={RING_STROKE}
+          strokeLinecap="butt"
+          strokeDasharray={`${length} ${RING_CIRCUMFERENCE - length}`}
+        />
+      ) : null}
     </svg>
   );
 }

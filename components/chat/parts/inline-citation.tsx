@@ -129,7 +129,12 @@ export function InlineCitationPill({
         className,
       )}
     >
-      <CitationIcon citation={primary} showBackground={false} size={12} />
+      <CitationIcon
+        citation={primary}
+        onTint
+        showBackground={false}
+        size={12}
+      />
       <span className="truncate font-medium">{label}</span>
       {extra > 0 ? (
         <span className={cn("shrink-0", mutedFg)}>+{extra}</span>

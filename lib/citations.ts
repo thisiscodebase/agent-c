@@ -11,6 +11,7 @@ export type CitationSource =
   | "asana"
   | "retool"
   | "platform"
+  | "companies_house"
   | "unknown";
 
 export type Citation = {
@@ -99,6 +100,13 @@ const CONNECTOR_HOST_PATTERNS: Array<{
       || h === "platform-env-staging-thisiscodebase.vercel.app"
       || (h.includes("platform") && h.endsWith(".vercel.app")),
   },
+  {
+    source: "companies_house",
+    test: (h) =>
+      h === "find-and-update.company-information.service.gov.uk"
+      || h === "company-information.service.gov.uk"
+      || h.endsWith(".company-information.service.gov.uk"),
+  },
 ];
 
 function isHttpUrl(value: string): boolean {
@@ -172,6 +180,15 @@ export function classifyCitationSource(
     return "platform";
   }
   if (
+    name === "search_companies_house"
+    || name === "get_company_profile"
+    || name === "get_company_officers"
+    || name === "list_company_filings"
+    || name.includes("companies_house")
+  ) {
+    return "companies_house";
+  }
+  if (
     name === "web_search"
     || name === "search_web"
     || name === "google_search"
@@ -210,6 +227,8 @@ export function getCitationLabel(citation: Citation): string {
       return "Retool";
     case "platform":
       return "Platform";
+    case "companies_house":
+      return "Companies House";
     case "web":
     case "unknown":
       return getDomain(citation.url);
@@ -231,6 +250,7 @@ export function getCitationTintClass(source: CitationSource): string {
     case "asana":
     case "retool":
     case "platform":
+    case "companies_house":
       return getBrandTintClass(source);
     case "web":
       return "bg-sky-500/15";
@@ -254,6 +274,7 @@ export function getCitationTextClass(source: CitationSource): string {
     case "asana":
     case "retool":
     case "platform":
+    case "companies_house":
       return getBrandTextClass(source);
     case "web":
     case "unknown":

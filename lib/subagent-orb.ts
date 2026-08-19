@@ -14,6 +14,7 @@ const SEARCH_CATEGORIES = new Set([
   "asana",
   "retool",
   "platform",
+  "companies_house",
 ]);
 
 const SHAPE_CATEGORIES = new Set(["memory", "todos"]);
@@ -37,7 +38,7 @@ export function orbStateForCategory(category: string): OrbState {
 export function orbStateForSubagentTask(name: string, task?: string): OrbState {
   const haystack = `${name} ${task ?? ""}`.toLowerCase();
   if (
-    /\b(search|slack|hubspot|notion|drive|web|query|scan|pull|read|crm|docs|platform|tally|asana|retool)\b/.test(
+    /\b(search|slack|hubspot|notion|drive|web|query|scan|pull|read|crm|docs|platform|tally|asana|retool|companies house|registry)\b/.test(
       haystack,
     )
   ) {

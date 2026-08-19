@@ -1,6 +1,7 @@
 import type { ConnectorDef } from "#shared/types/connector";
 import {
   ASANA_CONNECTOR,
+  COMPANIES_HOUSE_CONNECTOR,
   DRIVE_CONNECTOR,
   DRIVE_OAUTH_SCOPES,
   HUBSPOT_CONNECTOR,
@@ -14,6 +15,7 @@ import {
 } from "#shared/connect";
 import { createError } from "~~/server/utils/http-error";
 import { testAsanaMcpConnection } from "~~/server/utils/asana-mcp-test";
+import { testCompaniesHouseConnection } from "~~/server/utils/companies-house-test";
 import { testNotionMcpConnection } from "~~/server/utils/notion-mcp-test";
 import { testPlatformMcpConnection } from "~~/server/utils/platform-mcp-test";
 import { testRetoolMcpConnection } from "~~/server/utils/retool-mcp-test";
@@ -184,6 +186,22 @@ export const connectors: ConnectorDef[] = [
     test: {
       label: "Check MCP",
       run: async (token) => testPlatformMcpConnection(token),
+    },
+  },
+  {
+    id: "companies_house",
+    name: "Companies House",
+    description:
+      "UK company profiles, officers, and filing history (shared API key; public data).",
+    connector: COMPANIES_HOUSE_CONNECTOR,
+    connectionName: "search_companies_house",
+    icon: "i-lucide-landmark",
+    scopes: [],
+    authMode: "env",
+    staticTokenEnv: "COMPANIES_HOUSE_API_KEY",
+    test: {
+      label: "Look up test company",
+      run: async (token) => testCompaniesHouseConnection(token),
     },
   },
   {

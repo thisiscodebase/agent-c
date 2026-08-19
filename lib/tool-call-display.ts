@@ -210,6 +210,16 @@ function getSearchQuery(input: unknown): string | undefined {
   return undefined;
 }
 
+function getCompanyNumber(input: unknown): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const record = input as Record<string, unknown>;
+  const value = record.company_number;
+  if (typeof value === "string" && value.trim()) {
+    return truncate(value.trim().toUpperCase(), 16);
+  }
+  return undefined;
+}
+
 function getSubagentMessage(input: unknown): string | undefined {
   const task = getSubagentTask(input);
   return task ? truncate(task, 72) : undefined;
@@ -255,10 +265,15 @@ export function resolveSubagentName(
   return formatSubagentName(subagentDisplayName(toolName));
 }
 
-/** Built-in `agent` tool or Eve-qualified subagent tool names. */
+/** Declared specialist slugs (`agent/subagents/<id>/`) plus Eve-qualified names. */
+const DECLARED_SUBAGENT_SLUGS = new Set(["researcher", "slack-scan"]);
+
+/** Built-in `agent` tool, declared specialists, or Eve-qualified subagent names. */
 function isSubagentTool(name: string): boolean {
+  const bare = (name.split(/[:/]/).at(-1) ?? name).toLowerCase();
   return (
-    name === "agent"
+    DECLARED_SUBAGENT_SLUGS.has(bare)
+    || name === "agent"
     || name.includes("subagent")
     || name.endsWith(":agent")
     || name.includes("handoff")
@@ -450,6 +465,71 @@ export function getToolDisplayInfo(
         ? `Queried Platform for “${query}”`
         : "Queried Platform",
       summaryLabel: "Queried Platform",
+    };
+  }
+
+  if (
+    name === "search_companies_house"
+    || name === "get_company_profile"
+    || name === "get_company_officers"
+    || name === "list_company_filings"
+    || name.includes("companies_house")
+  ) {
+    const query = getSearchQuery(input);
+    const number = getCompanyNumber(input);
+    if (name === "get_company_officers") {
+      return {
+        category: "companies_house",
+        integrationName: "Companies House",
+        showCategory: true,
+        runningLabel: number
+          ? `Listing officers for ${number}`
+          : "Listing Companies House officers",
+        completedLabel: number
+          ? `Listed officers for ${number}`
+          : "Listed Companies House officers",
+        summaryLabel: "Listed officers",
+      };
+    }
+    if (name === "list_company_filings") {
+      return {
+        category: "companies_house",
+        integrationName: "Companies House",
+        showCategory: true,
+        runningLabel: number
+          ? `Listing filings for ${number}`
+          : "Listing Companies House filings",
+        completedLabel: number
+          ? `Listed filings for ${number}`
+          : "Listed Companies House filings",
+        summaryLabel: "Listed filings",
+      };
+    }
+    if (name === "get_company_profile") {
+      return {
+        category: "companies_house",
+        integrationName: "Companies House",
+        showCategory: true,
+        runningLabel: number
+          ? `Looking up ${number} on Companies House`
+          : "Looking up Companies House",
+        completedLabel: number
+          ? `Looked up ${number} on Companies House`
+          : "Looked up Companies House",
+        summaryLabel: "Looked up company",
+      };
+    }
+    return {
+      category: "companies_house",
+      integrationName: "Companies House",
+      showCategory: true,
+      runningLabel: query
+        ? `Searching Companies House for “${query}”`
+        : "Searching Companies House",
+      completedLabel: query
+        ? `Searched Companies House for “${query}”`
+        : "Searched Companies House",
+      summaryLabel: "Searched Companies House",
     };
   }
 

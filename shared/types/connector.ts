@@ -43,9 +43,12 @@ export interface ConnectorDef {
    * (no Connect / no OAuth UI).
    */
   authMode?: "user" | "app" | "env";
-  /** Env var holding the shared bearer when `authMode` is `"env"`. */
+  /** Env var holding the shared bearer / API key when `authMode` is `"env"`. */
   staticTokenEnv?: string;
-  /** Env var holding the MCP URL when `authMode` is `"env"` (for test probes). */
+  /**
+   * Env var holding the MCP URL when `authMode` is `"env"` (for MCP probes).
+   * Omit for REST/API-key connectors that have no MCP endpoint.
+   */
   mcpUrlEnv?: string;
   test: {
     label: string;

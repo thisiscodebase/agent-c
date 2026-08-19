@@ -74,15 +74,50 @@ export function ChatPageClient({
   initialThread: ThreadRecord;
   access?: ThreadViewerAccess;
 }) {
-  const readOnly = access === "admin_readonly";
+  const [thread, setThread] = useState(initialThread);
+  const [resumeEpoch, setResumeEpoch] = useState(0);
   const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>(() =>
     normalizeAgentPrefs(initialThread.state?.agentPrefs ?? DEFAULT_AGENT_PREFS),
   );
+
+  return (
+    <ChatPageSession
+      key={`${chatId}:${resumeEpoch}`}
+      access={access}
+      agentPrefs={agentPrefs}
+      chatId={chatId}
+      initialThread={thread}
+      onAgentPrefsChange={setAgentPrefs}
+      onLiveResumeSettled={(next) => {
+        setThread(next);
+        setResumeEpoch((value) => value + 1);
+      }}
+    />
+  );
+}
+
+function ChatPageSession({
+  chatId,
+  initialThread,
+  access = "owner",
+  agentPrefs,
+  onAgentPrefsChange,
+  onLiveResumeSettled,
+}: {
+  chatId: string;
+  initialThread: ThreadRecord;
+  access?: ThreadViewerAccess;
+  agentPrefs: AgentPrefs;
+  onAgentPrefsChange: (prefs: AgentPrefs) => void;
+  onLiveResumeSettled?: (thread: ThreadRecord) => void;
+}) {
+  const readOnly = access === "admin_readonly";
   const [seedText] = useState(() => peekPendingMessage(chatId));
   const [localUser, setLocalUser] = useState<EveMessage | null>(null);
   const { agent, error, isBusy } = useChatSession(chatId, initialThread, {
     readOnly,
     agentPrefs,
+    onLiveResumeSettled,
   });
   const queryClient = useQueryClient();
   const usageMeter = useUsageMeter();
@@ -92,7 +127,7 @@ export function ChatPageClient({
   const handleAgentPrefsChange = useCallback(
     (next: AgentPrefs) => {
       const prefs = normalizeAgentPrefs(next);
-      setAgentPrefs(prefs);
+      onAgentPrefsChange(prefs);
       if (readOnly) {
         return;
       }
@@ -100,7 +135,7 @@ export function ChatPageClient({
         console.error("[persist-agent-prefs] failed", { chatId, error });
       });
     },
-    [chatId, queryClient, readOnly],
+    [chatId, onAgentPrefsChange, queryClient, readOnly],
   );
 
   useEffect(() => {

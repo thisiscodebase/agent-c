@@ -33,35 +33,13 @@ export type PersistThreadStateOptions = {
   skipInvalidate?: boolean;
 };
 
-/**
- * Persist Eve snapshot to Postgres. Writes sessionId even when events are still
- * empty so we can rewind the Eve stream if the transcript PATCH never lands.
- */
-export async function persistThreadState(
+async function patchThreadState(
   threadId: string,
-  snapshot: UseEveAgentSnapshot<unknown>,
+  state: ThreadState,
   queryClient: QueryClient,
-  agentPrefs?: AgentPrefs,
   options?: PersistThreadStateOptions,
 ) {
-  const hasEvents = snapshot.events.length > 0;
-  const sessionId = snapshot.session?.sessionId;
-  if (!hasEvents && !sessionId) {
-    return;
-  }
-
-  const state: ThreadState = {
-    session: {
-      ...(sessionId ? { sessionId } : {}),
-      streamIndex: hasEvents
-        ? snapshot.events.length
-        : (snapshot.session?.streamIndex ?? 0),
-    },
-    events: hasEvents ? [...snapshot.events] : [],
-    source: "web",
-    ...(agentPrefs ? { agentPrefs: normalizeAgentPrefs(agentPrefs) } : {}),
-  };
-
+  const sessionId = state.session.sessionId;
   const response = await fetch(`/api/threads/${threadId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -74,7 +52,7 @@ export async function persistThreadState(
     console.error("[agent-c persist] client PATCH failed", {
       threadId,
       status: response.status,
-      eventCount: snapshot.events.length,
+      eventCount: state.events.length,
       sessionId,
       detail: detail.slice(0, 500),
     });
@@ -84,6 +62,94 @@ export async function persistThreadState(
   if (!options?.skipInvalidate) {
     void queryClient.invalidateQueries({ queryKey: queryKeys.threads });
   }
+}
+
+function threadStateFromCursor(input: {
+  session?: ClientSessionState;
+  events?: readonly unknown[];
+  agentPrefs?: AgentPrefs;
+}): ThreadState | null {
+  const events = input.events ? [...input.events] : [];
+  const sessionId = input.session?.sessionId;
+  if (events.length === 0 && !sessionId) {
+    return null;
+  }
+
+  return {
+    session: {
+      ...(sessionId ? { sessionId } : {}),
+      streamIndex: input.session?.streamIndex
+        ?? (events.length > 0 ? events.length : 0),
+    },
+    events,
+    source: "web",
+    ...(input.agentPrefs
+      ? { agentPrefs: normalizeAgentPrefs(input.agentPrefs) }
+      : {}),
+  };
+}
+
+/**
+ * Persist Eve snapshot to Postgres. Writes sessionId even when events are still
+ * empty so we can rewind the Eve stream if the transcript PATCH never lands.
+ */
+export async function persistThreadState(
+  threadId: string,
+  snapshot: UseEveAgentSnapshot<unknown>,
+  queryClient: QueryClient,
+  agentPrefs?: AgentPrefs,
+  options?: PersistThreadStateOptions,
+) {
+  const state = threadStateFromCursor({
+    session: snapshot.session,
+    events: snapshot.events,
+    agentPrefs,
+  });
+  if (!state) {
+    return;
+  }
+  await patchThreadState(threadId, state, queryClient, options);
+}
+
+/** Persist the Eve session cursor without replacing a longer stored event log. */
+export async function persistSessionCursor(
+  threadId: string,
+  session: ClientSessionState,
+  queryClient: QueryClient,
+  agentPrefs?: AgentPrefs,
+  options?: PersistThreadStateOptions,
+) {
+  const state = threadStateFromCursor({
+    session,
+    events: [],
+    agentPrefs,
+  });
+  if (!state) {
+    return;
+  }
+  await patchThreadState(threadId, state, queryClient, {
+    keepalive: true,
+    skipInvalidate: true,
+    ...options,
+  });
+}
+
+/** Persist a live-resume catch-up (Eve snapshot + follow) onto the thread row. */
+export async function persistLiveResumeState(
+  threadId: string,
+  input: {
+    session: ClientSessionState;
+    events: readonly unknown[];
+    agentPrefs?: AgentPrefs;
+  },
+  queryClient: QueryClient,
+  options?: PersistThreadStateOptions,
+) {
+  const state = threadStateFromCursor(input);
+  if (!state) {
+    return;
+  }
+  await patchThreadState(threadId, state, queryClient, options);
 }
 
 /** Persist Zest/Juice + reasoning without touching session/events. */

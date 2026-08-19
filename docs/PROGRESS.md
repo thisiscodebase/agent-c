@@ -127,12 +127,15 @@ pattern still needs to be finalized as a config choice.
   whole-project flip. See `.migration/*.md` for per-component notes, and
   `agent/skills/migrate-radix-to-base/` (installed via
   `pnpm dlx skills add shadcn/ui`) for the migration reference tables.
-- **`eve/react`'s `useEveAgent` already handles resumable sessions, HITL, and
-  authorization prompts natively** — don't hand-roll this (the old Vue app did,
-  before the Next.js port). Read
-  `node_modules/eve/docs/guides/frontend/overview.mdx` first; it documents the
-  `key={chat.id}` remount pattern (required — `useChatSession`'s config is only
-  read once per mount) and the authorization message-part shape.
+- **`eve/react`'s `useEveAgent` hydrates history and follows the HTTP stream of
+  the tab that called `send()`** — HITL and authorization parts are native, but
+  a refresh or a second device does **not** automatically attach to an in-flight
+  turn. Live reconnect is `session.snapshot()` + `session.stream()` in
+  `hooks/chat/use-live-resume.ts` (Eve's documented catch-up path). Persist
+  skipped `message.appended` / `reasoning.appended` deltas, so never use
+  `events.length` as `startIndex`. Remount with `key={chatId}` (and again after
+  live resume settles) because session config is only read once per mount.
+  Read `node_modules/eve/docs/guides/frontend/overview.mdx` first.
 - **Local dev auth bypass, if needed again**: better-auth ships a `testUtils`
   plugin (`node_modules/better-auth/dist/plugins/test-utils/`) for minting a
   signed session cookie without real OAuth. Run it as a **standalone script

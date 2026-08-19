@@ -44,6 +44,7 @@ export function MessageList({
   status,
   className,
   animateInitialUser = false,
+  footerSpacerClass = chatFooterSpacerClass,
 }: {
   messages: readonly EveMessage[];
   onRespond: (requestId: string, optionId: string) => void;
@@ -52,6 +53,7 @@ export function MessageList({
   className?: string;
   /** Animate the first user bubble (new-chat launch). Follow-ups always animate. */
   animateInitialUser?: boolean;
+  footerSpacerClass?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const seenIdsRef = useRef<Set<string> | null>(null);
@@ -73,7 +75,7 @@ export function MessageList({
   return (
     <MessageScroller className={cn("h-full", className)}>
       <MessageScrollerViewport>
-        <MessageScrollerContent className={chatFooterSpacerClass}>
+        <MessageScrollerContent className={footerSpacerClass}>
           {displayMessages.length === 0 ? (
             <div className="flex size-full flex-col items-center justify-center gap-3 p-8 text-center">
               <div className="space-y-1">

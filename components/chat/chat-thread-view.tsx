@@ -39,6 +39,8 @@ export function ChatThreadView({
   composerDisabled,
   composer,
   footerBeforeComposer,
+  footerAfterComposer,
+  footerSpacerClass,
 }: {
   messages: readonly EveMessage[];
   status?: ChatStatus;
@@ -53,6 +55,9 @@ export function ChatThreadView({
   /** When set, replaces the default composer. */
   composer?: ReactNode;
   footerBeforeComposer?: ReactNode;
+  /** Secondary panel stacked under the composer (chat lab HUD). */
+  footerAfterComposer?: ReactNode;
+  footerSpacerClass?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const showPresence = shouldShowAgentPresence(messages, status);
@@ -65,6 +70,7 @@ export function ChatThreadView({
       <div className="relative h-full min-w-0">
         <MessageList
           animateInitialUser={animateInitialUser}
+          footerSpacerClass={footerSpacerClass}
           messages={messages}
           onRespond={onRespond ?? noopRespond}
           status={status}
@@ -140,6 +146,7 @@ export function ChatThreadView({
                     status={status}
                   />
                 )}
+                {footerAfterComposer}
               </div>
             </div>
           </div>

@@ -7,6 +7,8 @@ export const chatMessageColumnClass = "mx-auto w-full max-w-2xl";
 export const chatInputColumnClass = `mx-auto w-full max-w-3xl ${chatPanelPaddingClass}`;
 export const chatScrollerContentClass = `flex h-max min-h-full w-full flex-col gap-6 py-6 ${chatPanelPaddingClass}`;
 export const chatFooterSpacerClass = "pb-44";
+/** Extra bottom inset when a secondary footer panel sits under the composer. */
+export const chatFooterSpacerWithLabClass = "pb-64";
 export const chatFloatingFooterClass =
   "pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col";
 /* Overlaps the composer by ~6px so the opaque end sits just below its top lip.

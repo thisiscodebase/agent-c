@@ -1,7 +1,8 @@
 "use client";
 
 import { LayoutGroup } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import type { EveMessage } from "eve/react";
 import type { AgentPrefs } from "#shared/agent-modes";
@@ -9,6 +10,10 @@ import { DEFAULT_AGENT_PREFS } from "#shared/agent-modes";
 import { createOptimisticUserMessage } from "#shared/optimistic-user-message";
 import { Suggestion, Suggestions } from "~/components/ai-elements/suggestion";
 import { ChatThreadView } from "~/components/chat/chat-thread-view";
+import {
+  isChatLabEnabled,
+  MockChatLab,
+} from "~/components/chat-lab/mock-chat-lab";
 import { DetailPanelHost } from "~/components/detail-panel/detail-panel-host";
 import { Composer } from "~/components/ui/composer";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
@@ -108,7 +113,7 @@ function pickPair(offset: number): Starter[] {
   return [first, second];
 }
 
-export default function HomePage() {
+function HomePageLive() {
   const { startNewChat } = useChatNavigation();
   const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>({ ...DEFAULT_AGENT_PREFS });
   const [offset, setOffset] = useState(0);
@@ -218,5 +223,25 @@ export default function HomePage() {
         )}
       </LayoutGroup>
     </DetailPanelHost>
+  );
+}
+
+function HomePageRouter() {
+  const searchParams = useSearchParams();
+  if (isChatLabEnabled(searchParams)) {
+    return (
+      <MockChatLab
+        initialScenarioId={searchParams.get("scenario") ?? undefined}
+      />
+    );
+  }
+  return <HomePageLive />;
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<HomePageLive />}>
+      <HomePageRouter />
+    </Suspense>
   );
 }

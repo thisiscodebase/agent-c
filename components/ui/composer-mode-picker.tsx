@@ -132,8 +132,9 @@ export function ComposerModePicker({
 
   return (
     <Popover
-      open={open}
+      open={disabled ? false : open}
       onOpenChange={(next) => {
+        if (disabled) return;
         setOpen(next);
         if (next) {
           setActiveModeId(value.mode);
@@ -151,7 +152,7 @@ export function ComposerModePicker({
                 {...props}
                 className={cn(
                   "group flex h-8 items-stretch overflow-hidden rounded-full text-sm font-medium transition-colors",
-                  disabled && "pointer-events-none opacity-50",
+                  disabled && "pointer-events-none",
                   isJuice
                     ? "bg-orange-600 text-white hover:bg-orange-600/90"
                     : [
@@ -166,8 +167,15 @@ export function ComposerModePicker({
                 )}
               >
                 <button
-                  aria-label={`Mode ${selected.label}. Click to switch.`}
-                  className="flex items-center gap-1.5 py-0 pr-1 pl-2.5 outline-none"
+                  aria-label={
+                    disabled
+                      ? `Mode ${selected.label}`
+                      : `Mode ${selected.label}. Click to switch.`
+                  }
+                  className={cn(
+                    "flex items-center gap-1.5 py-0 pl-2.5 outline-none transition-[padding] duration-200",
+                    disabled ? "pr-2.5" : "pr-1",
+                  )}
                   disabled={disabled}
                   onClick={() => {
                     const next = toggleAgentPrefs(value);
@@ -181,19 +189,24 @@ export function ComposerModePicker({
                 </button>
 
                 <PopoverTrigger
+                  aria-hidden={disabled}
                   aria-label="Open mode and effort options"
                   aria-expanded={open}
                   className={cn(
-                    "flex items-center justify-center pr-2 pl-0.5 outline-none",
+                    "flex items-center justify-center outline-none transition-[width,opacity,padding] duration-200",
                     isJuice
                       ? "text-white/90"
                       : "text-orange-600/80 dark:text-orange-400/80",
+                    disabled
+                      ? "w-0 overflow-hidden p-0 opacity-0"
+                      : "w-auto pr-2 pl-0.5 opacity-100",
                   )}
                   disabled={disabled}
+                  tabIndex={disabled ? -1 : undefined}
                 >
                   <ChevronDownIcon
                     className={cn(
-                      "size-3.5 transition-transform",
+                      "size-3.5 transition-transform duration-200",
                       open && "rotate-180",
                     )}
                   />

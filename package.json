@@ -23,7 +23,7 @@
     "dev": "next dev",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test shared/**/*.test.ts lib/**/*.test.ts",
+    "test": "node --experimental-strip-types --test shared/**/*.test.ts lib/**/*.test.ts lib/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "psql \"${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}\" -v ON_ERROR_STOP=1 -f supabase/seeds/00_multi_user.sql -f supabase/seed.sql",

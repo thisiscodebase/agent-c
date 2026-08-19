@@ -20,6 +20,19 @@ export type ReasoningStep = {
   isStreaming: boolean;
 };
 
+/** One in-flight subagent shown in the live activity list. */
+export type LiveSubagent = {
+  id: string;
+  name: string;
+  task?: string;
+};
+
+export type LiveTool = {
+  category: string;
+  label: string;
+  detail?: string;
+};
+
 export type ActivityStep =
   | { kind: "reasoning"; step: ReasoningStep }
   | { kind: "tool"; entry: ToolCallEntry };

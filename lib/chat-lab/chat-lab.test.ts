@@ -177,6 +177,42 @@ describe("chat-lab checkpoints and parts", () => {
       );
     assert.ok(tools.length >= 3);
     assert.ok(tools.every((part) => part.type === "dynamic-tool" && part.state === "output-available"));
+
+    const names = new Set(
+      tools.flatMap((part) =>
+        part.type === "dynamic-tool" && part.toolMetadata?.eve?.name
+          ? [part.toolMetadata.eve.name]
+          : [],
+      ),
+    );
+    assert.ok(names.size >= 3);
+
+    const startedAt = scenario.events.reduce(
+      (last, event, index) => (event.type === "subagent.started" ? index : last),
+      -1,
+    );
+    assert.ok(startedAt > 0);
+    const mid = messagesAtIndex(scenario.events, startedAt + 1);
+    const live = mid
+      .flatMap((message) => message.parts)
+      .filter(
+        (part) =>
+          part.type === "dynamic-tool"
+          && part.toolMetadata?.eve?.kind === "subagent-call"
+          && (part.state === "input-available" || part.state === "input-streaming"),
+      );
+    assert.ok(live.length >= 3);
+    const liveNames = new Set(
+      live.flatMap((part) =>
+        part.type === "dynamic-tool" && part.toolMetadata?.eve?.name
+          ? [part.toolMetadata.eve.name]
+          : [],
+      ),
+    );
+    assert.equal(liveNames.size, live.length);
+
+    const childEvents = scenario.events.filter((event) => event.type === "subagent.event");
+    assert.ok(childEvents.length >= 8);
   });
 
   it("artifact scenario yields create_artifact output with id", () => {

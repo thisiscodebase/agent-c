@@ -216,6 +216,7 @@ export function ChatPageClient({
         messages={messages}
         onRespond={respondToInput}
         status={displayStatus}
+        streamEvents={agent.events}
         threadId={chatId}
       />
     </DetailPanelHost>

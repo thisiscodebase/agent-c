@@ -4,12 +4,21 @@ import type { EveMessagePart } from "eve/react";
 import {
   asToolInputs,
   collapseStatefulToolCalls,
+  getSubagentTask,
   getToolDisplayInfo,
+  resolveSubagentName,
   serializeToolOutput,
   STATEFUL_TOOL_CATEGORIES,
 } from "~/lib/tool-call-display";
 import { AgentActivitySection } from "~/components/ui/agent-activity-section";
-import type { ActivityItem, ActivityStep, ReasoningStep, ToolCallEntry } from "./activity-types";
+import type {
+  ActivityItem,
+  ActivityStep,
+  LiveSubagent,
+  LiveTool,
+  ReasoningStep,
+  ToolCallEntry,
+} from "./activity-types";
 import { ToolPart } from "./tool-part";
 
 const COMPLETED_STATES = new Set<
@@ -109,10 +118,12 @@ function buildTimelineSteps(items: ActivityItem[]): ActivityStep[] {
 
 function getLiveState(items: ActivityItem[]): {
   liveReasoning: ReasoningStep | null;
-  liveTool: { category: string; label: string; detail?: string } | null;
+  liveTool: LiveTool | null;
+  liveSubagents: LiveSubagent[];
 } {
   let liveReasoning: ReasoningStep | null = null;
-  let liveTool: { category: string; label: string; detail?: string } | null = null;
+  let liveTool: LiveTool | null = null;
+  const liveSubagents: LiveSubagent[] = [];
 
   for (const item of items) {
     if (item.kind === "reasoning" && item.part.state === "streaming") {
@@ -125,18 +136,26 @@ function getLiveState(items: ActivityItem[]): {
     if (item.kind === "tool" && !isInteractiveTool(item.part)) {
       if (ACTIVE_STATES.has(item.part.state)) {
         const display = getToolDisplayInfo(item.part.toolName, item.part.input);
-        const inputs = asToolInputs(item.part.input);
-        const task = typeof inputs?.message === "string" ? inputs.message.trim() : undefined;
-        liveTool = {
-          category: display.category,
-          label: display.category === "handoff" ? "Working via subagent" : display.runningLabel,
-          detail: display.category === "handoff" ? task : undefined,
-        };
+        if (display.category === "handoff") {
+          liveSubagents.push({
+            id: item.part.toolCallId,
+            name: resolveSubagentName(
+              item.part.toolName,
+              item.part.toolMetadata?.eve?.name,
+            ),
+            task: getSubagentTask(item.part.input),
+          });
+        } else {
+          liveTool = {
+            category: display.category,
+            label: display.runningLabel,
+          };
+        }
       }
     }
   }
 
-  return { liveReasoning, liveTool };
+  return { liveReasoning, liveTool, liveSubagents };
 }
 
 /**
@@ -155,12 +174,13 @@ export function AgentActivityGroup({
   );
 
   const steps = buildTimelineSteps(items);
-  const { liveReasoning, liveTool } = getLiveState(items);
+  const { liveReasoning, liveTool, liveSubagents } = getLiveState(items);
 
   return (
     <div className="flex w-full flex-col gap-0.5">
       <AgentActivitySection
         liveReasoning={liveReasoning}
+        liveSubagents={liveSubagents}
         liveTool={liveTool}
         steps={steps}
       />

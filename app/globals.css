@@ -195,6 +195,142 @@
   }
 }
 
+@property --paper-hue {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 85;
+}
+
+@property --paper-tint {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.005;
+}
+
+@property --paper-lightness {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.995;
+}
+
+@keyframes artifact-paper-cycle {
+  0%,
+  100% {
+    --paper-hue: 85;
+    --paper-tint: 0.005;
+    --paper-lightness: 0.995;
+  }
+  25% {
+    --paper-hue: 52;
+    --paper-tint: 0.034;
+    --paper-lightness: 0.955;
+  }
+  50% {
+    --paper-hue: 148;
+    --paper-tint: 0.026;
+    --paper-lightness: 0.955;
+  }
+  75% {
+    --paper-hue: 300;
+    --paper-tint: 0.028;
+    --paper-lightness: 0.955;
+  }
+}
+
+@keyframes artifact-paper-cycle-dark {
+  0%,
+  100% {
+    --paper-hue: 85;
+    --paper-tint: 0.005;
+    --paper-lightness: 0.19;
+  }
+  25% {
+    --paper-hue: 52;
+    --paper-tint: 0.034;
+    --paper-lightness: 0.235;
+  }
+  50% {
+    --paper-hue: 148;
+    --paper-tint: 0.026;
+    --paper-lightness: 0.235;
+  }
+  75% {
+    --paper-hue: 300;
+    --paper-tint: 0.028;
+    --paper-lightness: 0.235;
+  }
+}
+
+@keyframes artifact-pending-text-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.artifact-pending-cycle {
+  --paper-hue: 85;
+  --paper-tint: 0.005;
+  --paper-lightness: 0.995;
+  --paper-ink: 0.26;
+  --background: oklch(var(--paper-lightness) var(--paper-tint) var(--paper-hue));
+  --foreground: oklch(var(--paper-ink) calc(var(--paper-tint) * 0.8) var(--paper-hue));
+  --border: color-mix(in oklab, var(--background) 84%, var(--foreground));
+  background-color: var(--background);
+  color: var(--foreground);
+  border-color: var(--border);
+  animation: artifact-paper-cycle 10s linear infinite;
+}
+
+.artifact-pending-cycle::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    calc(90deg + 20deg),
+    transparent calc(50% - 3ch - 40px),
+    color-mix(in oklch, var(--foreground) 20%, transparent) calc(50% - 1.5ch - 20px),
+    color-mix(in oklch, var(--foreground) 38%, transparent) 50%,
+    color-mix(in oklch, var(--foreground) 20%, transparent) calc(50% + 1.5ch + 20px),
+    transparent calc(50% + 3ch + 40px)
+  );
+  background-repeat: no-repeat;
+  background-size: calc(200% + 6ch + 80px) 100%;
+  background-position: 0 0;
+  mix-blend-mode: overlay;
+  animation: artifact-pending-text-shimmer 1s linear infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .artifact-pending-cycle {
+    --paper-ink: 0.93;
+    animation-name: artifact-paper-cycle-dark;
+  }
+
+  .artifact-pending-cycle::after {
+    mix-blend-mode: soft-light;
+  }
+}
+
+.dark .artifact-pending-cycle {
+  --paper-ink: 0.93;
+  animation-name: artifact-paper-cycle-dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .artifact-pending-cycle {
+    animation: none;
+  }
+
+  .artifact-pending-cycle::after {
+    animation: none;
+    background-image: none;
+  }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-artifact-title: var(--font-artifact-title);

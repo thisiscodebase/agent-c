@@ -18,6 +18,10 @@ export const AGENT_ORB_DISPLAY_PX = 28;
 export type AgentOrbProps = Omit<ThinkingOrbProps, "theme" | "size"> & {
   /** Package canvas preset (always 20 for chat). Display size is scaled via CSS. */
   size?: OrbSize;
+  /** CSS px box; defaults to 28 for the 20 preset, 64 for the 64 preset. */
+  displayPx?: number;
+  /** Hue shift off the branded orange ink. Omit for the default fruit colour. */
+  hueRotate?: number;
   className?: string;
 };
 
@@ -28,6 +32,8 @@ export type AgentOrbProps = Omit<ThinkingOrbProps, "theme" | "size"> & {
 export function AgentOrb({
   state = "breathing",
   size = 20,
+  displayPx: displayPxProp,
+  hueRotate,
   speed = 1,
   paused = false,
   className,
@@ -35,7 +41,7 @@ export function AgentOrb({
   "aria-label": ariaLabel,
   ...rest
 }: AgentOrbProps) {
-  const displayPx = size === 64 ? 64 : AGENT_ORB_DISPLAY_PX;
+  const displayPx = displayPxProp ?? (size === 64 ? 64 : AGENT_ORB_DISPLAY_PX);
   const reduceMotion = useReducedMotion();
   const [activeState, setActiveState] = useState(state);
 
@@ -49,7 +55,11 @@ export function AgentOrb({
         "relative inline-flex shrink-0 items-center justify-center",
         className,
       )}
-      style={{ width: displayPx, height: displayPx }}
+      style={{
+        width: displayPx,
+        height: displayPx,
+        ...(hueRotate != null ? { filter: `hue-rotate(${hueRotate}deg)` } : {}),
+      }}
     >
       <AnimatePresence initial={false} mode="sync">
         <motion.span

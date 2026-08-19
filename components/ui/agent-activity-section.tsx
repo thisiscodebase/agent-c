@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { streamdownAnimation, streamdownPlugins } from "~/components/ai-elements/streamdown-config";
 import { streamdownLinkSafety } from "~/components/ai-elements/streamdown-link-safety-modal";
+import { useLiveSubagentOrbState } from "~/components/chat/live-subagent-activity";
 import {
   resolveTodos,
   TodosChecklist,
@@ -12,8 +13,18 @@ import {
 } from "~/components/chat/parts/todos-checklist";
 import { useReasoningDuration } from "~/components/chat/parts/use-reasoning-duration";
 import { useElapsedSeconds } from "~/components/chat/parts/use-elapsed-seconds";
-import type { ActivityStep, ReasoningStep } from "~/components/chat/parts/activity-types";
-import type { ToolCallEntry } from "~/components/chat/parts/activity-types";
+import type {
+  ActivityStep,
+  LiveSubagent,
+  LiveTool,
+  ReasoningStep,
+  ToolCallEntry,
+} from "~/components/chat/parts/activity-types";
+import { AgentOrb } from "~/components/ui/agent-orb";
+import {
+  assignUniqueSubagentHues,
+  orbStateForSubagentTask,
+} from "~/lib/subagent-orb";
 import {
   formatToolName,
   getActivitySummaryLabel,
@@ -329,10 +340,56 @@ function SoloTodosSection({
   );
 }
 
+function LiveSubagentRow({
+  id,
+  name,
+  task,
+  hueRotate,
+}: {
+  id: string;
+  name: string;
+  task?: string;
+  hueRotate: number;
+}) {
+  const elapsed = useElapsedSeconds(true, id);
+  const liveOrb = useLiveSubagentOrbState(id);
+  const orbState = liveOrb ?? orbStateForSubagentTask(name, task);
+
+  return (
+    <div className="flex items-start gap-2">
+      <AgentOrb
+        aria-label={`${name}: ${orbState}`}
+        className="mt-0.5"
+        displayPx={18}
+        hueRotate={hueRotate}
+        state={orbState}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="text-xs font-medium text-foreground/80 shimmer shimmer-duration-1000">
+            {name}
+          </span>
+          {formatElapsed(elapsed) ? (
+            <span className="text-[11px] tabular-nums text-muted-foreground/80">
+              {formatElapsed(elapsed)}
+            </span>
+          ) : null}
+        </div>
+        {task ? (
+          <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug text-muted-foreground/90">
+            {task}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export interface AgentActivitySectionProps {
   steps: ActivityStep[];
   liveReasoning?: ReasoningStep | null;
-  liveTool?: { category: string; label: string; detail?: string } | null;
+  liveTool?: LiveTool | null;
+  liveSubagents?: LiveSubagent[];
   className?: string;
   iconSize?: number;
   maxIconsToShow?: number;
@@ -342,6 +399,7 @@ export function AgentActivitySection({
   steps,
   liveReasoning = null,
   liveTool = null,
+  liveSubagents = [],
   className,
   iconSize = 16,
   maxIconsToShow = 10,
@@ -361,6 +419,11 @@ export function AgentActivitySection({
 
   const liveReasoningDuration = useReasoningDuration(liveReasoning?.isStreaming ?? false);
   const liveToolElapsed = useElapsedSeconds(Boolean(liveTool), liveTool?.label);
+  const liveSubagentIdKey = liveSubagents.map((agent) => agent.id).join("\0");
+  const liveSubagentHues = useMemo(
+    () => assignUniqueSubagentHues(liveSubagentIdKey ? liveSubagentIdKey.split("\0") : []),
+    [liveSubagentIdKey],
+  );
 
   const summaryLabel = getActivitySummaryLabel(
     reasoningSteps.length > 0 || liveReasoning
@@ -382,7 +445,9 @@ export function AgentActivitySection({
     });
   };
 
-  if (steps.length === 0 && !liveReasoning && !liveTool) return null;
+  if (steps.length === 0 && !liveReasoning && !liveTool && liveSubagents.length === 0) {
+    return null;
+  }
 
   const iconRenderer = (category: string, size: number) =>
     getToolCategoryIcon(category || "general", { size });
@@ -392,13 +457,14 @@ export function AgentActivitySection({
     steps.length === 1 &&
     steps[0]!.kind === "reasoning" &&
     !liveTool &&
+    liveSubagents.length === 0 &&
     !liveReasoning
   ) {
     return <SoloReasoningSection className={className} iconSize={iconSize} step={steps[0]!.step} />;
   }
 
   // Solo todos — flat header + checklist
-  if (isTodosOnlySteps(steps) && !liveReasoning && !liveTool) {
+  if (isTodosOnlySteps(steps) && !liveReasoning && !liveTool && liveSubagents.length === 0) {
     const entry = steps[steps.length - 1] as Extract<ActivityStep, { kind: "tool" }>;
     const todos = resolveTodos(entry.entry.inputs, entry.entry.output) ?? [];
     return (
@@ -483,8 +549,17 @@ export function AgentActivitySection({
         />
       </button>
 
-      {liveTool || (liveReasoning && steps.length > 0) ? (
-        <div className="flex flex-col gap-0.5 py-1 text-muted-foreground">
+      {liveSubagents.length > 0 || liveTool || (liveReasoning && steps.length > 0) ? (
+        <div className="flex flex-col gap-1.5 py-1 text-muted-foreground">
+          {liveSubagents.map((agent) => (
+            <LiveSubagentRow
+              key={agent.id}
+              hueRotate={liveSubagentHues.get(agent.id) ?? 95}
+              id={agent.id}
+              name={agent.name}
+              task={agent.task}
+            />
+          ))}
           {liveTool ? (
             <div className="flex items-start gap-2">
               <span className="mt-0.5 shrink-0">
@@ -506,7 +581,8 @@ export function AgentActivitySection({
                 ) : null}
               </div>
             </div>
-          ) : liveReasoning ? (
+          ) : null}
+          {liveReasoning && liveSubagents.length === 0 && !liveTool ? (
             <div className="flex items-center gap-2">
               <span style={{ rotate: "-8deg" }}>
                 {iconRenderer("reasoning", 14)}

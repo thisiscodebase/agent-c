@@ -211,13 +211,48 @@ function getSearchQuery(input: unknown): string | undefined {
 }
 
 function getSubagentMessage(input: unknown): string | undefined {
+  const task = getSubagentTask(input);
+  return task ? truncate(task, 72) : undefined;
+}
+
+/** Full task prompt for a live subagent row (not truncated for the activity list). */
+export function getSubagentTask(input: unknown): string | undefined {
   if (!input || typeof input !== "object") return undefined;
   const record = input as Record<string, unknown>;
   for (const key of ["message", "task", "prompt", "instructions", "goal"]) {
     const value = record[key];
-    if (typeof value === "string" && value.trim()) return truncate(value, 72);
+    if (typeof value === "string" && value.trim()) return value.trim();
   }
   return undefined;
+}
+
+/** Humanize a subagent slug (`docs-research` → `Docs Research`). */
+export function formatSubagentName(raw: string): string {
+  const words = raw
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+  return words.join(" ") || "Subagent";
+}
+
+/**
+ * Prefer Eve `toolMetadata.eve.name` (the subagent slug). Fall back to parsing
+ * the qualified tool name (`eve:subagent:docs-research`).
+ */
+export function resolveSubagentName(
+  toolName: string,
+  metadataName?: string,
+): string {
+  if (
+    metadataName &&
+    metadataName.trim() &&
+    metadataName.toLowerCase() !== "agent"
+  ) {
+    return formatSubagentName(metadataName);
+  }
+  return formatSubagentName(subagentDisplayName(toolName));
 }
 
 /** Built-in `agent` tool or Eve-qualified subagent tool names. */
@@ -466,7 +501,7 @@ export function getToolDisplayInfo(
 
   if (isSubagentTool(name)) {
     const task = getSubagentMessage(input);
-    const who = subagentDisplayName(toolName);
+    const who = formatSubagentName(subagentDisplayName(toolName));
     return {
       category: "handoff",
       showCategory: false,

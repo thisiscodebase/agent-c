@@ -12,7 +12,7 @@ export const subagentScenario: ChatLabScenario = {
   events: endTurn(
     beginTurn(userMessage)
       .streamReasoning(
-        "## Splitting the work\nThis is too wide for one pass. I’ll spin up four subagents: docs, CRM, Slack, and platform. They’ll finish on different clocks.",
+        "## Sharing the work\nThis is too wide for one pass. I’ll spin up four subagents: docs, CRM, Slack, and platform. They’ll finish on different clocks.",
       )
       .subagentBatch([
         {

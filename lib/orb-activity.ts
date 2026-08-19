@@ -1,6 +1,7 @@
 import type { ChatStatus } from "ai";
 import type { EveMessage, EveMessagePart } from "eve/react";
 import type { OrbState } from "~/components/ui/agent-orb";
+import { orbStateForCategory } from "~/lib/subagent-orb";
 import {
   getReasoningSummaryLabel,
   getToolDisplayInfo,
@@ -10,22 +11,6 @@ export type OrbActivity = {
   state: OrbState;
   label: string;
 };
-
-const SEARCH_CATEGORIES = new Set([
-  "web_search",
-  "web_fetch",
-  "retrieve_tools",
-  "slack",
-  "hubspot",
-  "notion",
-  "drive",
-  "tally",
-  "asana",
-  "retool",
-  "platform",
-]);
-
-const SHAPE_CATEGORIES = new Set(["memory", "todos"]);
 
 const ACTIVE_TOOL_STATES = new Set([
   "input-streaming",
@@ -101,6 +86,7 @@ export function getLiveOrbSignals(message: EveMessage | undefined): {
 
   let liveReasoning: LiveOrbReasoning | null = null;
   let liveTool: LiveOrbTool | null = null;
+  let handoffCount = 0;
   let streamingText = false;
   let connecting = false;
   let creatingArtifact = false;
@@ -121,13 +107,21 @@ export function getLiveOrbSignals(message: EveMessage | undefined): {
       }
       if (!isInteractiveTool(part) && ACTIVE_TOOL_STATES.has(part.state)) {
         const display = getToolDisplayInfo(part.toolName, part.input);
-        liveTool = {
-          category: display.category,
-          label:
-            display.category === "handoff"
-              ? "Working via subagent"
-              : display.runningLabel,
-        };
+        if (display.category === "handoff") {
+          handoffCount += 1;
+          liveTool = {
+            category: "handoff",
+            label:
+              handoffCount > 1
+                ? `Working via ${handoffCount} subagents`
+                : "Working via subagent",
+          };
+        } else {
+          liveTool = {
+            category: display.category,
+            label: display.runningLabel,
+          };
+        }
       }
     }
   }
@@ -181,16 +175,7 @@ export function resolveOrbActivity(input: {
 
   if (input.liveTool) {
     const { category, label } = input.liveTool;
-    if (category === "handoff") {
-      return { state: "weaving", label };
-    }
-    if (SEARCH_CATEGORIES.has(category)) {
-      return { state: "searching", label };
-    }
-    if (SHAPE_CATEGORIES.has(category)) {
-      return { state: "shaping", label };
-    }
-    return { state: "working", label };
+    return { state: orbStateForCategory(category), label };
   }
 
   if (input.liveReasoning) {

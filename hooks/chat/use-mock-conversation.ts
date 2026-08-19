@@ -339,6 +339,7 @@ export function useMockConversation(initialScenarioId?: string) {
     checkpoints: snapshot.checkpoints,
     waitingForHitl: snapshot.waitingForHitl,
     error: errorMessage ? new Error(errorMessage) : undefined,
+    streamEvents: events.slice(0, snapshot.index),
     play,
     pause,
     seek,

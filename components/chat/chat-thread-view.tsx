@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChatStatus } from "ai";
-import type { EveMessage } from "eve/react";
+import type { EveAgentReducerEvent, EveMessage } from "eve/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import type { AgentPrefs } from "#shared/agent-modes";
@@ -24,11 +24,13 @@ import {
   chatFooterSolidClass,
 } from "./chat-layout";
 import { AgentPresence } from "./agent-presence";
+import { LiveSubagentActivityProvider } from "./live-subagent-activity";
 import { MessageList } from "./message-list";
 
 export function ChatThreadView({
   messages,
   status,
+  streamEvents,
   threadId,
   onRespond,
   animateInitialUser = false,
@@ -44,6 +46,8 @@ export function ChatThreadView({
 }: {
   messages: readonly EveMessage[];
   status?: ChatStatus;
+  /** Applied stream prefix — used to morph live subagent orbs from nested child events. */
+  streamEvents?: readonly EveAgentReducerEvent[];
   threadId?: string;
   onRespond?: (requestId: string, optionId: string) => void;
   animateInitialUser?: boolean;
@@ -66,16 +70,17 @@ export function ChatThreadView({
     : null;
 
   return (
-    <MessageScrollerProvider autoScroll>
-      <div className="relative h-full min-w-0">
-        <MessageList
-          animateInitialUser={animateInitialUser}
-          footerSpacerClass={footerSpacerClass}
-          messages={messages}
-          onRespond={onRespond ?? noopRespond}
-          status={status}
-          threadId={threadId}
-        />
+    <LiveSubagentActivityProvider events={streamEvents}>
+      <MessageScrollerProvider autoScroll>
+        <div className="relative h-full min-w-0">
+          <MessageList
+            animateInitialUser={animateInitialUser}
+            footerSpacerClass={footerSpacerClass}
+            messages={messages}
+            onRespond={onRespond ?? noopRespond}
+            status={status}
+            threadId={threadId}
+          />
 
         <div className={chatFloatingFooterClass}>
           <div className="relative">
@@ -151,8 +156,9 @@ export function ChatThreadView({
             </div>
           </div>
         </div>
-      </div>
-    </MessageScrollerProvider>
+        </div>
+      </MessageScrollerProvider>
+    </LiveSubagentActivityProvider>
   );
 }
 

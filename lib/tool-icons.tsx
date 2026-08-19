@@ -1,12 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BrainIcon,
+  CircleDashedIcon,
   Code2Icon,
   GlobeIcon,
   InfoIcon,
   MessageCircleQuestionIcon,
   NotebookPenIcon,
-  SquareArrowOutUpRightIcon,
   ToolCaseIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -95,9 +95,9 @@ const iconConfigs: Record<string, IconConfig> = {
   },
   handoff: {
     kind: "lucide",
-    icon: SquareArrowOutUpRightIcon,
-    bgClass: "bg-sky-500/15",
-    iconClass: "text-sky-600 dark:text-sky-400",
+    icon: CircleDashedIcon,
+    bgClass: "bg-orange-500/15",
+    iconClass: "text-orange-600 dark:text-orange-400",
   },
   retrieve_tools: {
     kind: "lucide",
@@ -224,6 +224,8 @@ export function getBrandAccentClass(category: string): string {
       return "bg-violet-500";
     case "reasoning":
       return "bg-pink-500";
+    case "handoff":
+      return "bg-orange-500";
     default:
       return "bg-foreground/35";
   }

@@ -15,7 +15,6 @@ import {
 import { extractLeadingArtifactVisual } from "#shared/types/artifact-chart";
 import { ArtifactCoverCard } from "~/components/artifacts/artifact-cover-card";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Spinner } from "~/components/ui/spinner";
 import { useArtifact } from "~/hooks/use-artifact";
 import { useArtifactPanel } from "~/hooks/use-artifact-panel";
 import { toArtifactColour } from "~/lib/artifact-display";
@@ -94,34 +93,25 @@ export function ArtifactPart({
     );
   }
 
-  if (!artifact) {
-    const title = pendingTitle(part.input);
-    return (
-      <div
-        className="not-prose mb-4 flex aspect-[3/4] w-52 -rotate-1 skew-x-[0.6deg] items-center justify-center rounded-none border border-border/60 bg-muted/30 shadow-[3px_6px_16px_rgb(0_0_0/0.14),1px_2px_4px_rgb(0_0_0/0.08)] sm:w-56"
-      >
-        <span className="flex items-center gap-2 px-3 text-center text-xs text-muted-foreground">
-          <Spinner className="size-4 shrink-0" />
-          {title ? `Writing “${title}”…` : "Writing document…"}
-        </span>
-      </div>
-    );
-  }
-
+  const inputTitle = pendingTitle(part.input);
   const inputBody = contentMarkdownFromInput(part.input);
-  const body = liveArtifact?.contentMarkdown || inputBody || artifact.preview;
-  const stripped = stripLeadingTitleHeading(body, artifact.title);
+  const body = liveArtifact?.contentMarkdown || inputBody || artifact?.preview || "";
+  const title = artifact?.title ?? inputTitle;
+  const summaryLine = title
+    ? extractArtifactSummaryLine(body, title)
+    : undefined;
+  const stripped = title ? stripLeadingTitleHeading(body, title) : body;
   const leadingVisual = liveArtifact?.leadingVisual
     ?? extractLeadingArtifactVisual(stripped);
-  const summaryLine = extractArtifactSummaryLine(body, artifact.title);
 
   return (
     <ArtifactCoverCard
-      colour={artifact.colour}
-      leadingVisual={leadingVisual}
-      onOpen={() => openArtifact(artifact.id)}
+      colour={artifact?.colour}
+      leadingVisual={artifact ? leadingVisual : undefined}
+      onOpen={artifact ? () => openArtifact(artifact.id) : undefined}
+      pending={!artifact}
       summaryLine={summaryLine}
-      title={artifact.title}
+      title={title}
     />
   );
 }

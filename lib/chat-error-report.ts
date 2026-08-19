@@ -1,5 +1,6 @@
 import { USAGE_LIMIT_REACHED_CODE, USAGE_LIMIT_REACHED_MESSAGE } from "#shared/usage-meter";
 import { getStreamLogSnapshot } from "~/hooks/chat/use-stream-log";
+import { isReactMaxUpdateDepthError } from "~/lib/react-max-update-depth";
 
 function looksLikeHtmlDocument(message: string) {
   const trimmed = message.trimStart().slice(0, 200).toLowerCase();
@@ -20,6 +21,10 @@ export function formatChatErrorMessage(error: Error) {
     || message.includes("monthly Agent C usage limit")
   ) {
     return USAGE_LIMIT_REACHED_MESSAGE;
+  }
+
+  if (isReactMaxUpdateDepthError(error)) {
+    return "The reply is still being saved. Refresh the page to see the rest of the message.";
   }
 
   if (

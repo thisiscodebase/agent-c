@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { DEFAULT_AGENT_PREFS, normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord } from "#shared/types/thread";
+import { installEveStoreSubscribeThrottle } from "~/lib/eve-store-subscribe-throttle";
 import {
   chatFailureFromEvent,
   showChatErrorToast,
@@ -14,6 +15,9 @@ import { consumePendingMessage } from "./use-pending-message";
 import { recordStreamEvent } from "./use-stream-log";
 import { persistThreadState, resumeOptionsFromThread } from "./use-thread-state";
 import { requestThreadTitleGeneration } from "./use-thread-title";
+
+// Coalesce `message.appended` ticks so React doesn't hit error #185 mid-stream.
+installEveStoreSubscribeThrottle();
 
 export const AGENT_MODE_HEADER = "x-agent-c-mode";
 export const AGENT_REASONING_HEADER = "x-agent-c-reasoning";

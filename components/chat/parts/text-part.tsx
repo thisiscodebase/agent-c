@@ -52,6 +52,8 @@ export function TextPart({
     );
   }
 
+  const streaming = part.state === "streaming";
+
   return (
     <Streamdown
       allowedTags={{
@@ -61,9 +63,10 @@ export function TextPart({
       animated={streamdownAnimation}
       className={cn("size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0")}
       components={citationComponents}
-      isAnimating={part.state === "streaming"}
+      isAnimating={streaming}
       linkSafety={streamdownLinkSafety}
       literalTagContent={["cite-mark"]}
+      mode={streaming ? "streaming" : "static"}
       plugins={streamdownPlugins}
     >
       {markdown}

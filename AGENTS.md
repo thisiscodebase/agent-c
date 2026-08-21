@@ -118,3 +118,24 @@ Eve resolves the agent model on `session.started` via
 `disallowPromptTraining: true` and `zeroDataRetention: true`, except
 `xai/…` models which omit ZDR (no ZDR provider) while keeping no-training.
 Agent tiers use `reasoning: "high"`.
+
+## Cursor Cloud specific instructions
+
+### Services
+
+| Service | How to run | Notes |
+| ------- | ---------- | ----- |
+| **Next.js + Eve** | `pnpm dev` | Single process (`withEve()`). App at `http://localhost:3000`; Eve health at `/eve/v1/health`. |
+| **Postgres** | local cluster on **port 54322** | Matches `.env.example` / `supabase start` defaults (`postgres:postgres@127.0.0.1:54322/postgres`). This environment uses system PostgreSQL 16 (not the Supabase CLI). Ensure it is up before `pnpm dev`: `pg_lsclusters` / `sudo pg_ctlcluster 16 main start`. |
+| Connectors / Platform MCP / Slack | optional | Not required to boot or exercise chat UI, artifacts, profile, or leaderboard. |
+
+Standard install/migrate/run commands live in the Quick Reference above and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). Lint/typecheck is `pnpm typecheck`; unit tests are `pnpm test` (no separate ESLint script).
+
+### Gotchas
+
+- **Node must be ≥ 24** (`engines` / CI). The cloud image may expose an older Node earlier on `PATH` via `/exec-daemon/node`. Prefer the Node 24 install under nvm; shims in `/usr/local/cargo/bin` (ahead of `/exec-daemon`) keep `node`/`pnpm` on 24.
+- **`.env.local` line endings**: if secrets look correct but Better Auth sessions always fail, strip CR (`\r`) from `.env.local`. Windows-sourced env files make `BETTER_AUTH_SECRET` disagree between the shell and Next’s dotenv loader.
+- **Migrations**: `pnpm db:migrate` applies Drizzle (`server/db/migrations`). Also apply hand-written SQL under `supabase/migrations/` (e.g. `psql "$DATABASE_URL" -f …`) for artifacts / usage meter / feedback tables. Optional fixtures: `pnpm db:seed`.
+- **Auth**: Google Workspace OAuth only. Empty `GOOGLE_*` still boots the app; login needs real OAuth client redirect `http://localhost:3000/api/auth/callback/google`. Seeded `@example.com` users are DB fixtures, not Google login accounts.
+- **AI Gateway**: chat model replies need `VERCEL_OIDC_TOKEN` (via `vercel env pull`) or `AI_GATEWAY_API_KEY`. App and Eve health work without it; turns fail at inference time.
+- Do **not** put `experimentalServices` back into `vercel.json` — it breaks `/eve/v1/*` routing (see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)).

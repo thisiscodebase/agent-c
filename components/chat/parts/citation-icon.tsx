@@ -19,6 +19,7 @@ const BRAND_ICONS: Partial<
   retool: { src: "/icons/retool.svg", alt: "Retool" },
   platform: { src: "/icons/codebase.jpeg", alt: "CodeBase Platform" },
   companies_house: { src: "/icons/gov-uk.svg", alt: "Companies House" },
+  eventbrite: { src: "/icons/eventbrite.svg", alt: "Eventbrite" },
 };
 
 export function CitationIcon({

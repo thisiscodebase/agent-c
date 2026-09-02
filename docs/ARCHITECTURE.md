@@ -143,8 +143,8 @@ without the storage layer needing to know which one gets used.
 
 Two different retrieval problems, handled differently:
 
-- **External sources (Drive, HubSpot, Notion, Tally, Asana, Retool, Slack, Platform, Companies House)** — queried live via MCP
-  connector tool calls, or thin custom tools (Slack search, Drive REST, Companies House REST)
+- **External sources (Drive, HubSpot, Notion, Tally, Asana, Retool, Slack, Platform, Companies House, Eventbrite)** — queried live via MCP
+  connector tool calls, or thin custom tools (Slack search, Drive REST, Companies House REST, Eventbrite REST)
   against each service's own search API, not pre-indexed by us. Building
   and maintaining a federated indexing pipeline per external source is a large,
   ongoing engineering investment that isn't justified for v1.
@@ -178,6 +178,7 @@ for provisioning, pricing, and DIY comparison.
 | Retool          | Official Retool MCP (`https://thisiscodebase.retool.com/mcp`) via Vercel Connect              | **Per-user**        | Org-specific Streamable HTTP + OAuth (`mcp:read` / `mcp:write`). Resource queries allowed; mutations blocked until confirmed. See `agent/connections/retool.ts`.                     |
 | CodeBase Platform | Official Platform MCP (`PLATFORM_MCP_URL`) via shared bearer                                | **App-scoped env**  | Not Connect. Read-only allow-list. See `agent/connections/platform.ts`.                                                                                                               |
 | Companies House | REST tools (`search_companies_house`, `get_company_profile`, `get_company_officers`, `list_company_filings`) | **App-scoped env** | Public Data API + `COMPANIES_HOUSE_API_KEY`. HubSpot `companies_house_no` is the id bridge. No unofficial MCP. See `agent/lib/companies-house-api.ts`. |
+| Eventbrite | REST tools (`list_eventbrite_events`, `get_eventbrite_event`, `list_eventbrite_attendees`, `search_eventbrite_attendees`) | **App-scoped env** | API v3 + `EVENTBRITE_API_KEY` (Private token). Org-owned events only; no official MCP. See `agent/lib/eventbrite-api.ts`. |
 
 ### Auth model for connectors
 
@@ -195,7 +196,8 @@ Drive and Notion use per-user because their permission models are the actual
 security boundary for confidential material. HubSpot defaults to app-level
 because CRM access is typically uniform — but this is a per-connector decision,
 not a global policy, and should be re-checked against how CodeBase actually
-restricts each system.
+restricts each system. Eventbrite is app-scoped (org Private token): every
+signed-in user can see the same org events and attendee name/email.
 
 ## Removed surfaces / example scaffolding
 

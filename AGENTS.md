@@ -63,6 +63,9 @@ Live lookup sources (MCP / search tools), registered in
 - Companies House — REST tools (`search_companies_house`, `get_company_profile`,
   `get_company_officers`, `list_company_filings`) via shared `COMPANIES_HOUSE_API_KEY`
   (not Connect; public data).
+- Eventbrite — REST tools (`list_eventbrite_events`, `get_eventbrite_event`,
+  `list_eventbrite_attendees`, `search_eventbrite_attendees`) via shared
+  `EVENTBRITE_API_KEY` (Private token; not Connect; org-owned events only).
 
 UIDs: [`shared/connect.ts`](shared/connect.ts). Provision Connect connectors via
 `vercel connect` — see [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md).

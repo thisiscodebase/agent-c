@@ -9,6 +9,7 @@ import {
   HUBSPOT_CONNECTOR,
   NOTION_CONNECTOR,
   COMPANIES_HOUSE_CONNECTOR,
+  EVENTBRITE_CONNECTOR,
   PLATFORM_CONNECTOR,
   RETOOL_CONNECTOR,
   RETOOL_MCP_URL,
@@ -35,6 +36,7 @@ describe("connect UIDs + issuer", () => {
     assert.equal(SLACK_CONNECTOR, "slack/agent-c");
     assert.equal(PLATFORM_CONNECTOR, "platform-mcp/env");
     assert.equal(COMPANIES_HOUSE_CONNECTOR, "companies-house/env");
+    assert.equal(EVENTBRITE_CONNECTOR, "eventbrite/env");
     assert.ok(
       DRIVE_OAUTH_SCOPES.includes("https://www.googleapis.com/auth/drive.readonly"),
     );

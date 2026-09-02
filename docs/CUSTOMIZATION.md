@@ -43,6 +43,9 @@ code:
 - `search_companies_house.ts` / `get_company_profile.ts` /
   `get_company_officers.ts` / `list_company_filings.ts` — Companies House Public
   Data API (shared `COMPANIES_HOUSE_API_KEY`). Not Connect / not MCP.
+- `list_eventbrite_events.ts` / `get_eventbrite_event.ts` /
+  `list_eventbrite_attendees.ts` / `search_eventbrite_attendees.ts` — Eventbrite
+  API v3 (shared `EVENTBRITE_API_KEY` Private token). Not Connect / not MCP.
 - Phase 4 (not yet): `search_artifacts.ts`, `generate_report.ts`.
 
 Live HubSpot / Notion / Tally lookup is folded into connection files
@@ -70,6 +73,8 @@ MCP tools via `connection_search`. Drive uses custom tools (Slack-style) for now
   the **same** Connect app with expanded scopes via `search_slack.ts`.
 - Companies House is **not** an MCP connection — REST tools + env API key (same
   Integrations `authMode: "env"` pattern as Platform, without an MCP URL).
+- Eventbrite is **not** an MCP connection — REST tools + org Private token
+  (`EVENTBRITE_API_KEY`). Same `authMode: "env"` pattern.
 
 Registry + Integrations UI: [`server/connectors.ts`](../server/connectors.ts),
 UIDs in [`shared/connect.ts`](../shared/connect.ts).
@@ -111,4 +116,6 @@ login provider.
   Connect OAuth — hosted Drive MCP bypassed until Google’s data plane works.
 - **Companies House**: first-party REST tools + shared API key. Do not adopt
   unofficial MCP servers (AGPL, stdio, 45+ tools).
+- **Eventbrite**: first-party REST tools + shared Private token. Do not wrap
+  community MCP servers (write-heavy, no attendee tools, or unofficial search).
 - **Notion**: added as a Phase 3 lookup source via hosted Notion MCP.

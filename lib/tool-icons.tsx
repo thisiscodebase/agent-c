@@ -197,6 +197,12 @@ const iconConfigs: Record<string, IconConfig> = {
     onTintImgClass: "brightness-0 invert",
     textClass: "text-white",
   },
+  eventbrite: {
+    kind: "image",
+    src: "/icons/eventbrite.svg",
+    bgClass: "bg-[#F05537]/15",
+    alt: "Eventbrite",
+  },
 };
 
 /** Solid accent fill for progress bars / meters matching the tool brand. */
@@ -220,6 +226,8 @@ export function getBrandAccentClass(category: string): string {
       return "bg-emerald-500";
     case "companies_house":
       return "bg-[#1D70B8]";
+    case "eventbrite":
+      return "bg-[#F05537]";
     case "todos":
       return "bg-amber-500";
     case "development":

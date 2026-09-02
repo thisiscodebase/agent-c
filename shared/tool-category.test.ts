@@ -50,6 +50,14 @@ describe("toolCategory", () => {
       category: "companies_house",
       label: "Companies House",
     });
+    assert.deepEqual(toolCategory("list_eventbrite_events"), {
+      category: "eventbrite",
+      label: "Eventbrite",
+    });
+    assert.deepEqual(toolCategory("search_eventbrite_attendees"), {
+      category: "eventbrite",
+      label: "Eventbrite",
+    });
   });
 
   it("maps built-ins and unknown tools", () => {

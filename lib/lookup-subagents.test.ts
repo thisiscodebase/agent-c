@@ -63,6 +63,10 @@ describe("lookup subagent isolation", () => {
     assert.ok(researcherTools.includes("get_company_profile.ts"));
     assert.ok(researcherTools.includes("get_company_officers.ts"));
     assert.ok(researcherTools.includes("list_company_filings.ts"));
+    assert.ok(researcherTools.includes("list_eventbrite_events.ts"));
+    assert.ok(researcherTools.includes("get_eventbrite_event.ts"));
+    assert.ok(researcherTools.includes("list_eventbrite_attendees.ts"));
+    assert.ok(researcherTools.includes("search_eventbrite_attendees.ts"));
     assert.deepEqual(
       [...researcherConnections].sort(),
       ["asana.ts", "hubspot.ts", "notion.ts", "platform.ts", "retool.ts", "tally.ts"],
@@ -71,6 +75,7 @@ describe("lookup subagent isolation", () => {
     assert.ok(slackTools.includes("search_slack.ts"));
     assert.ok(!slackTools.includes("search_drive.ts"));
     assert.ok(!slackTools.includes("search_companies_house.ts"));
+    assert.ok(!slackTools.includes("list_eventbrite_events.ts"));
     assert.ok(!slackTools.includes("save_memory.ts"));
     assert.ok(!slackTools.includes("create_artifact.ts"));
   });

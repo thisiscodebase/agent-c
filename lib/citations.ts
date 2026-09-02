@@ -12,6 +12,7 @@ export type CitationSource =
   | "retool"
   | "platform"
   | "companies_house"
+  | "eventbrite"
   | "unknown";
 
 export type Citation = {
@@ -107,6 +108,13 @@ const CONNECTOR_HOST_PATTERNS: Array<{
       || h === "company-information.service.gov.uk"
       || h.endsWith(".company-information.service.gov.uk"),
   },
+  {
+    source: "eventbrite",
+    test: (h) =>
+      h === "eventbrite.com"
+      || h === "www.eventbrite.com"
+      || h.endsWith(".eventbrite.com"),
+  },
 ];
 
 function isHttpUrl(value: string): boolean {
@@ -189,6 +197,15 @@ export function classifyCitationSource(
     return "companies_house";
   }
   if (
+    name === "list_eventbrite_events"
+    || name === "get_eventbrite_event"
+    || name === "list_eventbrite_attendees"
+    || name === "search_eventbrite_attendees"
+    || name.includes("eventbrite")
+  ) {
+    return "eventbrite";
+  }
+  if (
     name === "web_search"
     || name === "search_web"
     || name === "google_search"
@@ -229,6 +246,8 @@ export function getCitationLabel(citation: Citation): string {
       return "Platform";
     case "companies_house":
       return "Companies House";
+    case "eventbrite":
+      return "Eventbrite";
     case "web":
     case "unknown":
       return getDomain(citation.url);
@@ -251,6 +270,7 @@ export function getCitationTintClass(source: CitationSource): string {
     case "retool":
     case "platform":
     case "companies_house":
+    case "eventbrite":
       return getBrandTintClass(source);
     case "web":
       return "bg-sky-500/15";
@@ -275,6 +295,7 @@ export function getCitationTextClass(source: CitationSource): string {
     case "retool":
     case "platform":
     case "companies_house":
+    case "eventbrite":
       return getBrandTextClass(source);
     case "web":
     case "unknown":

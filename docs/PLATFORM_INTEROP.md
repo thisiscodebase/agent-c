@@ -14,6 +14,7 @@ Related: [Environment](ENVIRONMENT.md), [Connect](CONNECT.md).
 | ----------- | ---------- | --------------- |
 | **Platform MCP** | Shared bearer (`PLATFORM_MCP_TOKEN`) — **not** Connect | CodeBase Platform (`/api/mcp`) |
 | **Companies House** | Shared API key (`COMPANIES_HOUSE_API_KEY`) — **not** Connect | Companies House Public Data REST |
+| **Eventbrite** | Shared Private token (`EVENTBRITE_API_KEY`) — **not** Connect | Eventbrite API v3 REST |
 | **Drive / HubSpot / Notion / Tally / Asana / Retool** | Vercel Connect OAuth (per-user or app-scoped) | Provider MCP URLs |
 | **Slack search + Slack channel** | Connect app `slack/agent-c` | Slack APIs |
 

@@ -15,6 +15,7 @@ const SEARCH_CATEGORIES = new Set([
   "retool",
   "platform",
   "companies_house",
+  "eventbrite",
 ]);
 
 const SHAPE_CATEGORIES = new Set(["memory", "todos"]);

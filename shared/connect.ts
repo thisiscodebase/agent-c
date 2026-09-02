@@ -68,3 +68,11 @@ export const PLATFORM_CONNECTOR = "platform-mcp/env";
  * Sentinel UID for the Integrations registry only.
  */
 export const COMPANIES_HOUSE_CONNECTOR = "companies-house/env";
+
+/**
+ * Eventbrite API v3 — app-scoped private token (not Vercel Connect).
+ * Set `EVENTBRITE_API_KEY` (Private token, not App Key) on Eve (tools) and
+ * web (Integrations test). Optional `EVENTBRITE_ORGANIZATION_ID`.
+ * Sentinel UID for the Integrations registry only.
+ */
+export const EVENTBRITE_CONNECTOR = "eventbrite/env";

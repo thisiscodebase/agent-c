@@ -11,6 +11,7 @@ const CONNECTION_CATEGORIES: Record<string, { category: string; label: string }>
   retool: { category: "retool", label: "Retool" },
   platform: { category: "platform", label: "CodeBase Platform" },
   companies_house: { category: "companies_house", label: "Companies House" },
+  eventbrite: { category: "eventbrite", label: "Eventbrite" },
 };
 
 /** Known popular-tool category keys (URL slug safe). */
@@ -24,6 +25,7 @@ export const TOOL_CATEGORY_KEYS = [
   "retool",
   "platform",
   "companies_house",
+  "eventbrite",
   "development",
   "todos",
   "memory",
@@ -58,6 +60,8 @@ export function categoryLabel(category: string): string {
       return "CodeBase Platform";
     case "companies_house":
       return "Companies House";
+    case "eventbrite":
+      return "Eventbrite";
     case "development":
       return "Code";
     case "todos":
@@ -138,6 +142,15 @@ export function toolCategory(toolName: string): { category: string; label: strin
     || name.includes("companies_house")
   ) {
     return { category: "companies_house", label: "Companies House" };
+  }
+  if (
+    name === "list_eventbrite_events"
+    || name === "get_eventbrite_event"
+    || name === "list_eventbrite_attendees"
+    || name === "search_eventbrite_attendees"
+    || name.includes("eventbrite")
+  ) {
+    return { category: "eventbrite", label: "Eventbrite" };
   }
   if (name === "connection_search" || name.includes("connection_search")) {
     return { category: "connections", label: "Connections" };

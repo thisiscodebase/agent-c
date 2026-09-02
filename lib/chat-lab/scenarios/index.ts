@@ -1,6 +1,7 @@
 import type { ChatLabScenario } from "../types.ts";
 import { artifactScenario } from "./artifact.ts";
 import { companiesHouseScenario } from "./companies-house.ts";
+import { eventbriteScenario } from "./eventbrite.ts";
 import { errorScenario } from "./error.ts";
 import { hitlMemoryScenario } from "./hitl-memory.ts";
 import { plainStreamScenario } from "./plain-stream.ts";
@@ -12,6 +13,7 @@ export const CHAT_LAB_SCENARIOS: readonly ChatLabScenario[] = [
   reasoningToolsScenario,
   subagentScenario,
   companiesHouseScenario,
+  eventbriteScenario,
   artifactScenario,
   hitlMemoryScenario,
   errorScenario,
@@ -25,6 +27,7 @@ export function getChatLabScenario(id: string | null | undefined): ChatLabScenar
 export {
   artifactScenario,
   companiesHouseScenario,
+  eventbriteScenario,
   errorScenario,
   hitlMemoryScenario,
   plainStreamScenario,

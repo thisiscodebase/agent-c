@@ -4,6 +4,7 @@ import {
   COMPANIES_HOUSE_CONNECTOR,
   DRIVE_CONNECTOR,
   DRIVE_OAUTH_SCOPES,
+  EVENTBRITE_CONNECTOR,
   HUBSPOT_CONNECTOR,
   HUBSPOT_OAUTH_SCOPES,
   NOTION_CONNECTOR,
@@ -16,6 +17,7 @@ import {
 import { createError } from "~~/server/utils/http-error";
 import { testAsanaMcpConnection } from "~~/server/utils/asana-mcp-test";
 import { testCompaniesHouseConnection } from "~~/server/utils/companies-house-test";
+import { testEventbriteConnection } from "~~/server/utils/eventbrite-test";
 import { testNotionMcpConnection } from "~~/server/utils/notion-mcp-test";
 import { testPlatformMcpConnection } from "~~/server/utils/platform-mcp-test";
 import { testRetoolMcpConnection } from "~~/server/utils/retool-mcp-test";
@@ -202,6 +204,22 @@ export const connectors: ConnectorDef[] = [
     test: {
       label: "Look up test company",
       run: async (token) => testCompaniesHouseConnection(token),
+    },
+  },
+  {
+    id: "eventbrite",
+    name: "Eventbrite",
+    description:
+      "Org events, attendance, and attendee lookup (shared private token; this org only).",
+    connector: EVENTBRITE_CONNECTOR,
+    connectionName: "list_eventbrite_events",
+    icon: "i-simple-icons-eventbrite",
+    scopes: [],
+    authMode: "env",
+    staticTokenEnv: "EVENTBRITE_API_KEY",
+    test: {
+      label: "Check Eventbrite account",
+      run: async (token) => testEventbriteConnection(token),
     },
   },
   {

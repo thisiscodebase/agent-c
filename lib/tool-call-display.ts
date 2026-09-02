@@ -220,6 +220,26 @@ function getCompanyNumber(input: unknown): string | undefined {
   return undefined;
 }
 
+function getEventId(input: unknown): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const record = input as Record<string, unknown>;
+  const value = record.event_id;
+  if (typeof value === "string" && value.trim()) {
+    return truncate(value.trim(), 16);
+  }
+  return undefined;
+}
+
+function getNameFilter(input: unknown): string | undefined {
+  if (!input || typeof input !== "object") return undefined;
+  const record = input as Record<string, unknown>;
+  const value = record.name_filter;
+  if (typeof value === "string" && value.trim()) {
+    return truncate(value.trim(), 40);
+  }
+  return undefined;
+}
+
 function getSubagentMessage(input: unknown): string | undefined {
   const task = getSubagentTask(input);
   return task ? truncate(task, 72) : undefined;
@@ -530,6 +550,72 @@ export function getToolDisplayInfo(
         ? `Searched Companies House for “${query}”`
         : "Searched Companies House",
       summaryLabel: "Searched Companies House",
+    };
+  }
+
+  if (
+    name === "list_eventbrite_events"
+    || name === "get_eventbrite_event"
+    || name === "list_eventbrite_attendees"
+    || name === "search_eventbrite_attendees"
+    || name.includes("eventbrite")
+  ) {
+    const query = getSearchQuery(input);
+    const eventId = getEventId(input);
+    const nameFilter = getNameFilter(input);
+    if (name === "get_eventbrite_event") {
+      return {
+        category: "eventbrite",
+        integrationName: "Eventbrite",
+        showCategory: true,
+        runningLabel: eventId
+          ? `Looking up Eventbrite event ${eventId}`
+          : "Looking up Eventbrite event",
+        completedLabel: eventId
+          ? `Looked up Eventbrite event ${eventId}`
+          : "Looked up Eventbrite event",
+        summaryLabel: "Looked up event",
+      };
+    }
+    if (name === "list_eventbrite_attendees") {
+      return {
+        category: "eventbrite",
+        integrationName: "Eventbrite",
+        showCategory: true,
+        runningLabel: eventId
+          ? `Listing attendees for ${eventId}`
+          : "Listing Eventbrite attendees",
+        completedLabel: eventId
+          ? `Listed attendees for ${eventId}`
+          : "Listed Eventbrite attendees",
+        summaryLabel: "Listed attendees",
+      };
+    }
+    if (name === "search_eventbrite_attendees") {
+      return {
+        category: "eventbrite",
+        integrationName: "Eventbrite",
+        showCategory: true,
+        runningLabel: query
+          ? `Searching Eventbrite attendees for “${query}”`
+          : "Searching Eventbrite attendees",
+        completedLabel: query
+          ? `Searched Eventbrite attendees for “${query}”`
+          : "Searched Eventbrite attendees",
+        summaryLabel: "Searched attendees",
+      };
+    }
+    return {
+      category: "eventbrite",
+      integrationName: "Eventbrite",
+      showCategory: true,
+      runningLabel: nameFilter
+        ? `Listing Eventbrite events for “${nameFilter}”`
+        : "Listing Eventbrite events",
+      completedLabel: nameFilter
+        ? `Listed Eventbrite events for “${nameFilter}”`
+        : "Listed Eventbrite events",
+      summaryLabel: "Listed events",
     };
   }
 

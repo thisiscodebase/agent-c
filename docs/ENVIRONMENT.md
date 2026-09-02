@@ -149,6 +149,31 @@ Rate limit: 600 requests / 5 minutes per key. Chat uses four REST tools
 (`search_companies_house`, `get_company_profile`, `get_company_officers`,
 `list_company_filings`) — no hosted MCP, no per-user OAuth.
 
+### Eventbrite (`eve` + `web`)
+
+Not Vercel Connect — shared app-scoped **Private token** against
+[Eventbrite API v3](https://www.eventbrite.com/platform/api) (Bearer). There is
+no official Eventbrite MCP; do not wrap community stdio servers.
+
+1. Sign in as the CodeBase Eventbrite org owner/admin.
+2. Open [API keys](https://www.eventbrite.com/platform/api-keys) (Account
+   Settings → Developer Links → API Keys). Create an app if needed.
+3. Copy the **Private token**, not the public App Key / Client Secret.
+4. Organization ID from org settings, or
+   `GET https://www.eventbriteapi.com/v3/users/me/organizations/` with
+   `Authorization: Bearer <private-token>`.
+
+On **Eve** (tools) and **web** (Settings → Integrations status/test):
+
+- `EVENTBRITE_API_KEY` — Private token (required)
+- `EVENTBRITE_ORGANIZATION_ID` — org id (optional; required if the token sees
+  more than one organization)
+
+Rate limit: roughly 1,000 requests/hour. Chat uses four REST tools
+(`list_eventbrite_events`, `get_eventbrite_event`, `list_eventbrite_attendees`,
+`search_eventbrite_attendees`) — org-owned events only (public search was
+removed). Attendee name/email is PII visible to every Agent C user.
+
 ### Drive (GCP)
 
 Drive MCP requires a Google Cloud project with:

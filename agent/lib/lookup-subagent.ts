@@ -12,7 +12,7 @@ import { fetchAgentModelSelection } from "./model-routing-internal.js";
 /** Descriptions the parent model uses to decide when to delegate. */
 export const LOOKUP_SUBAGENT_DESCRIPTIONS = {
   researcher:
-    "Look up companies, people, programmes, docs, CRM, Drive, Notion, Platform, Tally, Asana, Retool, and Companies House. Use proactively for multi-source digests, case-study gathering, bid evidence sweeps, and any lookup that needs more than one or two connector calls. Do not use for Slack searches or for a single-connector fact the parent can answer itself.",
+    "Look up companies, people, programmes, docs, CRM, Drive, Notion, Platform, Tally, Asana, Retool, Companies House, and Eventbrite. Use proactively for multi-source digests, case-study gathering, bid evidence sweeps, and any lookup that needs more than one or two connector calls. Do not use for Slack searches or for a single-connector fact the parent can answer itself.",
   "slack-scan":
     "Search Slack for discussion, decisions, and what was said. Use proactively for workspace sweeps, decision hunts, and any Slack search beyond resolving a known permalink. Do not use for CRM, Drive, Notion, or Platform lookups.",
 } as const;

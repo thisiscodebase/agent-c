@@ -85,3 +85,32 @@ describe("Companies House tool display", () => {
     );
   });
 });
+
+describe("Eventbrite tool display", () => {
+  it("labels list, get, roster, and person search", () => {
+    assert.equal(
+      getToolDisplayInfo("list_eventbrite_events", { name_filter: "Unfiltered" })
+        .category,
+      "eventbrite",
+    );
+    assert.equal(
+      getToolDisplayInfo("list_eventbrite_events", { name_filter: "Unfiltered" })
+        .runningLabel,
+      "Listing Eventbrite events for “Unfiltered”",
+    );
+    assert.equal(
+      getToolDisplayInfo("get_eventbrite_event", { event_id: "111" }).runningLabel,
+      "Looking up Eventbrite event 111",
+    );
+    assert.equal(
+      getToolDisplayInfo("list_eventbrite_attendees", { event_id: "111" })
+        .summaryLabel,
+      "Listed attendees",
+    );
+    assert.equal(
+      getToolDisplayInfo("search_eventbrite_attendees", { query: "Ada" })
+        .runningLabel,
+      "Searching Eventbrite attendees for “Ada”",
+    );
+  });
+});

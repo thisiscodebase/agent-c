@@ -6,6 +6,8 @@ type ModelLogo = {
   alt: string;
   /** White/light logos need invert in light mode to show on pale backgrounds. */
   invertInLightMode?: boolean;
+  /** Black logos need invert in dark mode to show on dark backgrounds. */
+  invertInDarkMode?: boolean;
 };
 
 const PROVIDER_LOGOS: Record<string, ModelLogo> = {
@@ -18,6 +20,8 @@ const PROVIDER_LOGOS: Record<string, ModelLogo> = {
   xai: { src: "/icons/cursor.svg", alt: "Grok", invertInLightMode: true },
   grok: { src: "/icons/cursor.svg", alt: "Grok", invertInLightMode: true },
   cursor: { src: "/icons/cursor.svg", alt: "Cursor", invertInLightMode: true },
+  zai: { src: "/icons/zai.svg", alt: "Z.ai", invertInDarkMode: true },
+  glm: { src: "/icons/zai.svg", alt: "Z.ai", invertInDarkMode: true },
 };
 
 export { modelProviderFromId };
@@ -42,6 +46,9 @@ export function modelBrandAccentClass(modelId: string): string {
     case "grok":
     case "cursor":
       return "bg-[#F54E00]";
+    case "zai":
+    case "glm":
+      return "bg-neutral-950 dark:bg-white";
     default:
       return "bg-foreground/35";
   }
@@ -77,6 +84,7 @@ export function ModelProviderLogo({
       className={cn(
         "size-10 shrink-0 object-contain",
         logo.invertInLightMode && "invert dark:invert-0",
+        logo.invertInDarkMode && "dark:invert",
         className,
       )}
       src={logo.src}

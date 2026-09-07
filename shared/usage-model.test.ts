@@ -13,6 +13,8 @@ describe("canonicalModelId / modelProviderFromId", () => {
     assert.equal(modelProviderFromId("dynamic:openai/gpt-5.6-luna"), "openai");
     assert.equal(modelProviderFromId("openai/gpt-5.6-sol"), "openai");
     assert.equal(modelProviderFromId("anthropic/claude-sonnet-5"), "anthropic");
+    assert.equal(modelProviderFromId("zai/glm-5.3-flash"), "zai");
+    assert.equal(modelProviderFromId("dynamic:zai/glm-5.3-flash"), "zai");
   });
 });
 

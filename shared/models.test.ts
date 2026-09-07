@@ -50,6 +50,7 @@ describe("gateway privacy + tier resolution", () => {
     assert.equal(resolveAgentTier("nope"), "chat");
     assert.equal(isGatewayModelId("openai/gpt-5.6-luna"), true);
     assert.equal(isGatewayModelId("xai/grok-5"), true);
+    assert.equal(isGatewayModelId("zai/glm-5.3-flash"), true);
     assert.equal(isGatewayModelId("not-in-pool"), false);
     assert.equal(resolveTierModel("chat", "openai/gpt-5.6-luna"), "openai/gpt-5.6-luna");
     assert.equal(resolveTierModel("premium", "openai/gpt-5.6-sol"), "openai/gpt-5.6-sol");

@@ -189,6 +189,9 @@ function modelLabel(modelId: string): string {
   return raw
     .split("-")
     .map((part) => {
+      if (part === "glm") {
+        return "GLM";
+      }
       if (part.length <= 3 && /[a-z]/.test(part) && /\d/.test(part)) {
         return part.toUpperCase();
       }

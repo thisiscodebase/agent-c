@@ -8,7 +8,7 @@ export function canonicalModelId(raw: string | null | undefined): string | null 
   return normalizeModelId(raw);
 }
 
-/** Provider segment of a Gateway model id (`openai`, `anthropic`, `xai`). */
+/** Provider segment of a Gateway model id (`openai`, `anthropic`, `xai`, `zai`). */
 export function modelProviderFromId(modelId: string): string {
   const id = canonicalModelId(modelId) ?? modelId.trim();
   const slash = id.indexOf("/");

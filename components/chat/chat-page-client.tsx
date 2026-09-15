@@ -23,6 +23,11 @@ import { useUsageMeter } from "~/hooks/use-usage-meter";
 import { queryKeys } from "~/lib/query-keys";
 import { estimateThreadContextBreakdown } from "~/lib/thread-context-breakdown";
 import { resolveThreadContextPressure } from "~/lib/thread-context-pressure";
+import {
+  buildMessageWithAttachments,
+  uploadThreadAttachments,
+} from "~/lib/upload-attachments";
+import { toast } from "sonner";
 import { ChatErrorBanner } from "./chat-error-banner";
 import { ChatThreadView } from "./chat-thread-view";
 
@@ -213,12 +218,27 @@ function ChatPageSession({
               onStop={() => {
                 void agent.cancel();
               }}
-              onSubmit={(message) => {
+              onSubmit={(message, files) => {
                 if (usageBlocked) return;
                 const text = message.trim();
-                if (!text) return;
-                setLocalUser(createOptimisticUserMessage(text) as EveMessage);
-                void agent.send(text);
+                if (!text && !(files && files.length > 0)) return;
+
+                void (async () => {
+                  try {
+                    let outbound = text;
+                    if (files && files.length > 0) {
+                      const uploaded = await uploadThreadAttachments(chatId, files);
+                      outbound = buildMessageWithAttachments(text, uploaded);
+                    }
+                    setLocalUser(createOptimisticUserMessage(outbound) as EveMessage);
+                    void agent.send(outbound);
+                  }
+                  catch (error) {
+                    toast.error(
+                      error instanceof Error ? error.message : "Upload failed",
+                    );
+                  }
+                })();
               }}
               status={displayStatus}
             />

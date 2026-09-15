@@ -92,8 +92,11 @@ pattern still needs to be finalized as a config choice.
 
 - Quick-chat pill visual design (functional today via AI Elements `Suggestion`,
   just not art-directed)
-- Attachment/file upload isn't wired into the composer (`PromptInput` supports
-  it; not exercised yet)
+- Composer file attachments are wired: upload to private Supabase Storage
+  (`chat-attachments`), `[[attachment:id|name]]` markers in the prompt, and
+  progressive agent tools `preview_attachment` / `read_attachment` (PDF pages,
+  CSV rows, text/DOCX offsets). Requires `SUPABASE_URL` +
+  `SUPABASE_SERVICE_ROLE_KEY`.
 
 ## Housekeeping
 

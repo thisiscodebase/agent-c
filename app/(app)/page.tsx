@@ -19,7 +19,6 @@ import { Composer } from "~/components/ui/composer";
 import { useChatNavigation } from "~/hooks/chat/use-chat-navigation";
 import {
   clearPendingMessage,
-  setPendingMessage,
 } from "~/hooks/chat/use-pending-message";
 import { getToolCategoryIcon } from "~/lib/tool-icons";
 import { cn } from "~/lib/utils";
@@ -142,15 +141,20 @@ function HomePageLive() {
   }, [launch]);
 
   const launchChat = useCallback(
-    (message: string) => {
+    (message: string, files?: File[]) => {
       const text = message.trim();
-      if (!text || launch) return;
+      if ((!text && !(files && files.length > 0)) || launch) return;
 
       const chatId = crypto.randomUUID();
       setRestoreValue(undefined);
-      setPendingMessage(chatId, text);
-      setLaunch({ chatId, message: text });
-      void startNewChat(text, agentPrefs, { chatId }).catch((error) => {
+      // Optimistic bubble uses raw text; markers are added after upload in startNewChat.
+      const optimistic =
+        text
+        || (files?.length
+          ? files.map((file) => file.name).join(", ")
+          : "");
+      setLaunch({ chatId, message: optimistic });
+      void startNewChat(text, agentPrefs, { chatId, files }).catch((error) => {
         clearPendingMessage();
         setLaunch(null);
         setRestoreValue(text);
@@ -196,8 +200,8 @@ function HomePageLive() {
               className="w-full"
               defaultValue={restoreValue}
               onAgentPrefsChange={setAgentPrefs}
-              onSubmit={(message) => {
-                if (message.trim()) launchChat(message);
+              onSubmit={(message, files) => {
+                launchChat(message, files);
               }}
             />
 

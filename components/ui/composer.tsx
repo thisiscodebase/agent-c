@@ -1,19 +1,28 @@
 "use client";
 
 import type { ChatStatus } from "ai";
-import { ArrowUpIcon, MicIcon, SquareIcon, XIcon } from "lucide-react";
+import {
+  ArrowUpIcon,
+  MicIcon,
+  PaperclipIcon,
+  SquareIcon,
+  XIcon,
+} from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   type CSSProperties,
   type ClipboardEvent,
+  type DragEvent,
   type FormEvent,
   type KeyboardEvent,
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 import {
   SkillSlashMenu,
   clearComposerContent,
@@ -38,15 +47,21 @@ import {
   extractComposerPasteRef,
   shouldChipComposerPaste,
 } from "#shared/composer-paste-refs";
+import {
+  MAX_ATTACHMENTS_PER_TURN,
+  MAX_ATTACHMENT_BYTES,
+  resolveAttachmentMime,
+} from "#shared/types/attachment";
 import { cn } from "~/lib/utils";
 import { COMPOSER_LAYOUT_ID } from "~/components/chat/chat-layout";
 
-/** Prepared for file-attachment UI (not rendered yet). */
+/** Local pending attachment (uploaded on submit). */
 export type UploadedFile = {
   id: string;
   name: string;
   type: string;
   url: string;
+  file: File;
   description?: string;
   isUploading?: boolean;
 };
@@ -74,7 +89,7 @@ export type ComposerProps = {
    * built-in hints (skills, connectors, general prompts).
    */
   placeholder?: string;
-  onSubmit?: (message: string, files?: UploadedFile[]) => void;
+  onSubmit?: (message: string, files?: File[]) => void;
   onChange?: (value: string) => void;
   disabled?: boolean;
   autoFocus?: boolean;
@@ -83,16 +98,12 @@ export type ComposerProps = {
   /** When set, resets the editor to this plain text (chips are not preserved). */
   value?: string;
   className?: string;
-  /** Reserved for upcoming attachment chips. */
-  attachedFiles?: UploadedFile[];
-  onRemoveFile?: (id: string) => void;
   /** @deprecated Slash skills are built-in; prop ignored. */
   tools?: ComposerTool[];
   onToolSelect?: (tool: ComposerTool) => void;
   showToolsButton?: boolean;
   /** Reserved for upcoming plus-button menu. */
   contextOptions?: ComposerContextOption[];
-  onAttachClick?: () => void;
   status?: ChatStatus;
   onStop?: () => void;
   /** Per-thread Zest/Juice mode + reasoning. When set, shows the mode picker. */
@@ -109,6 +120,7 @@ const COMPOSER_PLACEHOLDERS = [
   "What would you like to know?",
   "Type / for skills…",
   "Mention a Drive file with @…",
+  "Attach a PDF, CSV, or doc…",
   "Paste a Drive, Notion, HubSpot, Asana, or Tally link…",
   "Draft a bid response with /bid-writing…",
   "Search Drive for the latest deck…",
@@ -170,7 +182,6 @@ export function Composer({
   defaultValue = "",
   value,
   className,
-  attachedFiles = [],
   status,
   onStop,
   agentPrefs,
@@ -179,9 +190,70 @@ export function Composer({
   const reduceMotion = useReducedMotion();
   const editorRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
   const [isComposing, setIsComposing] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!defaultValue.trim());
+  const [attachedFiles, setAttachedFiles] = useState<UploadedFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const canSubmit = !isEmpty || attachedFiles.length > 0;
+
+  useEffect(() => {
+    return () => {
+      for (const file of attachedFiles) {
+        URL.revokeObjectURL(file.url);
+      }
+    };
+    // Only revoke on unmount for the latest list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unmount cleanup
+  }, []);
+
+  const attachedFilesRef = useRef(attachedFiles);
+  useEffect(() => {
+    attachedFilesRef.current = attachedFiles;
+  }, [attachedFiles]);
+
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const list = Array.from(incoming);
+    if (list.length === 0) return;
+
+    const current = attachedFilesRef.current;
+    const remaining = MAX_ATTACHMENTS_PER_TURN - current.length;
+    if (remaining <= 0) {
+      toast.error(`At most ${MAX_ATTACHMENTS_PER_TURN} files per message`);
+      return;
+    }
+
+    const next = [...current];
+    for (const file of list.slice(0, remaining)) {
+      const mime = resolveAttachmentMime(file.type, file.name);
+      if (!mime) {
+        toast.error(`Unsupported file type: ${file.name}`);
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast.error(`${file.name} exceeds the 20 MB limit`);
+        continue;
+      }
+      next.push({
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: mime,
+        url: URL.createObjectURL(file),
+        file,
+      });
+    }
+    if (list.length > remaining) {
+      toast.error(`At most ${MAX_ATTACHMENTS_PER_TURN} files per message`);
+    }
+    setAttachedFiles(next);
+  }, []);
+
+  const removeFile = useCallback((id: string) => {
+    const target = attachedFilesRef.current.find((file) => file.id === id);
+    if (target) URL.revokeObjectURL(target.url);
+    setAttachedFiles((current) => current.filter((file) => file.id !== id));
+  }, []);
 
   const isGenerating = status === "submitted" || status === "streaming";
   const editorDisabled = disabled || isGenerating;
@@ -384,7 +456,13 @@ export function Composer({
       if (!message && attachedFiles.length === 0) return;
 
       stopDictation();
-      onSubmit?.(message, attachedFiles);
+      const files = attachedFiles.map((entry) => entry.file);
+      onSubmit?.(message, files.length > 0 ? files : undefined);
+
+      for (const entry of attachedFiles) {
+        URL.revokeObjectURL(entry.url);
+      }
+      setAttachedFiles([]);
 
       if (value === undefined) {
         clearComposerContent(editor);
@@ -423,6 +501,13 @@ export function Composer({
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLDivElement>) => {
+      const pastedFiles = Array.from(event.clipboardData.files ?? []);
+      if (pastedFiles.length > 0) {
+        event.preventDefault();
+        addFiles(pastedFiles);
+        return;
+      }
+
       const plain = event.clipboardData.getData("text/plain");
       const html = event.clipboardData.getData("text/html");
       const parsed = extractComposerPasteRef({ plain, html });
@@ -496,7 +581,36 @@ export function Composer({
       slash.refresh();
       refs.refresh();
     },
-    [emitChange, refs.refresh, resizeEditor, slash.refresh],
+    [addFiles, emitChange, refs.refresh, resizeEditor, slash.refresh],
+  );
+
+  const handleDragOver = useCallback(
+    (event: DragEvent<HTMLFormElement>) => {
+      if (editorDisabled) return;
+      if (![...event.dataTransfer.types].includes("Files")) return;
+      event.preventDefault();
+      setIsDragging(true);
+    },
+    [editorDisabled],
+  );
+
+  const handleDragLeave = useCallback((event: DragEvent<HTMLFormElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (event: DragEvent<HTMLFormElement>) => {
+      if (editorDisabled) return;
+      event.preventDefault();
+      setIsDragging(false);
+      if (event.dataTransfer.files?.length) {
+        addFiles(event.dataTransfer.files);
+      }
+    },
+    [addFiles, editorDisabled],
   );
 
   const handleStop = useCallback(() => {
@@ -521,7 +635,13 @@ export function Composer({
   };
 
   return (
-    <form className={cn("w-full", className)} onSubmit={handleSubmit}>
+    <form
+      className={cn("w-full", className)}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onSubmit={handleSubmit}
+    >
       <motion.div
         ref={cardRef}
         className={cn(
@@ -531,12 +651,27 @@ export function Composer({
           "transition-[box-shadow,border-color] duration-200",
           "hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1)]",
           "focus-within:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_12px_32px_rgba(0,0,0,0.1)]",
+          isDragging && "border-orange-400/60 ring-2 ring-orange-400/20",
         )}
         layout={!reduceMotion ? "position" : false}
         layoutId={COMPOSER_LAYOUT_ID}
         style={{ viewTransitionName: COMPOSER_LAYOUT_ID }}
         transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
       >
+        <input
+          ref={fileInputRef}
+          accept=".pdf,.docx,.doc,.txt,.md,.markdown,.csv,.json,.png,.jpg,.jpeg,.webp,application/pdf,text/csv,text/plain,text/markdown,application/json,image/png,image/jpeg,image/webp,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          aria-label="Attach files"
+          className="sr-only"
+          id={fileInputId}
+          multiple
+          type="file"
+          onChange={(event) => {
+            if (event.target.files) addFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+
         <SkillSlashMenu
           activeIndex={slash.activeIndex}
           onActiveIndexChange={slash.setActiveIndex}
@@ -567,6 +702,29 @@ export function Composer({
           style={refMenuStyle}
         />
 
+        {attachedFiles.length > 0 ? (
+          <ul className="mb-2 flex flex-wrap gap-2">
+            {attachedFiles.map((file) => (
+              <li
+                key={file.id}
+                className="flex max-w-full items-center gap-1.5 rounded-full bg-muted/80 px-2.5 py-1 text-xs text-foreground"
+              >
+                <PaperclipIcon className="size-3 shrink-0 opacity-70" />
+                <span className="truncate">{file.name}</span>
+                <button
+                  aria-label={`Remove ${file.name}`}
+                  className="rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                  disabled={editorDisabled}
+                  type="button"
+                  onClick={() => removeFile(file.id)}
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
         <div className="relative">
           {isEmpty ? (
             <div
@@ -579,7 +737,11 @@ export function Composer({
                   : "opacity-100",
               )}
             >
-              {isDictating ? "Listening…" : activePlaceholder}
+              {isDictating
+                ? "Listening…"
+                : isDragging
+                  ? "Drop files to attach…"
+                  : activePlaceholder}
             </div>
           ) : null}
           <div
@@ -610,7 +772,20 @@ export function Composer({
         </div>
 
         <div className="mt-2 flex items-center justify-between gap-2">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1">
+            <button
+              aria-label="Attach files"
+              className={cn(
+                "flex size-9 items-center justify-center rounded-full transition-colors",
+                "text-muted-foreground hover:bg-muted hover:text-foreground",
+                editorDisabled && "cursor-not-allowed opacity-50",
+              )}
+              disabled={editorDisabled}
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <PaperclipIcon className="size-4" />
+            </button>
             {agentPrefs && onAgentPrefsChange ? (
               <ComposerModePicker
                 disabled={editorDisabled}

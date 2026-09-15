@@ -8,6 +8,10 @@ import type { ThreadRecord, ThreadSummary } from "#shared/types/thread";
 import { truncateThreadTitle } from "#shared/types/thread";
 import { toDisplayText } from "#shared/composer-refs";
 import { queryKeys } from "~/lib/query-keys";
+import {
+  buildMessageWithAttachments,
+  uploadThreadAttachments,
+} from "~/lib/upload-attachments";
 import { setPendingMessage } from "./use-pending-message";
 import { requestThreadTitleGeneration } from "./use-thread-title";
 
@@ -31,17 +35,16 @@ export function useChatNavigation() {
   async function startNewChat(
     message: string,
     agentPrefs?: AgentPrefs,
-    options?: { chatId?: string },
+    options?: { chatId?: string; files?: File[] },
   ) {
+    const files = options?.files ?? [];
     const text = message.trim();
-    if (!text) return;
+    if (!text && files.length === 0) return;
 
     const chatId = options?.chatId ?? crypto.randomUUID();
-    const displayTitle = toDisplayText(text);
+    const displayTitle = toDisplayText(text) || files[0]?.name || "New chat";
     const prefs = agentPrefs ? normalizeAgentPrefs(agentPrefs) : undefined;
     const optimisticTitle = truncateThreadTitle(displayTitle);
-
-    setPendingMessage(chatId, text);
 
     const response = await fetch("/api/threads", {
       method: "POST",
@@ -60,6 +63,14 @@ export function useChatNavigation() {
       );
     }
     const { thread } = (await response.json()) as { thread: ThreadRecord };
+
+    let outbound = text;
+    if (files.length > 0) {
+      const uploaded = await uploadThreadAttachments(chatId, files);
+      outbound = buildMessageWithAttachments(text, uploaded);
+    }
+
+    setPendingMessage(chatId, outbound);
 
     queryClient.setQueryData<ThreadListResponse>(queryKeys.threads, (old) => ({
       threads: [thread, ...(old?.threads ?? []).filter((entry) => entry.id !== chatId)],

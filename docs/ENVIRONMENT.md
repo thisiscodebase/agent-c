@@ -42,11 +42,15 @@ connection string against Supabase:
   pooling doesn't support prepared statements.
 - `DIRECT_URL` — the unpooled connection, used only by `drizzle-kit`
   migrations (`drizzle.config.ts`).
-- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — **not currently used.**
-  Drizzle talks to Supabase purely as a Postgres connection string via
-  `postgres-js` (`server/db/client.ts`); add these only if something beyond
-  raw Postgres access is introduced later (e.g. Supabase Storage for
-  artifact exports).
+- `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — used by the web service for
+  **Supabase Storage** (private `chat-attachments` bucket for composer file
+  uploads). Drizzle still talks to Postgres via `DATABASE_URL` / `DIRECT_URL`;
+  these keys are only for the Storage API (`server/db/supabase.ts`). Locally,
+  after `supabase start`, set `SUPABASE_URL` to the API URL (typically
+  `http://127.0.0.1:54321`) and `SUPABASE_SERVICE_ROLE_KEY` to the service_role
+  JWT from `supabase status`. Create the bucket via
+  `supabase/migrations/20260915160000_chat_attachments.sql` (or local
+  `config.toml` `[storage.buckets.chat-attachments]`).
 - `pgvector` is enabled via a Drizzle-generated migration
   (`create extension if not exists vector;`) rather than the Supabase
   dashboard, so it's tracked the same way as the rest of the schema.

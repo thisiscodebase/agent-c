@@ -52,18 +52,16 @@ import {
   MAX_ATTACHMENT_BYTES,
   resolveAttachmentMime,
 } from "#shared/types/attachment";
+import {
+  FilePreview,
+  type UploadedFile as PreviewFile,
+} from "~/components/ui/file-preview";
 import { cn } from "~/lib/utils";
 import { COMPOSER_LAYOUT_ID } from "~/components/chat/chat-layout";
 
 /** Local pending attachment (uploaded on submit). */
-export type UploadedFile = {
-  id: string;
-  name: string;
-  type: string;
-  url: string;
+export type UploadedFile = PreviewFile & {
   file: File;
-  description?: string;
-  isUploading?: boolean;
 };
 
 /** @deprecated Prefer shared/composer-skills — kept for API compatibility. */
@@ -703,26 +701,11 @@ export function Composer({
         />
 
         {attachedFiles.length > 0 ? (
-          <ul className="mb-2 flex flex-wrap gap-2">
-            {attachedFiles.map((file) => (
-              <li
-                key={file.id}
-                className="flex max-w-full items-center gap-1.5 rounded-full bg-muted/80 px-2.5 py-1 text-xs text-foreground"
-              >
-                <PaperclipIcon className="size-3 shrink-0 opacity-70" />
-                <span className="truncate">{file.name}</span>
-                <button
-                  aria-label={`Remove ${file.name}`}
-                  className="rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
-                  disabled={editorDisabled}
-                  type="button"
-                  onClick={() => removeFile(file.id)}
-                >
-                  <XIcon className="size-3" />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <FilePreview
+            className="mb-2"
+            files={attachedFiles}
+            onRemove={editorDisabled ? undefined : removeFile}
+          />
         ) : null}
 
         <div className="relative">

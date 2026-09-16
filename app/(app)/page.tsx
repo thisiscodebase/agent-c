@@ -8,6 +8,7 @@ import type { EveMessage } from "eve/react";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { DEFAULT_AGENT_PREFS } from "#shared/agent-modes";
 import { createOptimisticUserMessage } from "#shared/optimistic-user-message";
+import { appendAttachmentMarkers } from "#shared/types/attachment";
 import { Suggestion, Suggestions } from "~/components/ai-elements/suggestion";
 import { ChatThreadView } from "~/components/chat/chat-thread-view";
 import {
@@ -147,12 +148,12 @@ function HomePageLive() {
 
       const chatId = crypto.randomUUID();
       setRestoreValue(undefined);
-      // Optimistic bubble uses raw text; markers are added after upload in startNewChat.
-      const optimistic =
-        text
-        || (files?.length
-          ? files.map((file) => file.name).join(", ")
-          : "");
+      const optimistic = files?.length
+        ? appendAttachmentMarkers(
+            text,
+            files.map((file) => ({ id: `pending-${file.name}`, name: file.name })),
+          )
+        : text;
       setLaunch({ chatId, message: optimistic });
       void startNewChat(text, agentPrefs, { chatId, files }).catch((error) => {
         clearPendingMessage();

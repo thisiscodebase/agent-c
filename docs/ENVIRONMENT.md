@@ -45,12 +45,14 @@ connection string against Supabase:
 - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` — used by the web service for
   **Supabase Storage** (private `chat-attachments` bucket for composer file
   uploads). Drizzle still talks to Postgres via `DATABASE_URL` / `DIRECT_URL`;
-  these keys are only for the Storage API (`server/db/supabase.ts`). Locally,
-  after `supabase start`, set `SUPABASE_URL` to the API URL (typically
-  `http://127.0.0.1:54321`) and `SUPABASE_SERVICE_ROLE_KEY` to the service_role
-  JWT from `supabase status`. Create the bucket via
-  `supabase/migrations/20260915160000_chat_attachments.sql` (or local
-  `config.toml` `[storage.buckets.chat-attachments]`).
+  these keys are only for the Storage API (`server/db/supabase.ts`). On Vercel
+  with the Supabase integration, `NEXT_PUBLIC_SUPABASE_URL` and
+  `SUPABASE_SECRET_KEY` are accepted as fallbacks (the integration does not
+  set the older names). Locally, after `supabase start`, set `SUPABASE_URL`
+  to the API URL (typically `http://127.0.0.1:54321`) and
+  `SUPABASE_SERVICE_ROLE_KEY` to the service_role JWT from `supabase status`.
+  Create the bucket via `supabase/migrations/20260915160000_chat_attachments.sql`
+  (or local `config.toml` `[storage.buckets.chat-attachments]`).
 - `pgvector` is enabled via a Drizzle-generated migration
   (`create extension if not exists vector;`) rather than the Supabase
   dashboard, so it's tracked the same way as the rest of the schema.

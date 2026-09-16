@@ -1,12 +1,10 @@
 "use client";
 
-import { ATTACHMENT_MARKER_RE, unescapeAttachmentMarkerName } from "#shared/types/attachment";
 import {
   COMPOSER_REF_MARKER_RE,
   getComposerRefService,
   type ComposerRefService,
 } from "#shared/composer-refs";
-import { PaperclipIcon } from "lucide-react";
 import { refMentionColorClass } from "~/components/ui/composer-ref-chips";
 import { useDetailPanel } from "~/hooks/use-detail-panel";
 import { cn } from "~/lib/utils";
@@ -16,11 +14,6 @@ type TextSegment =
   | {
       type: "ref";
       service: ComposerRefService;
-      id: string;
-      name: string;
-    }
-  | {
-      type: "attachment";
       id: string;
       name: string;
     };
@@ -48,18 +41,6 @@ function collectMarkers(text: string): MarkerMatch[] {
       index,
       length: match[0]?.length ?? 0,
       segment: { type: "ref", service, id, name },
-    });
-  }
-
-  for (const match of text.matchAll(new RegExp(ATTACHMENT_MARKER_RE.source, "g"))) {
-    const index = match.index ?? 0;
-    const id = match[1] ?? "";
-    const name = unescapeAttachmentMarkerName(match[2] ?? "");
-    if (!id || !name) continue;
-    matches.push({
-      index,
-      length: match[0]?.length ?? 0,
-      segment: { type: "attachment", id, name },
     });
   }
 
@@ -93,7 +74,7 @@ function splitSegments(text: string): TextSegment[] {
   return segments.length > 0 ? segments : [{ type: "text", value: text }];
 }
 
-/** Render user-message text with `[[ref:...]]` and `[[attachment:...]]` chips. */
+/** Render user-message text with `[[ref:...]]` chips. Attachments render via FilePreview. */
 export function UserTextWithRefs({ text }: { text: string }) {
   const segments = splitSegments(text);
   const { openRef } = useDetailPanel();
@@ -103,19 +84,6 @@ export function UserTextWithRefs({ text }: { text: string }) {
       {segments.map((segment, index) => {
         if (segment.type === "text") {
           return <span key={`t-${index}-${segment.value.slice(0, 12)}`}>{segment.value}</span>;
-        }
-
-        if (segment.type === "attachment") {
-          return (
-            <span
-              key={`a-${segment.id}-${segment.name}`}
-              className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm bg-muted/80 px-1 py-0.5 text-[0.95em] text-foreground"
-              title={segment.name}
-            >
-              <PaperclipIcon className="size-3 shrink-0 opacity-70" />
-              {segment.name}
-            </span>
-          );
         }
 
         const meta = getComposerRefService(segment.service);

@@ -3,7 +3,12 @@
 import type { EveMessage, EveMessagePart } from "eve/react";
 import { useMemo } from "react";
 import { Streamdown } from "streamdown";
+import {
+  extractAttachmentMarkers,
+  resolveAttachmentMime,
+} from "#shared/types/attachment";
 import { Bubble, BubbleContent } from "~/components/ui/bubble";
+import { FilePreview } from "~/components/ui/file-preview";
 import {
   streamdownAnimation,
   streamdownPlugins,
@@ -43,12 +48,27 @@ export function TextPart({
   }, [citations, isAssistant, part.text]);
 
   if (!isAssistant) {
+    const { text, attachments } = extractAttachmentMarkers(part.text);
+    const files = attachments.map((file) => ({
+      id: file.id,
+      name: file.name,
+      type: resolveAttachmentMime("", file.name) ?? "application/octet-stream",
+      url: "",
+    }));
+
     return (
-      <Bubble variant="imessage">
-        <BubbleContent className="text-sm">
-          <UserTextWithRefs text={part.text} />
-        </BubbleContent>
-      </Bubble>
+      <div className="flex w-full min-w-0 flex-col items-end gap-2">
+        {files.length > 0 ? (
+          <FilePreview align="end" files={files} />
+        ) : null}
+        {text ? (
+          <Bubble variant="imessage">
+            <BubbleContent className="text-sm">
+              <UserTextWithRefs text={text} />
+            </BubbleContent>
+          </Bubble>
+        ) : null}
+      </div>
     );
   }
 

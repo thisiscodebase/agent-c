@@ -96,6 +96,34 @@ export function appendAttachmentMarkers(
   return trimmed ? `${trimmed}\n\n${markers}` : markers;
 }
 
+export type AttachmentMarker = {
+  id: string;
+  name: string;
+};
+
+/** Split prompt text from `[[attachment:id|name]]` markers for UI rendering. */
+export function extractAttachmentMarkers(text: string): {
+  text: string;
+  attachments: AttachmentMarker[];
+} {
+  const attachments: AttachmentMarker[] = [];
+  const stripped = text.replace(
+    new RegExp(ATTACHMENT_MARKER_RE.source, "g"),
+    (_match, id: string, rawName: string) => {
+      attachments.push({
+        id,
+        name: unescapeAttachmentMarkerName(rawName),
+      });
+      return "";
+    },
+  );
+
+  return {
+    text: stripped.replace(/\n{3,}/g, "\n\n").trim(),
+    attachments,
+  };
+}
+
 export function resolveAttachmentMime(
   mimeType: string | undefined,
   filename: string,

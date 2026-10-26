@@ -2,6 +2,7 @@ import { handleFromEmail } from "#shared/user-handle";
 import type {
   AdminCompanyProfile,
   AdminLeaderboardEntry,
+  AdminRecentThread,
   AdminToolCategoryDetail,
   CompanyProfile,
   LeaderboardEntry,
@@ -17,6 +18,7 @@ import {
 import { createError } from "~~/server/utils/http-error";
 
 const COMPANY_NAME = "CodeBase";
+const RECENT_THREAD_LIMIT = 20;
 
 type ThreadRow = {
   id: string;
@@ -154,7 +156,35 @@ export async function getAdminCompanyProfile(): Promise<AdminCompanyProfile> {
     users[0]?.createdAt.getTime() ?? Date.now(),
   );
 
-  const stats = aggregateUsageStats(allThreads, createdAt);
+  const aggregated = aggregateUsageStats(allThreads, createdAt, Date.now(), {
+    includeThreads: true,
+  });
+  const { threads: threadStats, ...stats } = aggregated;
+
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const ownerByThreadId = new Map(threads.map((thread) => [thread.id, thread.userId]));
+  const recentThreads: AdminRecentThread[] = (threadStats ?? [])
+    .flatMap((thread) => {
+      const userId = ownerByThreadId.get(thread.threadId);
+      const user = userId ? usersById.get(userId) : undefined;
+      if (!user) {
+        return [];
+      }
+      const handle = handleFromEmail(user.email);
+      if (!handle) {
+        return [];
+      }
+      return [
+        {
+          ...thread,
+          userName: user.name,
+          userHandle: handle,
+          userImage: user.image,
+        },
+      ];
+    })
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, RECENT_THREAD_LIMIT);
 
   const leaderboard: AdminLeaderboardEntry[] = users
     .map((user) => {
@@ -184,6 +214,7 @@ export async function getAdminCompanyProfile(): Promise<AdminCompanyProfile> {
     createdAt,
     stats,
     leaderboard,
+    recentThreads,
   };
 }
 

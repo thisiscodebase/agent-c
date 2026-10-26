@@ -150,12 +150,20 @@ export interface AdminLeaderboardEntry extends LeaderboardEntry {
   totalCostUsd: number;
 }
 
+/** A thread on the admin dashboard, with the member who owns it. */
+export interface AdminRecentThread extends UsageThreadStat {
+  userName: string;
+  userHandle: string;
+  userImage: string | null;
+}
+
 export interface AdminCompanyProfile {
   name: string;
   userCount: number;
   createdAt: number;
   stats: UserUsageStats;
   leaderboard: AdminLeaderboardEntry[];
+  recentThreads: AdminRecentThread[];
 }
 
 export interface AdminUserDetail {

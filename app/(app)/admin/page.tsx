@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import type { UsageMetric } from "#shared/types/usage-metric";
 import { ADMIN_USAGE_METRICS } from "#shared/types/usage-metric";
-import { AdminUsageMeters } from "~/components/admin/admin-usage-meters";
+import { AdminRecentThreads } from "~/components/admin/admin-recent-threads";
+import { AdminUsageSettings } from "~/components/admin/admin-usage-settings";
 import { AdminUserLeaderboard } from "~/components/admin/admin-user-leaderboard";
 import { ModelsLeaderboard } from "~/components/profile/models-leaderboard";
 import { PopularTools } from "~/components/profile/popular-tools";
@@ -107,13 +108,6 @@ export default function AdminDashboardPage() {
           <Metric label="Longest Agent" value={formatDurationMs(stats.longestAgentMs)} />
         </div>
 
-        {usageMeters.data?.meters && usageMeters.data.settings ? (
-          <AdminUsageMeters
-            meters={usageMeters.data.meters}
-            settings={usageMeters.data.settings}
-          />
-        ) : null}
-
         <ProfileActivityHeatmap data={stats.heatmap} />
 
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -125,7 +119,21 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        <AdminUserLeaderboard entries={company.leaderboard} metric={metric} />
+        <AdminUserLeaderboard
+          budget={
+            usageMeters.data?.settings ? (
+              <AdminUsageSettings
+                key={usageMeters.data.settings.defaultLimitUsd}
+                initialSettings={usageMeters.data.settings}
+              />
+            ) : null
+          }
+          entries={company.leaderboard}
+          meters={usageMeters.data?.meters}
+          metric={metric}
+        />
+
+        <AdminRecentThreads threads={company.recentThreads} />
 
         <PopularTools linkToAdmin metric={metric} tools={stats.tools} />
 

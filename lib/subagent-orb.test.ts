@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ConversationAgentSession, EveAgentReducerEvent, EveMessage } from "eve/react";
 import {
+  activityFromFollowedSession,
   assignUniqueSubagentHues,
   orbStateForCategory,
   orbStateForSubagentTask,
@@ -64,17 +65,19 @@ describe("assignUniqueSubagentHues", () => {
 });
 
 describe("orbStateFromChildStreamEvent", () => {
+  const meta = { id: "evt", at: "2020-01-01T00:00:00.000Z" };
+
   it("maps nested reasoning, tools, and text to orb verbs", () => {
     assert.equal(
       orbStateFromChildStreamEvent({
         type: "reasoning.appended",
         data: {
           reasoningDelta: "x",
-          reasoningSoFar: "x",
           sequence: 1,
           stepIndex: 0,
           turnId: "t",
         },
+        meta,
       }),
       "solving",
     );
@@ -94,6 +97,7 @@ describe("orbStateFromChildStreamEvent", () => {
           stepIndex: 0,
           turnId: "t",
         },
+        meta,
       }),
       "searching",
     );
@@ -102,11 +106,11 @@ describe("orbStateFromChildStreamEvent", () => {
         type: "message.appended",
         data: {
           messageDelta: "ok",
-          messageSoFar: "ok",
           sequence: 1,
           stepIndex: 0,
           turnId: "t",
         },
+        meta,
       }),
       "composing",
     );
@@ -114,65 +118,96 @@ describe("orbStateFromChildStreamEvent", () => {
 });
 
 describe("reduceLiveSubagentOrbStates", () => {
-  it("tracks the latest inner verb and drops completed calls", () => {
+  it("clears tracked calls when the parent turn ends", () => {
     const events: EveAgentReducerEvent[] = [
       {
-        type: "subagent.event",
+        type: "task.started",
         data: {
           callId: "call-docs",
-          subagentName: "docs-research",
-          event: {
-            type: "reasoning.appended",
-            data: {
-              reasoningDelta: "x",
-              reasoningSoFar: "x",
-              sequence: 1,
-              stepIndex: 0,
-              turnId: "t",
-            },
-          },
+          kind: "agent",
+          name: "researcher",
+          taskId: "task-docs",
+          turnId: "t",
         },
         meta: { id: "1", at: "2020-01-01T00:00:00.000Z" },
       },
       {
-        type: "subagent.event",
+        type: "task.settled",
         data: {
           callId: "call-docs",
-          subagentName: "docs-research",
-          event: {
-            type: "actions.requested",
-            data: {
-              actions: [
-                {
-                  kind: "tool-call",
-                  callId: "inner-1",
-                  toolName: "search_drive",
-                  input: { query: "Acme" },
-                },
-              ],
-              sequence: 2,
-              stepIndex: 0,
-              turnId: "t",
-            },
-          },
+          kind: "agent",
+          name: "researcher",
+          output: "done",
+          status: "completed",
+          taskId: "task-docs",
+          turnId: "t",
         },
         meta: { id: "2", at: "2020-01-01T00:00:00.000Z" },
       },
       {
-        type: "subagent.completed",
+        type: "turn.completed",
         data: {
-          callId: "call-docs",
-          output: "done",
-          subagentName: "docs-research",
+          sequence: 3,
+          turnId: "t",
         },
         meta: { id: "3", at: "2020-01-01T00:00:00.000Z" },
       },
     ];
 
-    const mid = reduceLiveSubagentOrbStates(events.slice(0, 2));
-    assert.equal(mid.get("call-docs"), "searching");
+    assert.equal(reduceLiveSubagentOrbStates(events.slice(0, 2)).size, 0);
+    assert.equal(reduceLiveSubagentOrbStates(events).size, 0);
+  });
+});
 
-    const done = reduceLiveSubagentOrbStates(events);
-    assert.equal(done.size, 0);
+function followedSession(messages: readonly EveMessage[]): ConversationAgentSession {
+  return {
+    sessionId: "child",
+    name: "researcher",
+    callId: "call-1",
+    turnId: "t",
+    observation: {
+      status: "following",
+      conversation: {
+        messages,
+        turns: {},
+        inputs: {},
+        tasks: {},
+        agents: {},
+      },
+    },
+  };
+}
+
+describe("activityFromFollowedSession", () => {
+  it("prefers an active child tool over streaming reasoning", () => {
+    const activity = activityFromFollowedSession(followedSession([
+      {
+        id: "a",
+        role: "assistant",
+        parts: [
+          { type: "reasoning", text: "Looking…", state: "streaming" },
+          {
+            type: "dynamic-tool",
+            toolCallId: "tool-1",
+            toolName: "search_slack",
+            state: "input-available",
+            input: { query: "acme" },
+          },
+        ],
+      },
+    ]));
+    assert.equal(activity?.orb, "searching");
+    assert.equal(activity?.toolLabel, "Searching Slack for “acme”");
+  });
+
+  it("returns undefined until the child is followed", () => {
+    const session = followedSession([]);
+    assert.equal(
+      activityFromFollowedSession({
+        ...session,
+        observation: { status: "not-followed" },
+      }),
+      undefined,
+    );
   });
 });

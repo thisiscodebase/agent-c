@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { streamdownAnimation, streamdownPlugins } from "~/components/ai-elements/streamdown-config";
 import { streamdownLinkSafety } from "~/components/ai-elements/streamdown-link-safety-modal";
-import { useLiveSubagentOrbState } from "~/components/chat/live-subagent-activity";
+import { useLiveSubagentActivity } from "~/components/chat/live-subagent-activity";
 import {
   resolveTodos,
   TodosChecklist,
@@ -352,8 +352,8 @@ function LiveSubagentRow({
   hueRotate: number;
 }) {
   const elapsed = useElapsedSeconds(true, id);
-  const liveOrb = useLiveSubagentOrbState(id);
-  const orbState = liveOrb ?? orbStateForSubagentTask(name, task);
+  const live = useLiveSubagentActivity(id);
+  const orbState = live?.orb ?? orbStateForSubagentTask(name, task);
 
   return (
     <div className="flex items-start gap-2">
@@ -378,6 +378,11 @@ function LiveSubagentRow({
         {task ? (
           <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug text-muted-foreground/90">
             {task}
+          </p>
+        ) : null}
+        {live?.toolLabel ? (
+          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-foreground/70">
+            {live.toolLabel}
           </p>
         ) : null}
       </div>

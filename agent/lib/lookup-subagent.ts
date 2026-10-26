@@ -1,4 +1,4 @@
-import { defineAgent } from "eve";
+import { defineAgent, defineDynamic } from "eve";
 import {
   MODEL_DEFAULTS,
   contextWindowForModel,
@@ -6,7 +6,6 @@ import {
   reasoningProviderOptions,
 } from "../../shared/models.js";
 import { isAppUserId } from "../../shared/usage-meter.js";
-import { lookupFindingsSchema } from "./lookup-findings.js";
 import { fetchAgentModelSelection } from "./model-routing-internal.js";
 
 /** Descriptions the parent model uses to decide when to delegate. */
@@ -28,15 +27,7 @@ type LookupSubagentSessionCtx = {
   };
 };
 
-/**
- * Chat-tier model + privacy options for lookup children.
- * Child Connect OAuth challenges are proxied onto the root channel
- * (`principalType: "user"` on web and linked Slack sessions).
- */
-export async function resolveLookupSubagent(
-  ctx: LookupSubagentSessionCtx,
-  description: string,
-) {
+async function resolveLookupModel(ctx: LookupSubagentSessionCtx) {
   const principalId = ctx.session.auth.current?.principalId;
   const userId = isAppUserId(principalId) ? principalId : undefined;
   const selection = await fetchAgentModelSelection(userId, {
@@ -48,8 +39,7 @@ export async function resolveLookupSubagent(
     selection.reasoning,
   );
 
-  return defineAgent({
-    description,
+  return {
     model: selection.model,
     modelContextWindowTokens: contextWindowForModel(selection.model),
     modelOptions: {
@@ -58,8 +48,26 @@ export async function resolveLookupSubagent(
         ...reasoningOptions,
       },
     },
+  };
+}
+
+/**
+ * Chat-tier model + privacy options for lookup children.
+ * `tool: false` hides the child from the parent model; the same-named
+ * workflow tool is what the model calls, and `ctx.agent(name)` still
+ * reaches this child. Child Connect OAuth challenges are proxied onto
+ * the root channel (`principalType: "user"` on web and linked Slack sessions).
+ */
+export function defineLookupSubagent(description: string) {
+  return defineAgent({
+    description,
+    tool: false,
+    model: defineDynamic({
+      events: {
+        "session.started": (_event, ctx) => resolveLookupModel(ctx),
+      },
+    }),
     reasoning: "provider-default",
-    outputSchema: lookupFindingsSchema,
     compaction: {
       thresholdPercent: 0.85,
     },

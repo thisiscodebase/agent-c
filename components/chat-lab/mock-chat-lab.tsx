@@ -49,7 +49,6 @@ export function MockChatLab({
     respond,
     error,
     playing,
-    streamEvents,
   } = controller;
 
   const handleSubmit = useCallback(
@@ -107,7 +106,6 @@ export function MockChatLab({
               messages={displayMessages}
               onRespond={respond}
               status={displayStatus}
-              streamEvents={streamEvents}
               threadId="mock-lab"
             />
           </div>

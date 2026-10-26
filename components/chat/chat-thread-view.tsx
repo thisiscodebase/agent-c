@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChatStatus } from "ai";
-import type { EveAgentReducerEvent, EveMessage } from "eve/react";
+import type { ConversationAgentSession, EveMessage } from "eve/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import type { AgentPrefs } from "#shared/agent-modes";
@@ -30,7 +30,7 @@ import { MessageList } from "./message-list";
 export function ChatThreadView({
   messages,
   status,
-  streamEvents,
+  subagentSessions,
   threadId,
   onRespond,
   animateInitialUser = false,
@@ -47,8 +47,8 @@ export function ChatThreadView({
 }: {
   messages: readonly EveMessage[];
   status?: ChatStatus;
-  /** Applied stream prefix — used to morph live subagent orbs from nested child events. */
-  streamEvents?: readonly EveAgentReducerEvent[];
+  /** Followed specialist sessions (`conversation.agents`). Drives live child orbs. */
+  subagentSessions?: Readonly<Record<string, ConversationAgentSession>>;
   threadId?: string;
   onRespond?: (requestId: string, optionId: string) => void;
   animateInitialUser?: boolean;
@@ -73,7 +73,7 @@ export function ChatThreadView({
     : null;
 
   return (
-    <LiveSubagentActivityProvider events={streamEvents}>
+    <LiveSubagentActivityProvider agents={subagentSessions}>
       <MessageScrollerProvider autoScroll>
         <div className="relative h-full min-w-0">
           <MessageList

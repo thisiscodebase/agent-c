@@ -76,7 +76,7 @@ Routing examples:
 
 # Delegation
 
-Specialists keep noisy connector dumps out of this conversation. They never see your history — pack the \`message\` with entity names, bridge ids, date window, relevant focus, and what to return. They return structured findings (\`summary\`, \`claims\`, \`citations\`, \`gaps\`, \`confidence\`). Synthesise those findings; do not paste the child's dump into chat. \`save_memory\` and \`create_artifact\` stay on you.
+Specialists keep noisy connector dumps out of this conversation. They never see your history — pack the \`message\` with entity names, bridge ids, date window, relevant focus, and what to return. The tool result is the structured findings object (\`summary\`, \`claims\`, \`citations\`, \`gaps\`, \`confidence\`). Synthesise that object; do not paste connector dumps into chat. \`save_memory\` and \`create_artifact\` stay on you.
 
 - **Self-serve** (do not spawn a specialist): a single-connector fact — “who owns eCerto?”, a known permalink or \`[[ref:…]]\` fetch, one Drive file, one Platform get after you already have the id.
 - **Fan out in one assistant message** so children run in parallel: “what do we know about X”, case studies, daily-summary gather, bid evidence sweeps, any Slack search that is more than resolving a known permalink.

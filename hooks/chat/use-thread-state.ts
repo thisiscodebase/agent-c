@@ -134,24 +134,6 @@ export async function persistSessionCursor(
   });
 }
 
-/** Persist a live-resume catch-up (Eve snapshot + follow) onto the thread row. */
-export async function persistLiveResumeState(
-  threadId: string,
-  input: {
-    session: ClientSessionState;
-    events: readonly unknown[];
-    agentPrefs?: AgentPrefs;
-  },
-  queryClient: QueryClient,
-  options?: PersistThreadStateOptions,
-) {
-  const state = threadStateFromCursor(input);
-  if (!state) {
-    return;
-  }
-  await patchThreadState(threadId, state, queryClient, options);
-}
-
 /** Persist Zest/Juice + reasoning without touching session/events. */
 export async function saveThreadAgentPrefs(
   threadId: string,

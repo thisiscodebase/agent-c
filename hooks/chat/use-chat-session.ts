@@ -1,9 +1,8 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import type { InputResponse } from "eve/client";
 import { useEveAgent } from "eve/react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { DEFAULT_AGENT_PREFS, normalizeAgentPrefs } from "#shared/agent-modes";
 import type { ThreadRecord } from "#shared/types/thread";
@@ -12,7 +11,6 @@ import {
   chatFailureFromEvent,
   showChatErrorToast,
 } from "~/lib/show-chat-error-toast";
-import { useLiveResume } from "./use-live-resume";
 import { consumePendingMessage } from "./use-pending-message";
 import { recordStreamEvent } from "./use-stream-log";
 import {
@@ -32,11 +30,6 @@ export const AGENT_THREAD_ID_HEADER = "x-agent-c-thread-id";
 export type UseChatSessionOptions = {
   readOnly?: boolean;
   agentPrefs?: AgentPrefs;
-  /**
-   * After a live-stream attach catches up to a turn boundary, the parent should
-   * remount this hook with the hydrated thread (`key` + `initialThread`).
-   */
-  onLiveResumeSettled?: (thread: ThreadRecord) => void;
 };
 
 /**
@@ -47,10 +40,8 @@ export type UseChatSessionOptions = {
  * calls this hook with `key={chatId}`, e.g. `<ChatPageClient key={chatId} .../>`.
  * Without that, switching threads will keep showing the first thread's session.
  *
- * `useEveAgent` hydrates history on load but does not follow an in-flight turn.
- * When Postgres still shows an open turn (or a session-only husk), a second
- * Eve client attaches with `snapshot()` + `session.stream()` so refresh / other
- * devices keep receiving live events.
+ * `resume` follows an in-flight turn when this thread already has a session.
+ * `followSubagents` puts each specialist's conversation on `agent.data.agents`.
  */
 export function useChatSession(
   chatId: string,
@@ -81,6 +72,8 @@ export function useChatSession(
   const agent = useEveAgent({
     initialSession: resumeOptions.initialSession,
     initialEvents: resumeOptions.initialEvents,
+    followSubagents: true,
+    resume: Boolean(resumeOptions.initialSession),
     headers,
     onSessionChange: (session) => {
       if (readOnly || !session?.sessionId) {
@@ -159,22 +152,16 @@ export function useChatSession(
     },
   });
 
-  const live = useLiveResume({
-    chatId,
-    thread: initialThread,
-    headers,
-    persist: !readOnly,
-    agentPrefs,
-    queryClient,
-    onSettled: options?.onLiveResumeSettled,
-  });
-
   // Clear banner when a new turn starts.
   useEffect(() => {
-    if (agent.status === "submitted" || agent.status === "streaming" || live.active) {
+    if (
+      agent.status === "submitted" ||
+      agent.status === "streaming" ||
+      agent.status === "resuming"
+    ) {
       setStreamFailure(undefined);
     }
-  }, [agent.status, live.active]);
+  }, [agent.status]);
 
   // Best-effort save if the tab hides/unloads — including mid-stream so we at
   // least keep sessionId + whatever events the client already has.
@@ -184,11 +171,10 @@ export function useChatSession(
     }
 
     function flush() {
-      if (live.active) {
-        return;
-      }
       const streaming =
-        agent.status === "submitted" || agent.status === "streaming";
+        agent.status === "submitted" ||
+        agent.status === "streaming" ||
+        agent.status === "resuming";
       void persistThreadState(
         chatId,
         agent,
@@ -212,7 +198,7 @@ export function useChatSession(
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [agent, chatId, live.active, queryClient, readOnly]);
+  }, [agent, chatId, queryClient, readOnly]);
 
   const sentPendingRef = useRef(false);
   useLayoutEffect(() => {
@@ -220,40 +206,12 @@ export function useChatSession(
     if (sentPendingRef.current) return;
     sentPendingRef.current = true;
     const pending = consumePendingMessage(chatId);
-    if (pending && !live.active) void agent.send(pending);
+    if (pending) void agent.send(pending);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatId, live.active, readOnly]);
+  }, [chatId, readOnly]);
 
-  const cancel = useCallback(async () => {
-    if (live.active) {
-      await live.cancel();
-      return;
-    }
-    await agent.cancel();
-  }, [agent, live]);
+  const isBusy = agent.status === "submitted" || agent.status === "streaming" || agent.status === "resuming";
+  const error = streamFailure ?? agent.error;
 
-  const respond = useCallback(async (responses: readonly InputResponse[]) => {
-    if (live.active) {
-      await live.respond(responses);
-      return;
-    }
-    await agent.respond(responses);
-  }, [agent, live]);
-
-  const displayAgent = useMemo(() => ({
-    ...agent,
-    data: live.messages
-      ? { ...agent.data, messages: live.messages }
-      : agent.data,
-    events: live.events ?? agent.events,
-    status: live.status ?? agent.status,
-    cancel,
-    respond,
-  }), [agent, cancel, live.events, live.messages, live.status, respond]);
-
-  const displayStatus = displayAgent.status;
-  const isBusy = displayStatus === "submitted" || displayStatus === "streaming";
-  const error = live.error ?? streamFailure ?? agent.error;
-
-  return { agent: displayAgent, error, isBusy };
+  return { agent, error, isBusy };
 }

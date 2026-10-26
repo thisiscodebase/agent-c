@@ -58,35 +58,6 @@ export function getOpenTurnId(events: readonly unknown[]): string | undefined {
   return turnId;
 }
 
-/**
- * Whether a persisted Eve session should be live-attached on load.
- *
- * `useEveAgent` hydrates history from `initialEvents` but does not follow an
- * in-flight turn. Empty logs with a session id (ingest wrote the cursor before
- * events) and logs whose last turn has not reached a boundary both need a
- * `session.stream()` attach.
- */
-export function shouldResumeLiveStream(input: {
-  sessionId?: string;
-  events?: readonly unknown[] | null;
-}): boolean {
-  if (!input.sessionId) {
-    return false;
-  }
-
-  const events = input.events ?? [];
-  if (events.length === 0) {
-    return true;
-  }
-
-  if (getOpenTurnId(events)) {
-    return true;
-  }
-
-  const lastType = eventType(events[events.length - 1]);
-  return lastType === "session.started" || lastType === "message.received";
-}
-
 export function appendUniqueStreamEvent<T>(
   events: readonly T[],
   event: T,

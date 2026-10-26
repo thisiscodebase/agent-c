@@ -190,11 +190,11 @@ describe("chat-lab checkpoints and parts", () => {
     assert.equal(names.size, 2);
 
     const startedAt = scenario.events.reduce(
-      (last, event, index) => (event.type === "subagent.started" ? index : last),
+      (last, event, index) => (event.type === "agent.started" ? index : last),
       -1,
     );
     assert.ok(startedAt > 0);
-    const mid = messagesAtIndex(scenario.events, startedAt + 1);
+    const mid = messagesAtIndex(scenario.events, startedAt);
     const live = mid
       .flatMap((message) => message.parts)
       .filter(
@@ -213,8 +213,10 @@ describe("chat-lab checkpoints and parts", () => {
     );
     assert.equal(liveNames.size, live.length);
 
-    const childEvents = scenario.events.filter((event) => event.type === "subagent.event");
-    assert.ok(childEvents.length >= 8);
+    const started = scenario.events.filter((event) => event.type === "agent.started");
+    const settled = scenario.events.filter((event) => event.type === "task.settled");
+    assert.ok(started.length >= 2);
+    assert.equal(settled.length, started.length);
   });
 
   it("artifact scenario yields create_artifact output with id", () => {

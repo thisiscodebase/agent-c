@@ -91,7 +91,6 @@ function continuationAfterDecision(approved: boolean) {
       type: "message.appended",
       data: {
         messageDelta: delta,
-        messageSoFar: soFar,
         sequence: next(),
         stepIndex: 1,
         turnId,

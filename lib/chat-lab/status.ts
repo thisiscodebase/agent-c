@@ -16,10 +16,10 @@ const STREAMING_TYPES = new Set([
   "approval.settled",
   "authorization.required",
   "authorization.completed",
-  "subagent.called",
-  "subagent.started",
-  "subagent.event",
-  "subagent.completed",
+  "task.started",
+  "task.settled",
+  "agent.started",
+  "turn.waiting",
 ]);
 
 const READY_TYPES = new Set([

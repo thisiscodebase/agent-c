@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import type { ChatStatus } from "ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { EveMessage } from "eve/react";
 import type { AgentPrefs } from "#shared/agent-modes";
@@ -33,6 +34,14 @@ import { ChatThreadView } from "./chat-thread-view";
 
 function contextTipStorageKey(threadId: string) {
   return `agent-c:context-tip-dismissed:${threadId}`;
+}
+
+/** AI SDK composer status. Eve's `"resuming"` is a busy attach, not an idle ready. */
+function composerStatus(
+  status: "ready" | "resuming" | "submitted" | "streaming" | "error",
+): ChatStatus {
+  if (status === "resuming") return "submitted";
+  return status;
 }
 
 function readContextTipDismissed(threadId: string) {
@@ -79,24 +88,17 @@ export function ChatPageClient({
   initialThread: ThreadRecord;
   access?: ThreadViewerAccess;
 }) {
-  const [thread, setThread] = useState(initialThread);
-  const [resumeEpoch, setResumeEpoch] = useState(0);
   const [agentPrefs, setAgentPrefs] = useState<AgentPrefs>(() =>
     normalizeAgentPrefs(initialThread.state?.agentPrefs ?? DEFAULT_AGENT_PREFS),
   );
 
   return (
     <ChatPageSession
-      key={`${chatId}:${resumeEpoch}`}
       access={access}
       agentPrefs={agentPrefs}
       chatId={chatId}
-      initialThread={thread}
+      initialThread={initialThread}
       onAgentPrefsChange={setAgentPrefs}
-      onLiveResumeSettled={(next) => {
-        setThread(next);
-        setResumeEpoch((value) => value + 1);
-      }}
     />
   );
 }
@@ -107,14 +109,12 @@ function ChatPageSession({
   access = "owner",
   agentPrefs,
   onAgentPrefsChange,
-  onLiveResumeSettled,
 }: {
   chatId: string;
   initialThread: ThreadRecord;
   access?: ThreadViewerAccess;
   agentPrefs: AgentPrefs;
   onAgentPrefsChange: (prefs: AgentPrefs) => void;
-  onLiveResumeSettled?: (thread: ThreadRecord) => void;
 }) {
   const readOnly = access === "admin_readonly";
   const [seedText] = useState(() => peekPendingMessage(chatId));
@@ -122,7 +122,6 @@ function ChatPageSession({
   const { agent, error, isBusy } = useChatSession(chatId, initialThread, {
     readOnly,
     agentPrefs,
-    onLiveResumeSettled,
   });
   const queryClient = useQueryClient();
   const usageMeter = useUsageMeter();
@@ -190,12 +189,14 @@ function ChatPageSession({
     }
   }, [agent.data.messages, localUser]);
 
-  const displayStatus =
+  const displayStatus: ChatStatus = composerStatus(
     (seedMessage || localUser) &&
-    agent.status !== "submitted" &&
-    agent.status !== "streaming"
+      agent.status !== "submitted" &&
+      agent.status !== "streaming" &&
+      agent.status !== "resuming"
       ? "submitted"
-      : agent.status;
+      : agent.status,
+  );
 
   function respondToInput(requestId: string, optionId: string) {
     if (readOnly || usageBlocked) return;
@@ -273,7 +274,7 @@ function ChatPageSession({
         messages={messages}
         onRespond={respondToInput}
         status={displayStatus}
-        streamEvents={agent.events}
+        subagentSessions={agent.data.agents}
         threadId={chatId}
       />
     </DetailPanelHost>

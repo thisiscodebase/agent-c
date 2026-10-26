@@ -62,31 +62,12 @@ function baseDelay(event: EveAgentReducerEvent): number {
       }
       return 700;
     }
-    case "subagent.called":
+    case "task.started":
       return 220;
-    case "subagent.started":
+    case "agent.started":
       return 180;
-    case "subagent.event": {
-      const inner = event.data.event;
-      switch (inner.type) {
-        case "reasoning.appended":
-          return 420;
-        case "reasoning.completed":
-          return 40;
-        case "actions.requested":
-          return 520;
-        case "action.result":
-          return 640;
-        case "message.appended":
-          return 280;
-        case "message.completed":
-          return 80;
-        default:
-          return 220;
-      }
-    }
-    case "subagent.completed": {
-      const name = "subagentName" in event.data ? event.data.subagentName : "";
+    case "task.settled": {
+      const name = event.data.name ?? "";
       if (name.includes("slack")) return 2800;
       if (name.includes("crm") || name.includes("hubspot")) return 1600;
       if (name.includes("drive") || name.includes("docs")) return 900;

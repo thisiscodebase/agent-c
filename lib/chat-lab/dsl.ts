@@ -43,11 +43,6 @@ function nextSequence(state: BuilderState): number {
 }
 
 
-type SubagentChildEvent = Extract<
-  EveAgentReducerEvent,
-  { type: "subagent.event" }
->["data"]["event"];
-
 type SubagentInnerBeat =
   | { kind: "reason"; text: string }
   | {
@@ -57,210 +52,6 @@ type SubagentInnerBeat =
       output: unknown;
     }
   | { kind: "write"; text: string };
-
-function defaultSubagentInnerBeats(name: string): SubagentInnerBeat[] {
-  if (name.includes("docs")) {
-    return [
-      {
-        kind: "tool",
-        toolName: "search_drive",
-        input: { query: "Acme QBR" },
-        output: { files: [{ name: "Acme QBR notes.docx" }] },
-      },
-      {
-        kind: "tool",
-        toolName: "notion__search",
-        input: { query: "Acme coverage" },
-        output: { pages: [{ title: "Acme Q1 brief" }] },
-      },
-      { kind: "write", text: "QBR is current; March coverage is the open risk." },
-    ];
-  }
-  if (name.includes("crm")) {
-    return [
-      { kind: "reason", text: "Need company stage, owner, and latest deal activity." },
-      {
-        kind: "tool",
-        toolName: "hubspot__search_crm",
-        input: { query: "Acme", object: "companies" },
-        output: { results: [{ name: "Acme Corp", owner: "Sam Rivera" }] },
-      },
-      { kind: "write", text: "Customer stage, Sam Rivera, Thursday renewal." },
-    ];
-  }
-  if (name.includes("platform")) {
-    return [
-      { kind: "reason", text: "Check this week’s bookings and pairing gaps." },
-      {
-        kind: "tool",
-        toolName: "platform__list_sessions",
-        input: { company: "Acme", week: "this" },
-        output: { booked: 6, pending: 2 },
-      },
-      { kind: "write", text: "6 booked, 2 pending; pairing gap opens in March." },
-    ];
-  }
-  if (name.includes("slack")) {
-    return [
-      {
-        kind: "tool",
-        toolName: "search_slack",
-        input: { query: "Acme renewal after:2026-01-01" },
-        output: { matches: [{ channel: "#accounts", text: "Thursday still on" }] },
-      },
-      { kind: "reason", text: "Accounts agrees; mentors still thin for March." },
-      { kind: "write", text: "Thursday call on; March backups unconfirmed." },
-    ];
-  }
-  if (name.includes("research")) {
-    return [
-      { kind: "reason", text: "Need Platform, CRM, and coverage notes in one pass." },
-      {
-        kind: "tool",
-        toolName: "hubspot__search_crm_objects",
-        input: { query: "Acme", objectType: "COMPANY" },
-        output: { results: [{ name: "Acme Corp", owner: "Sam Rivera" }] },
-      },
-      {
-        kind: "tool",
-        toolName: "platform__search_companies",
-        input: { q: "Acme" },
-        output: { booked: 6, pending: 2 },
-      },
-      {
-        kind: "tool",
-        toolName: "search_drive",
-        input: { query: "Acme QBR" },
-        output: { files: [{ name: "Acme QBR notes.docx" }] },
-      },
-      {
-        kind: "tool",
-        toolName: "get_company_profile",
-        input: { company_number: "SC123456" },
-        output: {
-          company_number: "SC123456",
-          company_name: "ACME ROBOTICS LTD",
-          company_status: "active",
-          url: "https://find-and-update.company-information.service.gov.uk/company/SC123456",
-        },
-      },
-      { kind: "write", text: "Customer stage, Thursday renewal; March coverage is thin." },
-    ];
-  }
-  return [
-    { kind: "reason", text: "Working the assigned task." },
-    { kind: "write", text: "Done." },
-  ];
-}
-
-function pushSubagentChildEvent(
-  state: BuilderState,
-  agent: { callId: string; name: string },
-  event: SubagentChildEvent,
-) {
-  state.events.push({
-    type: "subagent.event",
-    data: {
-      callId: agent.callId,
-      event,
-      subagentName: agent.name,
-    },
-    meta: eventMeta(),
-  });
-}
-
-function emitSubagentInnerBeat(
-  state: BuilderState,
-  agent: { callId: string; name: string },
-  beat: SubagentInnerBeat,
-  beatIndex: number,
-) {
-  const turnId = `${state.turnId}-child-${agent.callId}`;
-  const childFields = {
-    sequence: nextSequence(state),
-    stepIndex: 0,
-    turnId,
-  };
-
-  switch (beat.kind) {
-    case "reason":
-      pushSubagentChildEvent(state, agent, {
-        type: "reasoning.appended",
-        data: {
-          reasoningDelta: beat.text,
-          reasoningSoFar: beat.text,
-          ...childFields,
-        },
-      });
-      pushSubagentChildEvent(state, agent, {
-        type: "reasoning.completed",
-        data: {
-          reasoning: beat.text,
-          sequence: nextSequence(state),
-          stepIndex: 0,
-          turnId,
-        },
-      });
-      return;
-    case "tool": {
-      const innerCallId = `${agent.callId}-inner-${beatIndex}`;
-      pushSubagentChildEvent(state, agent, {
-        type: "actions.requested",
-        data: {
-          actions: [
-            {
-              kind: "tool-call" as const,
-              callId: innerCallId,
-              toolName: beat.toolName,
-              input: beat.input as never,
-            },
-          ],
-          ...childFields,
-        },
-      });
-      pushSubagentChildEvent(state, agent, {
-        type: "action.result",
-        data: {
-          status: "completed",
-          result: {
-            kind: "tool-result",
-            callId: innerCallId,
-            toolName: beat.toolName,
-            output: beat.output as never,
-          },
-          sequence: nextSequence(state),
-          stepIndex: 0,
-          turnId,
-        },
-      });
-      return;
-    }
-    case "write":
-      pushSubagentChildEvent(state, agent, {
-        type: "message.appended",
-        data: {
-          messageDelta: beat.text,
-          messageSoFar: beat.text,
-          ...childFields,
-        },
-      });
-      pushSubagentChildEvent(state, agent, {
-        type: "message.completed",
-        data: {
-          finishReason: "stop",
-          message: beat.text,
-          sequence: nextSequence(state),
-          stepIndex: 0,
-          turnId,
-        },
-      });
-      return;
-    default: {
-      const _never: never = beat;
-      return _never;
-    }
-  }
-}
 
 export type ScenarioBuilder = {
   readonly events: EveAgentReducerEvent[];
@@ -409,7 +200,6 @@ export function createScenarioBuilder(options?: {
           type: "reasoning.appended",
           data: {
             reasoningDelta: delta,
-            reasoningSoFar: soFar,
             sequence: nextSequence(state),
             stepIndex: state.stepIndex,
             turnId: state.turnId,
@@ -438,7 +228,6 @@ export function createScenarioBuilder(options?: {
           type: "message.appended",
           data: {
             messageDelta: delta,
-            messageSoFar: soFar,
             sequence: nextSequence(state),
             stepIndex: state.stepIndex,
             turnId: state.turnId,
@@ -533,67 +322,41 @@ export function createScenarioBuilder(options?: {
         meta: eventMeta(),
       });
       for (const agent of prepared) {
+        const taskId = `task-${agent.callId}`;
         state.events.push({
-          type: "subagent.called",
+          type: "task.started",
           data: {
             callId: agent.callId,
-            childSessionId: `${state.sessionId}-child-${agent.callId}`,
-            childStreamPath: `/mock/subagent/${agent.callId}`,
-            sessionId: state.sessionId,
-            sequence: nextSequence(state),
+            kind: "agent",
             name: agent.name,
-            toolName: "agent",
+            taskId,
             turnId: state.turnId,
-            workflowId: `wf-${agent.callId}`,
           },
           meta: eventMeta(),
         });
         state.events.push({
-          type: "subagent.started",
+          type: "agent.started",
           data: {
             callId: agent.callId,
-            subagentName: agent.name,
+            name: agent.name,
+            sessionId: `${state.sessionId}-child-${agent.callId}`,
+            streamPath: `/mock/subagent/${agent.callId}`,
+            taskId,
+            turnId: state.turnId,
           },
           meta: eventMeta(),
         });
-      }
-      const innerQueues = prepared.map((agent) => ({
-        agent,
-        beats: [...(agent.innerBeats ?? defaultSubagentInnerBeats(agent.name))],
-      }));
-      let beatIndex = 0;
-      while (innerQueues.some((queue) => queue.beats.length > 0)) {
-        for (const queue of innerQueues) {
-          const beat = queue.beats.shift();
-          if (!beat) continue;
-          emitSubagentInnerBeat(state, queue.agent, beat, beatIndex);
-          beatIndex += 1;
-        }
       }
       for (const agent of prepared) {
         state.events.push({
-          type: "subagent.completed",
+          type: "task.settled",
           data: {
             callId: agent.callId,
+            kind: "agent",
+            name: agent.name,
             output: agent.result,
-            subagentName: agent.name,
-          },
-          meta: eventMeta(),
-        });
-        state.events.push({
-          type: "action.result",
-          data: {
             status: "completed",
-            result: {
-              kind: "subagent-result",
-              callId: agent.callId,
-              origin: "dispatch",
-              isError: true,
-              output: agent.result,
-              subagentName: agent.name,
-            },
-            sequence: nextSequence(state),
-            stepIndex: state.stepIndex,
+            taskId: `task-${agent.callId}`,
             turnId: state.turnId,
           },
           meta: eventMeta(),

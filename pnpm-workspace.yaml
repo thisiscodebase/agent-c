@@ -5,10 +5,11 @@ minimumReleaseAge: 10080
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 10080
 trustLockfile: true
-# 0.8.0 is still published by Vercel GitHub Actions from vercel/vercel,
+# These Vercel packages are still published by GitHub Actions from vercel/vercel,
 # but npm provenance attestations are missing (pnpm treats that as a trust downgrade).
 trustPolicyExclude:
-  - "@vercel/connect@0.8.0"
+  - "@vercel/connect@2.5.2"
+  - "@vercel/oidc@4.0.1"
 minimumReleaseAgeExclude:
   - eve
   - thinking-orbs
@@ -61,5 +62,3 @@ allowBuilds:
   better-sqlite3: true
   esbuild: true
   sharp: false
-patchedDependencies:
-  thinking-orbs@0.3.1: patches/thinking-orbs@0.3.1.patch

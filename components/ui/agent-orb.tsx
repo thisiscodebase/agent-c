@@ -26,7 +26,7 @@ export type AgentOrbProps = Omit<ThinkingOrbProps, "theme" | "size"> & {
 };
 
 /**
- * Branded Agent C thinking orb — orange-fruit ink via patched `thinking-orbs`.
+ * Branded Agent C thinking orb — orange ink via thinking-orbs `color`.
  * State changes crossfade so modes morph instead of hard-cutting.
  */
 export function AgentOrb({
@@ -82,6 +82,7 @@ export function AgentOrb({
               width: displayPx,
               height: displayPx,
             }}
+            color="#d2550f"
             theme="auto"
           />
         </motion.span>

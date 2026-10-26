@@ -46,13 +46,13 @@ describe("lookup findings schema", () => {
 describe("lookup subagent isolation", () => {
   it("does not remount Slack on researcher or lookup connectors on slack-scan", () => {
     const researcherTools = readdirSync(
-      join(repoRoot, "agent/subagents/researcher/tools"),
+      join(repoRoot, "agent/subagents/lookup-researcher/tools"),
     );
     const researcherConnections = readdirSync(
-      join(repoRoot, "agent/subagents/researcher/connections"),
+      join(repoRoot, "agent/subagents/lookup-researcher/connections"),
     );
     const slackTools = readdirSync(
-      join(repoRoot, "agent/subagents/slack-scan/tools"),
+      join(repoRoot, "agent/subagents/lookup-slack-scan/tools"),
     );
 
     assert.ok(!researcherTools.includes("search_slack.ts"));

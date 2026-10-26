@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-/** Structured return contract for lookup subagents (Eve task-mode `outputSchema`). */
+/**
+ * Structured return contract lookup subagents are instructed to follow.
+ * Eve no longer accepts `outputSchema` on `defineAgent`; a workflow `send()`
+ * is what enforces it. Instructions still ask for this shape.
+ */
 export const lookupFindingsSchema = z.object({
   summary: z
     .string()
@@ -36,3 +40,21 @@ export const lookupFindingsSchema = z.object({
 });
 
 export type LookupFindings = z.infer<typeof lookupFindingsSchema>;
+
+/**
+ * A parked child (`waiting`) still returns `data`. Only a failed turn, or a
+ * cancel that left no payload, is an error for the parent tool.
+ */
+export function requireLookupFindings(
+  name: string,
+  result: {
+    status: string;
+    data?: LookupFindings;
+    error?: { message: string };
+  },
+): LookupFindings {
+  if (result.status === "failed" || result.data == null) {
+    throw new Error(result.error?.message ?? `${name} ${result.status}`);
+  }
+  return result.data;
+}

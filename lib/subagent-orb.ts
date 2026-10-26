@@ -1,4 +1,8 @@
-import type { EveAgentReducerEvent } from "eve/react";
+import type {
+  ConversationAgentSession,
+  EveAgentReducerEvent,
+  EveMessage,
+} from "eve/react";
 import type { OrbState } from "thinking-orbs";
 import { getToolDisplayInfo } from "./tool-call-display.ts";
 
@@ -23,10 +27,15 @@ const SHAPE_CATEGORIES = new Set(["memory", "todos"]);
 /** Hue-rotate offsets that land off the branded orange fruit ink. */
 const SUBAGENT_HUE_ROTATES = [95, 135, 175, 210, 250, 290] as const;
 
-type SubagentChildEvent = Extract<
+type RequestedAction = Extract<
   EveAgentReducerEvent,
-  { type: "subagent.event" }
->["data"]["event"];
+  { type: "actions.requested" }
+>["data"]["actions"][number];
+
+type ActionResult = Extract<
+  EveAgentReducerEvent,
+  { type: "action.result" }
+>["data"]["result"];
 
 export function orbStateForCategory(category: string): OrbState {
   if (category === "handoff") return "weaving";
@@ -58,6 +67,93 @@ export function orbStateForSubagentTask(name: string, task?: string): OrbState {
     return "shaping";
   }
   return "working";
+}
+
+/** Live orb plus the child's current tool label, when a followed session has one. */
+export type FollowedSubagentActivity = {
+  orb: OrbState;
+  toolLabel?: string;
+};
+
+function childToolActivity(part: Extract<EveMessage["parts"][number], { type: "dynamic-tool" }>): FollowedSubagentActivity | undefined {
+  switch (part.state) {
+    case "input-streaming":
+    case "input-available":
+    case "approval-requested":
+    case "approval-responded":
+      break;
+    case "output-available":
+      if (part.partial !== true) return undefined;
+      break;
+    case "output-error":
+    case "output-denied":
+      return undefined;
+    default: {
+      const _never: never = part;
+      return _never;
+    }
+  }
+  const info = getToolDisplayInfo(part.toolName, part.input);
+  return {
+    orb: orbStateForCategory(info.category),
+    toolLabel: info.runningLabel,
+  };
+}
+
+function followedConversation(session: ConversationAgentSession) {
+  switch (session.observation.status) {
+    case "following":
+    case "idle":
+      return session.observation.conversation;
+    case "unavailable":
+      return session.observation.conversation;
+    case "not-followed":
+      return undefined;
+    default: {
+      const _never: never = session.observation;
+      return _never;
+    }
+  }
+}
+
+/** Latest live signal on one assistant message. Later parts win. */
+function activityFromAssistantMessage(message: EveMessage): FollowedSubagentActivity | undefined {
+  let activity: FollowedSubagentActivity | undefined;
+  for (const part of message.parts) {
+    if (part.type === "reasoning" && part.state === "streaming") {
+      activity = { orb: "solving" };
+      continue;
+    }
+    if (part.type === "text" && part.state === "streaming") {
+      activity = { orb: "composing" };
+      continue;
+    }
+    if (part.type === "dynamic-tool") {
+      const tool = childToolActivity(part);
+      if (tool) activity = tool;
+    }
+  }
+  return activity;
+}
+
+/**
+ * Orb and tool label from a followed child conversation.
+ * Returns undefined when the child is not followed yet, so the row can fall
+ * back to `orbStateForSubagentTask`.
+ */
+export function activityFromFollowedSession(
+  session: ConversationAgentSession,
+): FollowedSubagentActivity | undefined {
+  const conversation = followedConversation(session);
+  if (!conversation) return undefined;
+
+  let activity: FollowedSubagentActivity | undefined;
+  for (const message of conversation.messages) {
+    if (message.role !== "assistant") continue;
+    const next = activityFromAssistantMessage(message);
+    if (next) activity = next;
+  }
+  return activity;
 }
 
 function preferredHueIndex(id: string): number {
@@ -110,11 +206,10 @@ export function assignUniqueSubagentHues(
   return next;
 }
 
-function toolNameFromRequestedAction(
-  action: Extract<SubagentChildEvent, { type: "actions.requested" }>["data"]["actions"][number],
-): string {
+function toolNameFromRequestedAction(action: RequestedAction): string {
   switch (action.kind) {
     case "tool-call":
+    case "workflow-tool-call":
       return action.toolName;
     case "subagent-call":
       return `eve:subagent:${action.subagentName}`;
@@ -129,9 +224,7 @@ function toolNameFromRequestedAction(
   }
 }
 
-function toolNameFromActionResult(
-  result: Extract<SubagentChildEvent, { type: "action.result" }>["data"]["result"],
-): string | undefined {
+function toolNameFromActionResult(result: ActionResult): string | undefined {
   if ("toolName" in result && typeof result.toolName === "string") {
     return result.toolName;
   }
@@ -146,7 +239,7 @@ function toolNameFromActionResult(
 
 /** Map one nested child-stream event to an orb verb. */
 export function orbStateFromChildStreamEvent(
-  event: SubagentChildEvent,
+  event: EveAgentReducerEvent,
 ): OrbState | null {
   switch (event.type) {
     case "reasoning.appended":
@@ -178,7 +271,12 @@ export function orbStateFromChildStreamEvent(
   }
 }
 
-/** Latest inner orb verb per in-flight subagent call, from the parent stream. */
+/**
+ * Latest inner orb verb per in-flight subagent call.
+ * Parent streams no longer carry child progress (`subagent.event` is gone);
+ * a followed child stream can still be mapped with `orbStateFromChildStreamEvent`.
+ * `task.settled` and a finished turn drop any tracked call.
+ */
 export function reduceLiveSubagentOrbStates(
   events: readonly EveAgentReducerEvent[],
 ): Map<string, OrbState> {
@@ -186,12 +284,7 @@ export function reduceLiveSubagentOrbStates(
 
   for (const event of events) {
     switch (event.type) {
-      case "subagent.event": {
-        const next = orbStateFromChildStreamEvent(event.data.event);
-        if (next) states.set(event.data.callId, next);
-        break;
-      }
-      case "subagent.completed":
+      case "task.settled":
         states.delete(event.data.callId);
         break;
       case "turn.completed":

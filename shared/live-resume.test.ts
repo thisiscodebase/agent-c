@@ -5,7 +5,6 @@ import {
   getOpenTurnId,
   isTurnBoundaryEvent,
   mergeStreamEventLogs,
-  shouldResumeLiveStream,
   streamEventId,
 } from "./live-resume.ts";
 
@@ -55,46 +54,6 @@ describe("getOpenTurnId", () => {
         event("session.waiting", "w"),
       ]),
       undefined,
-    );
-  });
-});
-
-describe("shouldResumeLiveStream", () => {
-  it("requires a session id", () => {
-    assert.equal(shouldResumeLiveStream({ events: [] }), false);
-    assert.equal(
-      shouldResumeLiveStream({
-        sessionId: "sess_1",
-        events: [],
-      }),
-      true,
-    );
-  });
-
-  it("resumes an open turn and session-started husks", () => {
-    assert.equal(
-      shouldResumeLiveStream({
-        sessionId: "sess_1",
-        events: [event("turn.started", "t", "turn_1")],
-      }),
-      true,
-    );
-    assert.equal(
-      shouldResumeLiveStream({
-        sessionId: "sess_1",
-        events: [event("session.started", "s")],
-      }),
-      true,
-    );
-    assert.equal(
-      shouldResumeLiveStream({
-        sessionId: "sess_1",
-        events: [
-          event("turn.started", "t", "turn_1"),
-          event("session.waiting", "w"),
-        ],
-      }),
-      false,
     );
   });
 });

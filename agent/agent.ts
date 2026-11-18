@@ -12,7 +12,6 @@ import {
 } from "./lib/model-routing-internal.js";
 
 async function resolveDynamicModel(
-  _event: unknown,
   ctx: {
     session: {
       auth: {
@@ -53,12 +52,11 @@ async function resolveDynamicModel(
 export default defineAgent({
   // Dynamic models have no compiled fallback (eve ≥0.33); resolvers must
   // always return a concrete selection.
-  model: defineDynamic({
-    events: {
-      "session.started": resolveDynamicModel,
-      "turn.started": resolveDynamicModel,
-    },
-  }),
+  model: defineDynamic((ctx) =>
+    ctx.memo(["agent-model", ctx.turn?.id ?? "session"], () =>
+      resolveDynamicModel(ctx),
+    ),
+  ),
   // Per-turn effort is applied via providerOptions from the dynamic
   // resolver (Eve's root `reasoning` field is not dynamic).
   reasoning: "provider-default",
@@ -66,6 +64,6 @@ export default defineAgent({
   // compacting earlier trades one summarisation call for a smaller resend on
   // every later turn.
   compaction: {
-    thresholdPercent: 0.85,
+    threshold: 0.85,
   },
 });

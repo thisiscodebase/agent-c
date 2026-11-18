@@ -21,6 +21,27 @@ describe("extractTitleTurnsFromEvents", () => {
     assert.equal(countUserTurns(turns), 1);
   });
 
+  it("reads Eve 1.0 delivery and reply parts", () => {
+    const turns = extractTitleTurnsFromEvents([
+      {
+        type: "delivery.consumed",
+        data: { parts: [{ kind: "text", text: "Find the deck" }, { kind: "file" }] },
+      },
+      {
+        type: "content.completed",
+        data: { kind: "reasoning", phase: "narration", value: "thinking" },
+      },
+      {
+        type: "content.completed",
+        data: { kind: "text", phase: "reply", value: "Here it is." },
+      },
+    ]);
+    assert.deepEqual(turns, [
+      { role: "user", text: "Find the deck" },
+      { role: "assistant", text: "Here it is." },
+    ]);
+  });
+
   it("truncates long turns and keeps only the last 8", () => {
     const events = Array.from({ length: 12 }, (_, i) => ({
       type: "message.received",

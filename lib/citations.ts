@@ -615,10 +615,9 @@ export function extractCitationsFromParts(
   const map = new Map<string, Citation>();
 
   for (const part of parts) {
-    if (part.type !== "dynamic-tool") continue;
-    if (part.state !== "output-available") continue;
-    if (!("output" in part) || part.output == null) continue;
-    extractFromToolOutput(part.output, part.toolName, map);
+    if (part.type !== "tool") continue;
+    if (part.state !== "completed" || part.output == null) continue;
+    extractFromToolOutput(part.output, part.name, map);
   }
 
   // Also harvest citation-worthy markdown links from assistant text so the

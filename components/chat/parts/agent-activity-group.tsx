@@ -1,6 +1,7 @@
 "use client";
 
-import type { EveMessagePart } from "eve/react";
+import type { EveToolPart } from "eve/react";
+import { toolErrorText, toolHasOpenInteraction, toolInput, toolIsFinished, toolIsRunning, toolOutput } from "~/lib/eve-tool";
 import {
   asToolInputs,
   collapseStatefulToolCalls,
@@ -21,47 +22,25 @@ import type {
 } from "./activity-types";
 import { ToolPart } from "./tool-part";
 
-const COMPLETED_STATES = new Set<
-  Extract<EveMessagePart, { type: "dynamic-tool" }>["state"]
->([
-  "output-available",
-  "output-error",
-  "output-denied",
-]);
-
-const ACTIVE_STATES = new Set<
-  Extract<EveMessagePart, { type: "dynamic-tool" }>["state"]
->([
-  "input-streaming",
-  "input-available",
-  "approval-responded",
-]);
-
-function isInteractiveTool(
-  part: Extract<EveMessagePart, { type: "dynamic-tool" }>,
-): boolean {
-  if (part.toolName === "save_memory") return true;
-  if (part.toolName === "create_artifact") return true;
-  if (part.state === "approval-requested") return true;
-  if (part.toolMetadata?.eve?.inputRequest) return true;
+function isInteractiveTool(part: EveToolPart): boolean {
+  if (part.name === "save_memory") return true;
+  if (part.name === "create_artifact") return true;
+  if (part.state === "approval" || toolHasOpenInteraction(part)) return true;
   return false;
 }
 
-function toToolCallEntry(
-  part: Extract<EveMessagePart, { type: "dynamic-tool" }>,
-): ToolCallEntry {
-  const display = getToolDisplayInfo(part.toolName, part.input);
-  const errorText = "errorText" in part ? part.errorText : undefined;
-  const output = "output" in part ? part.output : undefined;
+function toToolCallEntry(part: EveToolPart): ToolCallEntry {
+  const input = toolInput(part);
+  const display = getToolDisplayInfo(part.name, input);
 
   return {
-    tool_name: part.toolName,
+    tool_name: part.name,
     tool_category: display.category,
     message: display.completedLabel,
     show_category: display.showCategory,
-    tool_call_id: part.toolCallId,
-    inputs: asToolInputs(part.input),
-    output: serializeToolOutput(output, errorText),
+    tool_call_id: part.callId,
+    inputs: asToolInputs(input),
+    output: serializeToolOutput(toolOutput(part), toolErrorText(part)),
     integration_name: display.integrationName,
   };
 }
@@ -97,7 +76,7 @@ function buildTimelineSteps(items: ActivityItem[]): ActivityStep[] {
     const part = item.part;
     if (isInteractiveTool(part)) continue;
 
-    if (COMPLETED_STATES.has(part.state)) {
+    if (toolIsFinished(part)) {
       const entry = toToolCallEntry(part);
       const prev = pendingTools.at(-1);
       if (
@@ -134,16 +113,14 @@ function getLiveState(items: ActivityItem[]): {
       };
     }
     if (item.kind === "tool" && !isInteractiveTool(item.part)) {
-      if (ACTIVE_STATES.has(item.part.state)) {
-        const display = getToolDisplayInfo(item.part.toolName, item.part.input);
-        if (display.category === "handoff") {
+      if (toolIsRunning(item.part)) {
+        const input = toolInput(item.part);
+        const display = getToolDisplayInfo(item.part.name, input);
+        if (display.category === "handoff" || item.part.kind === "agent") {
           liveSubagents.push({
-            id: item.part.toolCallId,
-            name: resolveSubagentName(
-              item.part.toolName,
-              item.part.toolMetadata?.eve?.name,
-            ),
-            task: getSubagentTask(item.part.input),
+            id: item.part.callId,
+            name: resolveSubagentName(item.part.name, item.part.name),
+            task: getSubagentTask(input),
           });
         } else {
           liveTool = {
@@ -185,7 +162,7 @@ export function AgentActivityGroup({
         steps={steps}
       />
       {interactive.map((item) => (
-        <ToolPart key={item.part.toolCallId} onRespond={onRespond} part={item.part} />
+        <ToolPart key={item.part.callId} onRespond={onRespond} part={item.part} />
       ))}
     </div>
   );

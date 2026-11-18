@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangleIcon } from "lucide-react";
 import { useEffect } from "react";
-import type { EveMessagePart } from "eve/react";
+import type { EveToolPart } from "eve/react";
 import {
   ARTIFACT_TYPES,
   extractArtifactSummaryLine,
@@ -64,11 +64,11 @@ function contentMarkdownFromInput(input: unknown): string {
 export function ArtifactPart({
   part,
 }: {
-  part: Extract<EveMessagePart, { type: "dynamic-tool" }>;
+  part: EveToolPart;
 }) {
   const { openArtifact } = useArtifactPanel();
   const queryClient = useQueryClient();
-  const artifact = "output" in part ? asArtifactOutput(part.output) : undefined;
+  const artifact = part.state === "streaming" ? undefined : asArtifactOutput(part.output);
   const savedArtifactId = artifact?.id;
   const { artifact: liveArtifact } = useArtifact(savedArtifactId);
 
@@ -77,7 +77,7 @@ export function ArtifactPart({
     void queryClient.invalidateQueries({ queryKey: queryKeys.artifacts });
   }, [queryClient, savedArtifactId]);
 
-  if (part.state === "output-error") {
+  if (part.state === "failed") {
     return (
       <Card className="not-prose mb-4" size="sm">
         <CardHeader>
@@ -87,14 +87,15 @@ export function ArtifactPart({
           </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          {part.errorText ?? "The document was not saved."}
+          {part.error?.message ?? "The document was not saved."}
         </CardContent>
       </Card>
     );
   }
 
-  const inputTitle = pendingTitle(part.input);
-  const inputBody = contentMarkdownFromInput(part.input);
+  const rawInput = part.state === "streaming" ? undefined : part.input;
+  const inputTitle = pendingTitle(rawInput);
+  const inputBody = contentMarkdownFromInput(rawInput);
   const body = liveArtifact?.contentMarkdown || inputBody || artifact?.preview || "";
   const title = artifact?.title ?? inputTitle;
   const summaryLine = title

@@ -134,30 +134,30 @@ describe("chat-lab checkpoints and parts", () => {
     const afterResult = reduceEventPrefix(scenario.events.slice(0, resultIndex + 1));
     const toolPart = afterResult.messages
       .flatMap((message) => message.parts)
-      .find((part) => part.type === "dynamic-tool");
-    assert.equal(toolPart?.type, "dynamic-tool");
-    if (toolPart?.type === "dynamic-tool") {
-      assert.equal(toolPart.state, "output-available");
+      .find((part) => part.type === "tool");
+    assert.equal(toolPart?.type, "tool");
+    if (toolPart?.type === "tool") {
+      assert.equal(toolPart.state, "completed");
     }
 
     const batches = scenario.events.filter((event) => event.type === "actions.requested");
     assert.ok(batches.length >= 3);
     const firstBatch = batches[0];
     assert.ok(firstBatch && firstBatch.type === "actions.requested");
-    assert.ok(firstBatch.data.actions.length >= 3);
+    assert.ok((firstBatch.data?.actions?.length ?? 0) >= 3);
     const afterRequest = reduceEventPrefix(
       scenario.events.slice(0, scenario.events.indexOf(firstBatch) + 1),
     );
     const inFlight = afterRequest.messages
       .flatMap((message) => message.parts)
-      .filter((part) => part.type === "dynamic-tool" && part.state === "input-available");
+      .filter((part) => part.type === "tool" && part.state === "running");
     assert.ok(inFlight.length >= 3);
 
     const toolNames = new Set(
       scenario.events.flatMap((event) => {
         if (event.type !== "action.result") return [];
-        const result = event.data.result as { toolName?: string };
-        return result.toolName ? [result.toolName] : [];
+        const result = event.data?.result as { toolName?: string } | undefined;
+        return result?.toolName ? [result.toolName] : [];
       }),
     );
     assert.ok(toolNames.size >= 6);
@@ -171,18 +171,14 @@ describe("chat-lab checkpoints and parts", () => {
     const tools = data.messages
       .flatMap((message) => message.parts)
       .filter(
-        (part) =>
-          part.type === "dynamic-tool"
-          && part.toolMetadata?.eve?.kind === "subagent-call",
+        (part) => part.type === "tool" && part.kind === "agent",
       );
     assert.ok(tools.length >= 2);
-    assert.ok(tools.every((part) => part.type === "dynamic-tool" && part.state === "output-available"));
+    assert.ok(tools.every((part) => part.type === "tool" && part.state === "completed"));
 
     const names = new Set(
       tools.flatMap((part) =>
-        part.type === "dynamic-tool" && part.toolMetadata?.eve?.name
-          ? [part.toolMetadata.eve.name]
-          : [],
+        part.type === "tool" ? [part.name] : [],
       ),
     );
     assert.ok(names.has("researcher"));
@@ -199,16 +195,14 @@ describe("chat-lab checkpoints and parts", () => {
       .flatMap((message) => message.parts)
       .filter(
         (part) =>
-          part.type === "dynamic-tool"
-          && part.toolMetadata?.eve?.kind === "subagent-call"
-          && (part.state === "input-available" || part.state === "input-streaming"),
+          part.type === "tool"
+          && part.kind === "agent"
+          && part.state === "running",
       );
     assert.ok(live.length >= 2);
     const liveNames = new Set(
       live.flatMap((part) =>
-        part.type === "dynamic-tool" && part.toolMetadata?.eve?.name
-          ? [part.toolMetadata.eve.name]
-          : [],
+        part.type === "tool" ? [part.name] : [],
       ),
     );
     assert.equal(liveNames.size, live.length);
@@ -227,11 +221,11 @@ describe("chat-lab checkpoints and parts", () => {
     const tool = data.messages
       .flatMap((message) => message.parts)
       .find(
-        (part) => part.type === "dynamic-tool" && part.toolName === "create_artifact",
+        (part) => part.type === "tool" && part.name === "create_artifact",
       );
     assert.ok(tool);
-    if (tool?.type === "dynamic-tool") {
-      assert.equal(tool.state, "output-available");
+    if (tool?.type === "tool") {
+      assert.equal(tool.state, "completed");
       assert.ok(tool.output && typeof tool.output === "object");
       assert.equal(
         (tool.output as { id?: string }).id,
@@ -251,11 +245,11 @@ describe("chat-lab checkpoints and parts", () => {
     const tool = data.messages
       .flatMap((message) => message.parts)
       .find(
-        (part) => part.type === "dynamic-tool" && part.toolName === "save_memory",
+        (part) => part.type === "tool" && part.name === "save_memory",
       );
     assert.ok(tool);
-    if (tool?.type === "dynamic-tool") {
-      assert.equal(tool.state, "approval-requested");
+    if (tool?.type === "tool") {
+      assert.equal(tool.state, "approval");
     }
 
     assert.ok(scenario.afterHitlApprove?.length);

@@ -86,7 +86,10 @@ describe("resumeOptionsFromThread", () => {
 
     assert.equal(options.initialSession?.sessionId, "sess_1");
     assert.equal(options.initialSession?.streamIndex, 2);
-    assert.equal(options.initialEvents?.length, 2);
+    assert.equal(options.initialEvents?.length, 1);
+    const started = options.initialEvents?.[0] as { type?: string; meta?: { next?: number } };
+    assert.equal(started.type, "session.started");
+    assert.equal(started.meta?.next, 2);
   });
 
   it("resumes session-only when events are empty", () => {

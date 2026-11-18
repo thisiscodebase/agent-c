@@ -62,14 +62,12 @@ export function defineLookupSubagent(description: string) {
   return defineAgent({
     description,
     tool: false,
-    model: defineDynamic({
-      events: {
-        "session.started": (_event, ctx) => resolveLookupModel(ctx),
-      },
-    }),
+    model: defineDynamic((ctx) =>
+      ctx.memo(["lookup-model", ctx.session.id], () => resolveLookupModel(ctx)),
+    ),
     reasoning: "provider-default",
     compaction: {
-      thresholdPercent: 0.85,
+      threshold: 0.85,
     },
   });
 }

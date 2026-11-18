@@ -2,7 +2,8 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import type { ChatStatus } from "ai";
-import type { EveAgentReducerEvent, EveMessage } from "eve/react";
+import type { EveMessage } from "eve/react";
+import type { ChatLabEvent } from "~/lib/chat-lab/types";
 import {
   useCallback,
   useEffect,
@@ -55,7 +56,7 @@ function seedMockArtifacts(
 }
 
 function snapshotFromIndex(
-  events: readonly EveAgentReducerEvent[],
+  events: readonly ChatLabEvent[],
   index: number,
   checkpoints: readonly ChatLabCheckpoint[],
 ) {
@@ -86,7 +87,7 @@ export function useMockConversation(initialScenarioId?: string) {
     () => getChatLabScenario(scenarioId),
     [scenarioId],
   );
-  const [events, setEvents] = useState<EveAgentReducerEvent[]>(() => [
+  const [events, setEvents] = useState<ChatLabEvent[]>(() => [
     ...scenario.events,
   ]);
   const checkpoints = useMemo(() => buildCheckpoints(events), [events]);
@@ -300,7 +301,7 @@ export function useMockConversation(initialScenarioId?: string) {
         ? scenario.afterHitlApprove
         : scenario.afterHitlDeny;
 
-      const responseEvent: EveAgentReducerEvent = {
+      const responseEvent: ChatLabEvent = {
         type: "client.input.responded",
         data: {
           createdAt: Date.now(),

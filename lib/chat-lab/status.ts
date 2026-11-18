@@ -1,5 +1,5 @@
 import type { ChatStatus } from "ai";
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 
 const STREAMING_TYPES = new Set([
   "turn.started",
@@ -46,7 +46,7 @@ const SUBMITTED_TYPES = new Set([
  * session after turn.failed). A later `turn.started` clears that failure.
  */
 export function deriveChatStatus(
-  events: readonly EveAgentReducerEvent[],
+  events: readonly ChatLabEvent[],
 ): ChatStatus {
   if (events.length === 0) {
     return "ready";
@@ -92,17 +92,17 @@ export function deriveChatStatus(
   return "ready";
 }
 
-export function isHitlPauseEvent(event: EveAgentReducerEvent): boolean {
+export function isHitlPauseEvent(event: ChatLabEvent): boolean {
   return event.type === "input.requested" || event.type === "authorization.required";
 }
 
 export function extractTurnFailureMessage(
-  events: readonly EveAgentReducerEvent[],
+  events: readonly ChatLabEvent[],
 ): string | undefined {
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const event = events[index]!;
     if (event.type === "turn.failed" || event.type === "session.failed") {
-      return event.data.message;
+      return typeof event.data?.message === "string" ? event.data.message : undefined;
     }
   }
   return undefined;

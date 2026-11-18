@@ -56,7 +56,7 @@ describe("isReactMaxUpdateDepthError", () => {
 });
 
 describe("createStreamingStoreNotifier", () => {
-  it("notifies immediately when the store is not streaming", () => {
+  it("notifies immediately when the store is not busy", () => {
     const clock = createTestClock();
     let calls = 0;
     let status: string = "submitted";
@@ -77,7 +77,7 @@ describe("createStreamingStoreNotifier", () => {
     assert.equal(calls, 3);
   });
 
-  it("does not delay the first streaming tick after submitted", () => {
+  it("does not delay the first busy tick after submitted", () => {
     const clock = createTestClock();
     let calls = 0;
     let status: string = "submitted";
@@ -91,16 +91,16 @@ describe("createStreamingStoreNotifier", () => {
     });
 
     notifier.notify();
-    status = "streaming";
+    status = "busy";
     notifier.notify();
     assert.equal(calls, 2);
   });
 
-  it("coalesces a synchronous streaming burst into a leading tick", () => {
+  it("coalesces a synchronous busy burst into a leading tick", () => {
     const clock = createTestClock();
     let calls = 0;
     const notifier = createStreamingStoreNotifier({
-      getStatus: () => "streaming",
+      getStatus: () => "busy",
       listener: () => {
         calls += 1;
       },
@@ -115,10 +115,10 @@ describe("createStreamingStoreNotifier", () => {
     assert.equal(calls, 2);
   });
 
-  it("flushes immediately when streaming ends mid-window", () => {
+  it("flushes immediately when busy ends mid-window", () => {
     const clock = createTestClock();
     let calls = 0;
-    let status: string = "streaming";
+    let status: string = "busy";
     const notifier = createStreamingStoreNotifier({
       getStatus: () => status,
       listener: () => {

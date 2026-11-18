@@ -25,7 +25,7 @@ export function LiveSubagentActivityProvider({
     if (!agents) return activity;
     for (const session of Object.values(agents)) {
       const next = activityFromFollowedSession(session);
-      if (next) activity.set(session.callId, next);
+      if (next) activity.set(session.callId ?? session.sessionId, next);
     }
     return activity;
   }, [agents]);

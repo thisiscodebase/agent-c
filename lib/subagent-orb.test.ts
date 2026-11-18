@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { ConversationAgentSession, EveAgentReducerEvent, EveMessage } from "eve/react";
+import type { ConversationAgentSession, ConversationState, EveMessage } from "eve/react";
 import {
   activityFromFollowedSession,
   assignUniqueSubagentHues,
@@ -119,7 +119,7 @@ describe("orbStateFromChildStreamEvent", () => {
 
 describe("reduceLiveSubagentOrbStates", () => {
   it("clears tracked calls when the parent turn ends", () => {
-    const events: EveAgentReducerEvent[] = [
+    const events = [
       {
         type: "task.started",
         data: {
@@ -164,15 +164,16 @@ function followedSession(messages: readonly EveMessage[]): ConversationAgentSess
     sessionId: "child",
     name: "researcher",
     callId: "call-1",
+    owner: { callId: "call-1" },
     turnId: "t",
     observation: {
       status: "following",
+      position: 0,
+      caughtUp: true,
       conversation: {
         messages,
-        turns: {},
-        inputs: {},
-        tasks: {},
         agents: {},
+        view: {} as ConversationState["view"],
       },
     },
   };
@@ -187,10 +188,13 @@ describe("activityFromFollowedSession", () => {
         parts: [
           { type: "reasoning", text: "Looking…", state: "streaming" },
           {
-            type: "dynamic-tool",
-            toolCallId: "tool-1",
-            toolName: "search_slack",
-            state: "input-available",
+            type: "tool",
+            callId: "tool-1",
+            stepIndex: 0,
+            kind: "tool",
+            name: "search_slack",
+            label: "Search Slack",
+            state: "running",
             input: { query: "acme" },
           },
         ],

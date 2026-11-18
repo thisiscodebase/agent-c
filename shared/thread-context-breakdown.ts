@@ -39,6 +39,8 @@ export type ContextBreakdownMessagePart = {
   type?: string;
   text?: string;
   toolName?: string;
+  /** Eve 1.0 tool parts name the tool here. */
+  name?: string;
   input?: unknown;
   output?: unknown;
   state?: string;
@@ -155,6 +157,14 @@ function collectMcpConnectors(
     for (const raw of events) {
       const event = asRecord(raw);
       if (!event) continue;
+      if (event.type === "call.requested") {
+        const data = asRecord(event.data);
+        const capability = asRecord(data?.capability);
+        if (capability?.kind === "tool" && typeof capability.name === "string") {
+          consider(capability.name, readConnection(data?.input));
+        }
+        continue;
+      }
       if (event.type !== "step.completed" && event.type !== "actions.requested") {
         continue;
       }
@@ -167,10 +177,14 @@ function collectMcpConnectors(
   if (Array.isArray(messages)) {
     for (const message of messages) {
       for (const part of message.parts ?? []) {
-        if (part.type !== "dynamic-tool" || typeof part.toolName !== "string") {
+        const toolName = part.toolName ?? part.name;
+        if (
+          (part.type !== "dynamic-tool" && part.type !== "tool")
+          || typeof toolName !== "string"
+        ) {
           continue;
         }
-        consider(part.toolName, readConnection(part.input));
+        consider(toolName, readConnection(part.input));
       }
     }
   }
@@ -217,6 +231,23 @@ function collectLoadedSkills(
     for (const raw of events) {
       const event = asRecord(raw);
       if (!event) continue;
+      if (event.type === "delivery.consumed") {
+        const parts = asRecord(event.data)?.parts;
+        if (Array.isArray(parts)) {
+          for (const part of parts) {
+            const text = asRecord(part)?.text;
+            if (typeof text === "string") scanText(text);
+          }
+        }
+        continue;
+      }
+      if (event.type === "content.completed") {
+        const data = asRecord(event.data);
+        if (data?.kind === "text" && typeof data.value === "string") {
+          scanText(data.value);
+        }
+        continue;
+      }
       if (
         event.type !== "message.received"
         && event.type !== "message.completed"
@@ -270,9 +301,10 @@ function estimateConversationTokens(
       if (typeof part.text === "string") {
         tokens += estimateTokensFromText(part.text);
       }
-      if (part.type === "dynamic-tool") {
-        if (typeof part.toolName === "string") {
-          tokens += estimateTokensFromText(part.toolName);
+      if (part.type === "dynamic-tool" || part.type === "tool") {
+        const toolName = part.toolName ?? part.name;
+        if (typeof toolName === "string") {
+          tokens += estimateTokensFromText(toolName);
         }
         tokens += estimateTokensFromText(stringifyUnknown(part.input));
         tokens += estimateTokensFromText(stringifyUnknown(part.output));
@@ -299,7 +331,19 @@ function readLatestUsage(events: readonly unknown[] | undefined): {
   for (const raw of events) {
     const event = asRecord(raw);
     if (!event) continue;
-    if (event.type !== "step.completed" && event.type !== "compaction.requested") {
+    if (event.type === "context.started") {
+      const trigger = asRecord(asRecord(event.data)?.trigger);
+      const next = readPositiveNumber(trigger?.inputTokens);
+      if (next !== null) {
+        inputTokens = next;
+      }
+      continue;
+    }
+    if (
+      event.type !== "step.completed"
+      && event.type !== "compaction.requested"
+      && event.type !== "usage.recorded"
+    ) {
       continue;
     }
     const data = asRecord(event.data);

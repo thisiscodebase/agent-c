@@ -1,8 +1,15 @@
 import type {
   ConversationAgentSession,
-  EveAgentReducerEvent,
   EveMessage,
+  EveToolPart,
 } from "eve/react";
+
+/** Child-stream beats the lab and older transcripts still replay. Live sessions use message parts. */
+type ChildStreamEvent = {
+  type: string;
+  data?: Record<string, any>;
+  meta?: Record<string, any>;
+};
 import type { OrbState } from "thinking-orbs";
 import { getToolDisplayInfo } from "./tool-call-display.ts";
 
@@ -27,15 +34,17 @@ const SHAPE_CATEGORIES = new Set(["memory", "todos"]);
 /** Hue-rotate offsets that land off the branded orange fruit ink. */
 const SUBAGENT_HUE_ROTATES = [95, 135, 175, 210, 250, 290] as const;
 
-type RequestedAction = Extract<
-  EveAgentReducerEvent,
-  { type: "actions.requested" }
->["data"]["actions"][number];
-
-type ActionResult = Extract<
-  EveAgentReducerEvent,
-  { type: "action.result" }
->["data"]["result"];
+type RequestedAction = {
+  kind?: string;
+  toolName?: string;
+  subagentName?: string;
+  remoteAgentName?: string;
+};
+type ActionResult = {
+  kind?: string;
+  toolName?: string;
+  subagentName?: string;
+};
 
 export function orbStateForCategory(category: string): OrbState {
   if (category === "handoff") return "weaving";
@@ -75,25 +84,25 @@ export type FollowedSubagentActivity = {
   toolLabel?: string;
 };
 
-function childToolActivity(part: Extract<EveMessage["parts"][number], { type: "dynamic-tool" }>): FollowedSubagentActivity | undefined {
+function childToolActivity(part: EveToolPart): FollowedSubagentActivity | undefined {
   switch (part.state) {
-    case "input-streaming":
-    case "input-available":
-    case "approval-requested":
-    case "approval-responded":
+    case "streaming":
+    case "requested":
+    case "running":
+    case "approval":
+    case "blocked":
       break;
-    case "output-available":
-      if (part.partial !== true) return undefined;
-      break;
-    case "output-error":
-    case "output-denied":
+    case "completed":
+    case "failed":
+    case "rejected":
+    case "cancelled":
       return undefined;
     default: {
       const _never: never = part;
       return _never;
     }
   }
-  const info = getToolDisplayInfo(part.toolName, part.input);
+  const info = getToolDisplayInfo(part.name, part.state === "streaming" ? undefined : part.input);
   return {
     orb: orbStateForCategory(info.category),
     toolLabel: info.runningLabel,
@@ -101,19 +110,8 @@ function childToolActivity(part: Extract<EveMessage["parts"][number], { type: "d
 }
 
 function followedConversation(session: ConversationAgentSession) {
-  switch (session.observation.status) {
-    case "following":
-    case "idle":
-      return session.observation.conversation;
-    case "unavailable":
-      return session.observation.conversation;
-    case "not-followed":
-      return undefined;
-    default: {
-      const _never: never = session.observation;
-      return _never;
-    }
-  }
+  if (session.observation.status === "not-followed") return undefined;
+  return session.observation.conversation;
 }
 
 /** Latest live signal on one assistant message. Later parts win. */
@@ -128,7 +126,7 @@ function activityFromAssistantMessage(message: EveMessage): FollowedSubagentActi
       activity = { orb: "composing" };
       continue;
     }
-    if (part.type === "dynamic-tool") {
+    if (part.type === "tool") {
       const tool = childToolActivity(part);
       if (tool) activity = tool;
     }
@@ -210,17 +208,15 @@ function toolNameFromRequestedAction(action: RequestedAction): string {
   switch (action.kind) {
     case "tool-call":
     case "workflow-tool-call":
-      return action.toolName;
+      return action.toolName ?? "tool";
     case "subagent-call":
-      return `eve:subagent:${action.subagentName}`;
+      return `eve:subagent:${action.subagentName ?? "agent"}`;
     case "remote-agent-call":
-      return `eve:subagent:${action.remoteAgentName}`;
+      return `eve:subagent:${action.remoteAgentName ?? "agent"}`;
     case "load-skill":
       return "eve:load-skill";
-    default: {
-      const _never: never = action;
-      return _never;
-    }
+    default:
+      return action.toolName ?? "tool";
   }
 }
 
@@ -239,7 +235,7 @@ function toolNameFromActionResult(result: ActionResult): string | undefined {
 
 /** Map one nested child-stream event to an orb verb. */
 export function orbStateFromChildStreamEvent(
-  event: EveAgentReducerEvent,
+  event: ChildStreamEvent,
 ): OrbState | null {
   switch (event.type) {
     case "reasoning.appended":
@@ -253,14 +249,17 @@ export function orbStateFromChildStreamEvent(
     case "input.requested":
       return "listening";
     case "actions.requested": {
-      const action = event.data.actions.at(-1);
+      const actions = event.data?.actions as RequestedAction[] | undefined;
+      const action = actions?.at(-1);
       if (!action) return "working";
       return orbStateForCategory(
         getToolDisplayInfo(toolNameFromRequestedAction(action)).category,
       );
     }
     case "action.result": {
-      const toolName = toolNameFromActionResult(event.data.result);
+      const toolName = event.data?.result
+        ? toolNameFromActionResult(event.data.result as ActionResult)
+        : undefined;
       if (!toolName) return "working";
       return orbStateForCategory(getToolDisplayInfo(toolName).category);
     }
@@ -278,18 +277,19 @@ export function orbStateFromChildStreamEvent(
  * `task.settled` and a finished turn drop any tracked call.
  */
 export function reduceLiveSubagentOrbStates(
-  events: readonly EveAgentReducerEvent[],
+  events: readonly ChildStreamEvent[],
 ): Map<string, OrbState> {
   const states = new Map<string, OrbState>();
 
   for (const event of events) {
     switch (event.type) {
       case "task.settled":
-        states.delete(event.data.callId);
+        if (typeof event.data?.callId === "string") states.delete(event.data.callId);
         break;
       case "turn.completed":
       case "turn.cancelled":
       case "turn.failed":
+      case "turn.settled":
         states.clear();
         break;
       default:

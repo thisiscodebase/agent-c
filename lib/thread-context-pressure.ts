@@ -96,12 +96,26 @@ export function resolveThreadContextPressure(
       if (!event) {
         continue;
       }
-      if (event.type === "compaction.requested" || event.type === "compaction.completed") {
+      if (
+        event.type === "compaction.requested"
+        || event.type === "compaction.completed"
+        || (event.type === "context.started" && asRecord(event.data)?.kind === "compaction")
+      ) {
         compacted = true;
+      }
+      if (event.type === "context.started") {
+        const trigger = asRecord(asRecord(event.data)?.trigger);
+        const peak = trigger?.inputTokens;
+        if (typeof peak === "number" && Number.isFinite(peak) && peak > 0) {
+          inputTokens = peak;
+          usageFromCompaction = asRecord(event.data)?.kind === "compaction";
+        }
+        continue;
       }
       if (
         event.type === "step.completed"
         || event.type === "compaction.requested"
+        || event.type === "usage.recorded"
       ) {
         const tokens = readInputTokens(asRecord(event.data));
         if (tokens !== null) {

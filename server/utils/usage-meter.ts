@@ -35,7 +35,7 @@ function eventAtMs(event: Record<string, unknown>): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
-/** Sum `costUsd` from thread `step.completed` events in the given UTC month. */
+/** Sum `costUsd` from thread usage events in the given UTC month. */
 export function sumThreadCostUsdForPeriod(
   threads: Array<{ state: ThreadState | null }>,
   periodKey: string,
@@ -48,7 +48,7 @@ export function sumThreadCostUsdForPeriod(
     }
     for (const raw of events) {
       const event = asRecord(raw);
-      if (!event || event.type !== "step.completed") {
+      if (!event || (event.type !== "step.completed" && event.type !== "usage.recorded")) {
         continue;
       }
       const at = eventAtMs(event);

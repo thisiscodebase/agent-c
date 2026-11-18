@@ -1,5 +1,12 @@
 import type { ChatStatus } from "ai";
-import type { EveAgentReducerEvent, EveMessage } from "eve/react";
+import type { EveMessage } from "eve/react";
+
+/** Scripted lab beats. The live client folds eve 1.0 events; the lab keeps its own sequence. */
+export type ChatLabEvent = {
+  type: string;
+  data?: Record<string, any>;
+  meta?: Record<string, any>;
+};
 
 export type ChatLabCheckpointKind =
   | "submitted"
@@ -42,22 +49,22 @@ export type ChatLabScenario = {
   description: string;
   /** Default user line shown when launching without typing. */
   userMessage: string;
-  events: readonly EveAgentReducerEvent[];
+  events: readonly ChatLabEvent[];
   /** Artifact ids that should be seeded into React Query when this scenario runs. */
   artifactIds?: readonly string[];
   /**
    * Extra events appended after HITL Approve (excluding client.input.responded,
    * which the controller injects from the user's choice).
    */
-  afterHitlApprove?: readonly EveAgentReducerEvent[];
+  afterHitlApprove?: readonly ChatLabEvent[];
   /** Extra events appended after HITL Deny. */
-  afterHitlDeny?: readonly EveAgentReducerEvent[];
+  afterHitlDeny?: readonly ChatLabEvent[];
 };
 
 export type ChatLabSnapshot = {
   messages: readonly EveMessage[];
   status: ChatStatus;
-  events: readonly EveAgentReducerEvent[];
+  events: readonly ChatLabEvent[];
   index: number;
   currentEventType: string | null;
   checkpoints: readonly ChatLabCheckpoint[];

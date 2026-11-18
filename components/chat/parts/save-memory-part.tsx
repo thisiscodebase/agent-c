@@ -1,7 +1,7 @@
 "use client";
 
 import { BrainIcon, CheckIcon, XIcon } from "lucide-react";
-import type { EveMessagePart } from "eve/react";
+import type { EveToolPart } from "eve/react";
 import { MEMORY_CATEGORIES, MEMORY_CATEGORY_LABELS, type MemoryCategory } from "#shared/types/memory";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "~/components/ui/card";
@@ -23,11 +23,14 @@ export function SaveMemoryPart({
   part,
   onRespond,
 }: {
-  part: Extract<EveMessagePart, { type: "dynamic-tool" }>;
-  onRespond: (requestId: string, optionId: string) => void;
+  part: EveToolPart;
+  onRespond: (interactionId: string, optionId: string) => void;
 }) {
-  const input = isSaveMemoryInput(part.input) ? part.input : undefined;
-  const request = part.state === "approval-requested" ? part.toolMetadata?.eve?.inputRequest : undefined;
+  const input = part.state === "streaming"
+    ? undefined
+    : isSaveMemoryInput(part.input) ? part.input : undefined;
+  const interaction = part.interaction?.status === "open" ? part.interaction : undefined;
+  const request = interaction?.request;
 
   return (
     <Card className="not-prose mb-4">
@@ -53,7 +56,7 @@ export function SaveMemoryPart({
               key={option.id}
               size="sm"
               variant={option.style === "danger" ? "destructive" : option.style === "primary" ? "default" : "outline"}
-              onClick={() => onRespond(request.requestId, option.id)}
+              onClick={() => onRespond(interaction.interactionId, option.id)}
             >
               {option.style === "danger" ? <XIcon /> : <CheckIcon />}
               {option.label}
@@ -62,7 +65,7 @@ export function SaveMemoryPart({
         </CardFooter>
       ) : (
         <CardFooter>
-          <p className="text-xs text-muted-foreground">{part.state === "output-denied" ? "Declined" : "Saved"}</p>
+          <p className="text-xs text-muted-foreground">{part.state === "rejected" ? "Declined" : "Saved"}</p>
         </CardFooter>
       )}
     </Card>

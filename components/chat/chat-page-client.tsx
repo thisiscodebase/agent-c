@@ -157,12 +157,12 @@ function ChatPageSession({
     () =>
       estimateThreadContextBreakdown({
         events: agent.events,
-        messages: agent.data.messages,
+        messages: agent.messages,
         inputTokens: contextPressure.inputTokens,
         contextWindowTokens: contextPressure.contextWindowTokens,
       }),
     [
-      agent.data.messages,
+      agent.messages,
       agent.events,
       contextPressure.inputTokens,
       contextPressure.contextWindowTokens,
@@ -173,34 +173,35 @@ function ChatPageSession({
   const usageBlocked = meterStatus === "blocked";
 
   const seedMessage =
-    seedText && !hasUserMessageText(agent.data.messages, seedText)
+    seedText && !hasUserMessageText(agent.messages, seedText)
       ? createOptimisticUserMessage(seedText, `pending-user-${chatId}`)
       : null;
   const messages = mergeOptimisticUserMessage(
-    mergeOptimisticUserMessage(agent.data.messages, seedMessage as EveMessage | null),
+    mergeOptimisticUserMessage(agent.messages, seedMessage as EveMessage | null),
     localUser,
   );
 
   useEffect(() => {
     if (!localUser) return;
-    const merged = mergeOptimisticUserMessage(agent.data.messages, localUser);
-    if (merged.length === agent.data.messages.length) {
+    const merged = mergeOptimisticUserMessage(agent.messages, localUser);
+    if (merged.length === agent.messages.length) {
       setLocalUser(null);
     }
-  }, [agent.data.messages, localUser]);
+  }, [agent.messages, localUser]);
 
   const displayStatus: ChatStatus = composerStatus(
-    (seedMessage || localUser) &&
-      agent.status !== "submitted" &&
-      agent.status !== "streaming" &&
-      agent.status !== "resuming"
+    (seedMessage || localUser) && agent.status === "idle"
       ? "submitted"
-      : agent.status,
+      : agent.status === "busy"
+        ? "streaming"
+        : agent.status === "resuming"
+          ? "resuming"
+          : "ready",
   );
 
-  function respondToInput(requestId: string, optionId: string) {
+  function respondToInput(interactionId: string, optionId: string) {
     if (readOnly || usageBlocked) return;
-    void agent.respond([{ requestId, optionId }]);
+    void agent.respond([{ interactionId, optionId }]);
   }
 
   return (
@@ -274,7 +275,7 @@ function ChatPageSession({
         messages={messages}
         onRespond={respondToInput}
         status={displayStatus}
-        subagentSessions={agent.data.agents}
+        subagentSessions={agent.agents}
         threadId={chatId}
       />
     </DetailPanelHost>

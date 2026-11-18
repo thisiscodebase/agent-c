@@ -43,6 +43,7 @@ export function readEventModelId(
       return typeof modelId === "string" ? canonicalModelId(modelId) : null;
     }
     case "step.started":
+    case "model.started":
     case "compaction.requested":
     case "compaction.completed": {
       const modelId = data.modelId;
@@ -57,6 +58,7 @@ export function readEventModelId(
 export function isResolvedRunModelEvent(eventType: string): boolean {
   switch (eventType) {
     case "step.started":
+    case "model.started":
     case "compaction.requested":
     case "compaction.completed":
       return true;

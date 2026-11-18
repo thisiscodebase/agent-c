@@ -38,7 +38,7 @@ export type ActivityStep =
   | { kind: "tool"; entry: ToolCallEntry };
 
 type ReasoningPartData = Extract<EveMessagePart, { type: "reasoning" }>;
-type DynamicToolPartData = Extract<EveMessagePart, { type: "dynamic-tool" }>;
+type DynamicToolPartData = Extract<EveMessagePart, { type: "tool" }>;
 
 export type ActivityItem =
   | { kind: "reasoning"; part: ReasoningPartData; index: number }

@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { UseEveAgentSnapshot } from "eve/react";
-import type { ClientSessionState, MessageStreamEvent } from "eve/client";
+import type { ClientSessionState, SessionStreamEvent } from "eve/client";
 import type { AgentPrefs } from "#shared/agent-modes";
 import { normalizeAgentPrefs } from "#shared/agent-modes";
 import { resumeOptionsFromThread as resumeFromShared } from "#shared/resume-thread";
@@ -9,7 +9,7 @@ import { queryKeys } from "~/lib/query-keys";
 
 interface ResumeOptions {
   initialSession?: ClientSessionState;
-  initialEvents?: readonly MessageStreamEvent[];
+  initialEvents?: readonly SessionStreamEvent[];
 }
 
 export function resumeOptionsFromThread(thread: ThreadRecord): ResumeOptions {
@@ -19,7 +19,7 @@ export function resumeOptionsFromThread(thread: ThreadRecord): ResumeOptions {
       ? { initialSession: options.initialSession }
       : {}),
     ...(options.initialEvents
-      ? { initialEvents: options.initialEvents as readonly MessageStreamEvent[] }
+      ? { initialEvents: options.initialEvents as readonly SessionStreamEvent[] }
       : {}),
   };
 }
@@ -95,7 +95,7 @@ function threadStateFromCursor(input: {
  */
 export async function persistThreadState(
   threadId: string,
-  snapshot: UseEveAgentSnapshot<unknown>,
+  snapshot: UseEveAgentSnapshot,
   queryClient: QueryClient,
   agentPrefs?: AgentPrefs,
   options?: PersistThreadStateOptions,

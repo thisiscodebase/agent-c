@@ -1,18 +1,23 @@
 "use client";
 
 import { KeyRoundIcon } from "lucide-react";
-import type { EveMessagePart } from "eve/react";
+import type { EveInteractionPart } from "eve/react";
+import { signInEnding } from "eve/react";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 
-export function AuthorizationPart({ part }: { part: Extract<EveMessagePart, { type: "authorization" }> }) {
-  if (part.state === "completed") {
+export function AuthorizationPart({ part }: { part: EveInteractionPart }) {
+  const signIn = part.request.signIn;
+  const displayName = signIn?.displayName || signIn?.name || part.request.title || "Connection";
+
+  if (part.status === "settled") {
+    const ending = part.outcome ? signInEnding(part.outcome) : "failed";
     return (
       <Alert>
         <KeyRoundIcon />
         <AlertTitle>
-          {part.outcome === "authorized"
-            ? `${part.displayName} connected`
-            : `${part.displayName} authorization ${part.outcome}`}
+          {ending === "connected"
+            ? `${displayName} connected`
+            : `${displayName} ${ending}`}
         </AlertTitle>
         {part.reason ? <AlertDescription>{part.reason}</AlertDescription> : null}
       </Alert>
@@ -22,15 +27,15 @@ export function AuthorizationPart({ part }: { part: Extract<EveMessagePart, { ty
   return (
     <Alert>
       <KeyRoundIcon />
-      <AlertTitle>{part.displayName}</AlertTitle>
+      <AlertTitle>{displayName}</AlertTitle>
       <AlertDescription className="flex flex-col gap-2">
-        <p>{part.description}</p>
-        {part.authorization?.instructions ? <p>{part.authorization.instructions}</p> : null}
-        {part.authorization?.userCode ? (
-          <code className="w-fit rounded bg-muted px-2 py-1 text-foreground">{part.authorization.userCode}</code>
+        <p>{part.request.prompt}</p>
+        {signIn?.instructions ? <p>{signIn.instructions}</p> : null}
+        {signIn?.userCode ? (
+          <code className="w-fit rounded bg-muted px-2 py-1 text-foreground">{signIn.userCode}</code>
         ) : null}
-        {part.authorization?.url ? (
-          <a className="w-fit underline hover:text-foreground" href={part.authorization.url} rel="noreferrer" target="_blank">
+        {signIn?.url ? (
+          <a className="w-fit underline hover:text-foreground" href={signIn.url} rel="noreferrer" target="_blank">
             Sign in →
           </a>
         ) : null}

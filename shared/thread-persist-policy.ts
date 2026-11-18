@@ -10,6 +10,9 @@ import {
 export const PERSIST_SKIPPED_EVENT_TYPES = new Set<string>([
   "message.appended",
   "reasoning.appended",
+  "content.delta",
+  "call.input",
+  "call.progress",
 ]);
 
 /**
@@ -20,9 +23,14 @@ export const SLACK_PERSISTED_EVENT_TYPES = new Set<string>([
   "session.started",
   "turn.started",
   "message.received",
+  "delivery.consumed",
   "actions.requested",
+  "call.requested",
   "step.started",
   "step.completed",
+  "model.started",
+  "model.settled",
+  "usage.recorded",
 ]);
 
 export const THREAD_ID_UUID_RE =
@@ -102,7 +110,7 @@ export function titleFromSlackMessageEvent(input: {
   messageText?: string;
   attributes?: Readonly<Record<string, string | readonly string[]>> | null;
 }): string {
-  if (input.eventType !== "message.received") {
+  if (input.eventType !== "message.received" && input.eventType !== "delivery.consumed") {
     return slackPlaceholderTitle(input.attributes);
   }
   const raw = input.messageText?.trim() ?? "";

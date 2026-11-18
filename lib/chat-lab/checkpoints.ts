@@ -1,9 +1,9 @@
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 import type { ChatLabCheckpoint, ChatLabCheckpointKind } from "./types.ts";
 
 function firstIndex(
-  events: readonly EveAgentReducerEvent[],
-  predicate: (event: EveAgentReducerEvent) => boolean,
+  events: readonly ChatLabEvent[],
+  predicate: (event: ChatLabEvent) => boolean,
 ): number | undefined {
   for (let index = 0; index < events.length; index += 1) {
     if (predicate(events[index]!)) {
@@ -18,7 +18,7 @@ function firstIndex(
  * Indices are exclusive upper bounds suitable for `seek(index)`.
  */
 export function buildCheckpoints(
-  events: readonly EveAgentReducerEvent[],
+  events: readonly ChatLabEvent[],
 ): ChatLabCheckpoint[] {
   const checkpoints: ChatLabCheckpoint[] = [];
   const seen = new Set<ChatLabCheckpointKind>();

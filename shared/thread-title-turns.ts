@@ -20,6 +20,24 @@ function truncateTurnText(text: string): string {
   return `${trimmed.slice(0, MAX_CHARS_PER_TURN - 1)}…`;
 }
 
+function pushTurn(turns: TitleTurn[], role: TitleTurnRole, raw: string) {
+  const text = truncateTurnText(raw);
+  if (text) {
+    turns.push({ role, text });
+  }
+}
+
+function textFromParts(parts: unknown): string {
+  if (!Array.isArray(parts)) return "";
+  return parts
+    .map((part) => {
+      if (!isRecord(part) || part.kind !== "text" || typeof part.text !== "string") return "";
+      return part.text;
+    })
+    .filter((text) => text.trim().length > 0)
+    .join("\n");
+}
+
 /**
  * Extract plain user/assistant turns from persisted Eve stream events.
  * Caps to the most recent turns and truncates each message for cheap prompts.
@@ -38,18 +56,27 @@ export function extractTitleTurnsFromEvents(events: readonly unknown[]): TitleTu
     }
 
     if (event.type === "message.received" && typeof data.message === "string") {
-      const text = truncateTurnText(data.message);
-      if (text) {
-        turns.push({ role: "user", text });
-      }
+      pushTurn(turns, "user", data.message);
+      continue;
+    }
+
+    if (event.type === "delivery.consumed") {
+      pushTurn(turns, "user", textFromParts(data.parts));
       continue;
     }
 
     if (event.type === "message.completed" && typeof data.message === "string") {
-      const text = truncateTurnText(data.message);
-      if (text) {
-        turns.push({ role: "assistant", text });
-      }
+      pushTurn(turns, "assistant", data.message);
+      continue;
+    }
+
+    if (
+      event.type === "content.completed"
+      && data.kind === "text"
+      && data.phase !== "narration"
+      && typeof data.value === "string"
+    ) {
+      pushTurn(turns, "assistant", data.value);
     }
   }
 

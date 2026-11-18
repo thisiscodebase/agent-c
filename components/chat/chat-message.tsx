@@ -31,9 +31,7 @@ function segmentParts(parts: readonly EveMessagePart[]): RenderSegment[] {
   };
 
   parts.forEach((part, index) => {
-    if (part.type === "step-start") return;
-
-    if (part.type === "reasoning" || part.type === "dynamic-tool") {
+    if (part.type === "reasoning" || part.type === "tool") {
       if (activityBuffer.length === 0) activityStart = index;
       activityBuffer.push(
         part.type === "reasoning"
@@ -100,7 +98,7 @@ export function ChatMessage({
                   role={message.role}
                 />
               );
-            case "authorization":
+            case "interaction":
               return <AuthorizationPart key={index} part={part} />;
             default:
               return null;

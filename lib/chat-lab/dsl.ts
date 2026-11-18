@@ -1,4 +1,4 @@
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 import { chunkReasoning, chunkWords } from "./chunk.ts";
 import { eventMeta } from "./event-meta.ts";
 
@@ -19,7 +19,7 @@ type BuilderState = {
   stepIndex: number;
   submissionId: string;
   sessionId: string;
-  events: EveAgentReducerEvent[];
+  events: ChatLabEvent[];
 };
 
 function createState(options?: {
@@ -54,7 +54,7 @@ type SubagentInnerBeat =
   | { kind: "write"; text: string };
 
 export type ScenarioBuilder = {
-  readonly events: EveAgentReducerEvent[];
+  readonly events: ChatLabEvent[];
   sessionStarted: () => ScenarioBuilder;
   userSubmitted: (message: string) => ScenarioBuilder;
   turnStarted: () => ScenarioBuilder;
@@ -566,6 +566,6 @@ export function beginTurn(
 }
 
 /** Finish a successful turn. */
-export function endTurn(builder: ScenarioBuilder): EveAgentReducerEvent[] {
+export function endTurn(builder: ScenarioBuilder): ChatLabEvent[] {
   return builder.turnCompleted().sessionWaiting().events;
 }

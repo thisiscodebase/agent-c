@@ -1,4 +1,4 @@
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 
 let eventCounter = 0;
 
@@ -16,13 +16,6 @@ export function resetEventMetaCounter(): void {
   eventCounter = 0;
 }
 
-export function isClientProjectionEvent(
-  event: EveAgentReducerEvent,
-): event is Extract<
-  EveAgentReducerEvent,
-  | { type: "client.message.submitted" }
-  | { type: "client.message.failed" }
-  | { type: "client.input.responded" }
-> {
+export function isClientProjectionEvent(event: ChatLabEvent): boolean {
   return event.type.startsWith("client.");
 }

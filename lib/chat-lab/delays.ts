@@ -13,18 +13,18 @@
  * - turn.completed / session.waiting: ~5–20
  */
 
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 
-function toolNameFromResult(event: EveAgentReducerEvent): string | undefined {
+function toolNameFromResult(event: ChatLabEvent): string | undefined {
   if (event.type !== "action.result") return undefined;
-  const result = event.data.result as { toolName?: string; kind?: string } | undefined;
+  const result = event.data?.result as { toolName?: string; kind?: string } | undefined;
   if (!result) return undefined;
   if (typeof result.toolName === "string") return result.toolName;
   if (result.kind === "subagent-result") return "subagent";
   return undefined;
 }
 
-function baseDelay(event: EveAgentReducerEvent): number {
+function baseDelay(event: ChatLabEvent): number {
   switch (event.type) {
     case "client.message.submitted":
     case "message.received":
@@ -67,7 +67,7 @@ function baseDelay(event: EveAgentReducerEvent): number {
     case "agent.started":
       return 180;
     case "task.settled": {
-      const name = event.data.name ?? "";
+      const name = typeof event.data?.name === "string" ? event.data.name : "";
       if (name.includes("slack")) return 2800;
       if (name.includes("crm") || name.includes("hubspot")) return 1600;
       if (name.includes("drive") || name.includes("docs")) return 900;
@@ -90,8 +90,8 @@ function baseDelay(event: EveAgentReducerEvent): number {
  * Extra TTFT is added when the first visible token follows `step.started`.
  */
 export function delayForEvent(
-  event: EveAgentReducerEvent,
-  previous?: EveAgentReducerEvent,
+  event: ChatLabEvent,
+  previous?: ChatLabEvent,
 ): number {
   const delay = baseDelay(event);
   if (previous?.type !== "step.started") {

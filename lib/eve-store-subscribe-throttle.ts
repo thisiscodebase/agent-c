@@ -1,10 +1,10 @@
-import { EveAgentStore } from "eve/client";
+import { SessionStore } from "eve/client";
 import { isReactMaxUpdateDepthError } from "./react-max-update-depth.ts";
 
 /**
- * Eve's `EveAgentStore.send` applies every stream event synchronously and
- * notifies React via `useSyncExternalStore` (`#O()` in eve 0.38). A long
- * `message.appended` burst — real dumps sit around 12ms/token — then trips
+ * Eve's `SessionStore` applies every stream event synchronously and
+ * notifies React via `useSyncExternalStore`. A long
+ * `content.delta` burst — real dumps sit around 12ms/token — then trips
  * React error #185 (max nested update depth of 50) and aborts the client
  * stream. The durable server turn still finishes, which is why a refresh
  * shows the rest of the reply.
@@ -34,8 +34,8 @@ export type StreamingStoreNotifier = {
 };
 
 /**
- * Coalesce store notifications while status is `streaming` (leading + trailing).
- * Lifecycle edges (`submitted` / `ready` / `error`) flush immediately so the
+ * Coalesce store notifications while status is `busy` (leading + trailing).
+ * Lifecycle edges (`idle` / `resuming`) flush immediately so the
  * composer and error UI do not lag.
  *
  * React #185 thrown from the listener is swallowed so Eve keeps consuming the
@@ -82,7 +82,7 @@ export function createStreamingStoreNotifier(input: {
   return {
     notify: () => {
       const status = input.getStatus();
-      if (status !== "streaming") {
+      if (status !== "busy") {
         clearTimer();
         pendingTrailing = false;
         notify(false);
@@ -115,9 +115,9 @@ export function installEveStoreSubscribeThrottle(): void {
   if (installed) return;
   installed = true;
 
-  const original = EveAgentStore.prototype.subscribe;
-  EveAgentStore.prototype.subscribe = function (
-    this: EveAgentStore<unknown>,
+  const original = SessionStore.prototype.subscribe;
+  SessionStore.prototype.subscribe = function (
+    this: SessionStore,
     listener: () => void,
   ) {
     const notifier = createStreamingStoreNotifier({

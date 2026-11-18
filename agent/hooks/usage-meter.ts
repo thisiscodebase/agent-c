@@ -39,7 +39,7 @@ export default defineHook({
       }
     },
 
-    async "step.completed"(event, ctx) {
+    async "usage.recorded"(event, ctx) {
       const userId = principalUserId(ctx);
       if (!userId) {
         return;
@@ -50,19 +50,14 @@ export default defineHook({
         return;
       }
 
-      const eventId = event.meta?.id;
-      if (!eventId) {
-        return;
-      }
-
+      const eventId = ctx.occurrence.idempotencyKey;
       try {
         await recordUsageMeterRemote({
           userId,
           eventId,
           costUsd,
           sessionId: ctx.session.id,
-          turnId: event.data.turnId,
-          stepIndex: event.data.stepIndex,
+          turnId: event.scope?.turnId,
         });
       } catch (error) {
         console.error("[usage-meter] failed to record step cost", {

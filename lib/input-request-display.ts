@@ -1,15 +1,7 @@
-import type { EveMessagePart } from "eve/react";
+import type { EveToolPart } from "eve/react";
+import type { Interaction } from "eve/react";
 
-type DynamicToolPartData = Extract<EveMessagePart, { type: "dynamic-tool" }>;
-type InputRequest = NonNullable<
-  NonNullable<DynamicToolPartData["toolMetadata"]>["eve"]
->["inputRequest"];
-
-type AskQuestionOutput = {
-  optionId?: string;
-  text?: string;
-  status?: "answered" | "ignored";
-};
+type InputRequest = Interaction["request"];
 
 function resolveOptionLabel(
   request: InputRequest | undefined,
@@ -20,60 +12,29 @@ function resolveOptionLabel(
   return selectedOption?.label ?? text ?? optionId;
 }
 
-function getResponseFromOutput(
-  part: DynamicToolPartData,
-  request: InputRequest | undefined,
-): string | undefined {
-  if (!("output" in part) || part.output === undefined || part.output === null) {
-    return undefined;
-  }
-
-  if (typeof part.output !== "object") {
-    return typeof part.output === "string" ? part.output : undefined;
-  }
-
-  const output = part.output as AskQuestionOutput;
-  if (output.status === "ignored") return "Skipped";
-
-  return resolveOptionLabel(request, output.optionId, output.text);
-}
-
-/** True while the runtime is waiting for a user response. */
-export function isInputRequestPending(part: DynamicToolPartData): boolean {
-  return (
-    part.state === "approval-requested" &&
-    Boolean(part.toolMetadata?.eve?.inputRequest)
-  );
+/** True while the runtime is waiting for a person to answer this call. */
+export function isInputRequestPending(part: EveToolPart): boolean {
+  return part.interaction?.status === "open";
 }
 
 /**
- * Resolve the label shown after answering.
- * Live sessions store `inputResponse` on metadata; historic replays derive it
- * from terminal tool state and `ask_question` output instead.
+ * Label shown after an approval or question is answered.
+ * The deciding answer lives on the interaction; a declined call has no option label.
  */
-export function getInputRequestResponseLabel(part: DynamicToolPartData): string | undefined {
-  const request = part.toolMetadata?.eve?.inputRequest;
-  const inputResponse = part.toolMetadata?.eve?.inputResponse;
+export function getInputRequestResponseLabel(part: EveToolPart): string | undefined {
+  const interaction = part.interaction;
+  const request = interaction?.request;
+  const answer = interaction?.answer;
 
-  if (inputResponse) {
-    return resolveOptionLabel(
-      request,
-      inputResponse.optionId,
-      inputResponse.text ?? inputResponse.optionId,
-    );
+  if (answer) {
+    return resolveOptionLabel(request, answer.optionId, answer.text ?? answer.optionId);
   }
 
-  const fromOutput = getResponseFromOutput(part, request);
-  if (fromOutput) return fromOutput;
-
-  if (part.state === "approval-responded" && part.approval?.reason) {
-    return part.approval.reason;
+  if (interaction?.outcome === "declined" || part.state === "rejected") {
+    return "Declined";
   }
 
-  if (
-    part.state === "output-available" ||
-    part.state === "approval-responded"
-  ) {
+  if (interaction?.status === "settled" || part.state === "completed") {
     return "Answered";
   }
 

@@ -1,18 +1,18 @@
-import type { EveAgentReducerEvent } from "eve/react";
+import type { ChatLabEvent } from "./types.ts";
 
 /**
  * Mirrors Eve's agent store: when `message.received` arrives, replace the pending
  * `client.message.submitted` instead of stacking a second user bubble.
  */
 export function reconcileEventLog(
-  events: readonly EveAgentReducerEvent[],
-): EveAgentReducerEvent[] {
-  const result: EveAgentReducerEvent[] = [];
+  events: readonly ChatLabEvent[],
+): ChatLabEvent[] {
+  const result: ChatLabEvent[] = [];
   let pendingSubmissionId: string | undefined;
 
   for (const event of events) {
     if (event.type === "client.message.submitted") {
-      pendingSubmissionId = event.data.submissionId;
+      pendingSubmissionId = event.data?.submissionId;
       result.push(event);
       continue;
     }
@@ -23,7 +23,7 @@ export function reconcileEventLog(
       const index = result.findIndex(
         (entry) =>
           entry.type === "client.message.submitted"
-          && entry.data.submissionId === submissionId,
+          && entry.data?.submissionId === submissionId,
       );
       if (index >= 0) {
         result[index] = event;
@@ -40,7 +40,7 @@ export function reconcileEventLog(
       const index = result.findIndex(
         (entry) =>
           entry.type === "client.message.submitted"
-          && entry.data.submissionId === submissionId,
+          && entry.data?.submissionId === submissionId,
       );
       if (index >= 0) {
         result[index] = event;
@@ -61,8 +61,8 @@ export function reconcileEventLog(
  * Apply one event onto a log the way Eve's store does for live playback.
  */
 export function appendReconciled(
-  events: readonly EveAgentReducerEvent[],
-  next: EveAgentReducerEvent,
-): EveAgentReducerEvent[] {
+  events: readonly ChatLabEvent[],
+  next: ChatLabEvent,
+): ChatLabEvent[] {
   return reconcileEventLog([...events, next]);
 }

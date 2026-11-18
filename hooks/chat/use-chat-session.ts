@@ -20,7 +20,7 @@ import {
 } from "./use-thread-state";
 import { requestThreadTitleGeneration } from "./use-thread-title";
 
-// Coalesce `message.appended` ticks so React doesn't hit error #185 mid-stream.
+// Coalesce `content.delta` ticks so React doesn't hit error #185 mid-stream.
 installEveStoreSubscribeThrottle();
 
 export const AGENT_MODE_HEADER = "x-agent-c-mode";
@@ -41,7 +41,7 @@ export type UseChatSessionOptions = {
  * Without that, switching threads will keep showing the first thread's session.
  *
  * `resume` follows an in-flight turn when this thread already has a session.
- * `followSubagents` puts each specialist's conversation on `agent.data.agents`.
+ * `followAgents` puts each specialist's conversation on `agent.agents`.
  */
 export function useChatSession(
   chatId: string,
@@ -72,7 +72,7 @@ export function useChatSession(
   const agent = useEveAgent({
     initialSession: resumeOptions.initialSession,
     initialEvents: resumeOptions.initialEvents,
-    followSubagents: true,
+    followAgents: true,
     resume: Boolean(resumeOptions.initialSession),
     headers,
     onSessionChange: (session) => {
@@ -114,7 +114,7 @@ export function useChatSession(
           );
         }
 
-        const userCount = snapshot.data.messages.filter(
+        const userCount = snapshot.messages.filter(
           (message) => message.role === "user" && !message.metadata?.optimistic,
         ).length;
 
@@ -131,20 +131,17 @@ export function useChatSession(
     onEvent: (event) => {
       recordStreamEvent(event.type);
 
-      // Eve parks many model failures as turn.failed + session.waiting without
-      // setting agent.error (that only follows session.failed / thrown errors).
-      if (event.type === "turn.failed") {
+      // A failed turn settles with an error and does not always set `agent.error`.
+      if (event.type === "turn.settled" && event.data.outcome === "failed" && event.data.error) {
         const failure = chatFailureFromEvent({
-          code: event.data.code,
-          message: event.data.message,
-          details: event.data.details,
+          code: event.data.error.code,
+          message: event.data.error.message,
           turnId: event.data.turnId,
           source: event.type,
         });
         setStreamFailure(failure);
         showChatErrorToast(failure, chatId, {
-          code: event.data.code,
-          details: event.data.details,
+          code: event.data.error.code,
           source: event.type,
           turnId: event.data.turnId,
         });
@@ -154,11 +151,7 @@ export function useChatSession(
 
   // Clear banner when a new turn starts.
   useEffect(() => {
-    if (
-      agent.status === "submitted" ||
-      agent.status === "streaming" ||
-      agent.status === "resuming"
-    ) {
+    if (agent.status === "busy" || agent.status === "resuming") {
       setStreamFailure(undefined);
     }
   }, [agent.status]);
@@ -171,10 +164,7 @@ export function useChatSession(
     }
 
     function flush() {
-      const streaming =
-        agent.status === "submitted" ||
-        agent.status === "streaming" ||
-        agent.status === "resuming";
+      const streaming = agent.status === "busy" || agent.status === "resuming";
       void persistThreadState(
         chatId,
         agent,
@@ -210,7 +200,7 @@ export function useChatSession(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId, readOnly]);
 
-  const isBusy = agent.status === "submitted" || agent.status === "streaming" || agent.status === "resuming";
+  const isBusy = agent.status === "busy" || agent.status === "resuming";
   const error = streamFailure ?? agent.error;
 
   return { agent, error, isBusy };

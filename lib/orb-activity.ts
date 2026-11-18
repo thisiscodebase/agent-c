@@ -1,6 +1,7 @@
 import type { ChatStatus } from "ai";
-import type { EveMessage, EveMessagePart } from "eve/react";
+import type { EveMessage, EveMessagePart, EveToolPart } from "eve/react";
 import type { OrbState } from "~/components/ui/agent-orb";
+import { toolHasOpenInteraction, toolIsRunning } from "~/lib/eve-tool";
 import { orbStateForCategory } from "~/lib/subagent-orb";
 import {
   getReasoningSummaryLabel,
@@ -11,12 +12,6 @@ export type OrbActivity = {
   state: OrbState;
   label: string;
 };
-
-const ACTIVE_TOOL_STATES = new Set([
-  "input-streaming",
-  "input-available",
-  "approval-responded",
-]);
 
 export type LiveOrbTool = {
   category: string;
@@ -30,22 +25,20 @@ export type LiveOrbReasoning = {
 /** True when the assistant is blocked on approval / input / OAuth. */
 export function isWaitingForUser(message: EveMessage): boolean {
   return message.parts.some((part) => {
-    if (part.type === "authorization" && part.state !== "completed") return true;
-    if (part.type !== "dynamic-tool") return false;
-    if (part.state === "approval-requested") return true;
-    if (part.toolMetadata?.eve?.inputRequest) return true;
+    if (part.type === "interaction" && part.status !== "settled") return true;
+    if (part.type !== "tool") return false;
+    if (part.state === "approval" || toolHasOpenInteraction(part)) return true;
     return false;
   });
 }
 
 function isVisiblePart(part: EveMessagePart): boolean {
-  if (part.type === "step-start") return false;
   if (part.type === "reasoning") {
     return part.state === "streaming" || Boolean(part.text?.trim());
   }
-  if (part.type === "dynamic-tool") return true;
+  if (part.type === "tool") return true;
   if (part.type === "text") return Boolean(part.text?.trim());
-  if (part.type === "authorization") return true;
+  if (part.type === "interaction") return true;
   return true;
 }
 
@@ -54,13 +47,10 @@ export function hasVisibleAssistantParts(message: EveMessage): boolean {
   return message.parts.some(isVisiblePart);
 }
 
-function isInteractiveTool(
-  part: Extract<EveMessagePart, { type: "dynamic-tool" }>,
-): boolean {
-  if (part.toolName === "save_memory") return true;
-  if (part.toolName === "create_artifact") return true;
-  if (part.state === "approval-requested") return true;
-  if (part.toolMetadata?.eve?.inputRequest) return true;
+function isInteractiveTool(part: EveToolPart): boolean {
+  if (part.name === "save_memory") return true;
+  if (part.name === "create_artifact") return true;
+  if (part.state === "approval" || toolHasOpenInteraction(part)) return true;
   return false;
 }
 
@@ -92,7 +82,7 @@ export function getLiveOrbSignals(message: EveMessage | undefined): {
   let creatingArtifact = false;
 
   for (const part of message.parts) {
-    if (part.type === "authorization" && part.state !== "completed") {
+    if (part.type === "interaction" && part.status !== "settled" && part.request.kind === "sign-in") {
       connecting = true;
     }
     if (part.type === "text" && part.state === "streaming" && part.text?.trim()) {
@@ -101,12 +91,12 @@ export function getLiveOrbSignals(message: EveMessage | undefined): {
     if (part.type === "reasoning" && part.state === "streaming") {
       liveReasoning = { text: part.text };
     }
-    if (part.type === "dynamic-tool") {
-      if (part.toolName === "create_artifact" && ACTIVE_TOOL_STATES.has(part.state)) {
+    if (part.type === "tool") {
+      if (part.name === "create_artifact" && toolIsRunning(part)) {
         creatingArtifact = true;
       }
-      if (!isInteractiveTool(part) && ACTIVE_TOOL_STATES.has(part.state)) {
-        const display = getToolDisplayInfo(part.toolName, part.input);
+      if (!isInteractiveTool(part) && toolIsRunning(part)) {
+        const display = getToolDisplayInfo(part.name, part.state === "streaming" ? undefined : part.input);
         if (display.category === "handoff") {
           handoffCount += 1;
           liveTool = {

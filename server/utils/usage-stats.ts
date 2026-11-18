@@ -143,6 +143,24 @@ function readConnection(input: unknown): string | null {
   return connection;
 }
 
+function readRequestedCall(data: Record<string, unknown> | undefined): ToolCallRef | null {
+  const capability = data?.capability;
+  if (!capability || typeof capability !== "object") {
+    return null;
+  }
+  const row = capability as { kind?: unknown; name?: unknown };
+  if (row.kind === "control" || row.kind === "skill") {
+    return null;
+  }
+  if (typeof row.name !== "string" || row.name.length === 0) {
+    return null;
+  }
+  return {
+    toolName: row.name,
+    connection: readConnection(data?.input),
+  };
+}
+
 function readToolCallsFromActions(data: Record<string, unknown> | undefined): ToolCallRef[] {
   const actions = data?.actions;
   if (!Array.isArray(actions)) {
@@ -407,8 +425,27 @@ export function aggregateUsageStats(
         }
       }
 
-      if (event.type === "step.started") {
+      if (event.type === "step.started" || event.type === "model.started") {
         stepCount += 1;
+      }
+
+      if (event.type === "call.requested") {
+        const call = readRequestedCall(event.data);
+        if (call) {
+          threadToolCalls += 1;
+          const { category, label } = toolCategoryForCall(call.toolName, call.connection);
+          if (category !== "connections") {
+            const existing = categoryCalls.get(category);
+            if (existing) {
+              existing.calls += 1;
+            } else {
+              categoryCalls.set(category, { label, calls: 1 });
+            }
+            if (turnIndex === 0) {
+              firstTurnCategories.add(category);
+            }
+          }
+        }
       }
 
       if (event.type === "actions.requested") {
@@ -438,7 +475,7 @@ export function aggregateUsageStats(
         }
       }
 
-      if (event.type === "step.completed") {
+      if ((event.type === "step.completed" || event.type === "usage.recorded")) {
         const usage = readUsage(event.data);
         const tokens = stepTokens(usage);
         const cost = usage?.costUsd ?? 0;
@@ -484,7 +521,7 @@ export function aggregateUsageStats(
     if (stepCount === 0) {
       let completedSteps = 0;
       for (const event of events) {
-        if (event.type === "step.completed") {
+        if ((event.type === "step.completed" || event.type === "usage.recorded")) {
           completedSteps += 1;
         }
       }
@@ -692,8 +729,27 @@ export function aggregateToolCategoryDetail(
         turnIndex += 1;
       }
 
-      if (event.type === "step.started") {
+      if (event.type === "step.started" || event.type === "model.started") {
         stepCount += 1;
+      }
+
+      if (event.type === "call.requested") {
+        const call = readRequestedCall(event.data);
+        if (call) {
+          threadToolCalls += 1;
+          const { category, label } = toolCategoryForCall(call.toolName, call.connection);
+          if (category !== "connections") {
+            const existing = categoryCalls.get(category);
+            if (existing) {
+              existing.calls += 1;
+            } else {
+              categoryCalls.set(category, { label, calls: 1 });
+            }
+            if (turnIndex === 0) {
+              firstTurnCategories.add(category);
+            }
+          }
+        }
       }
 
       if (event.type === "actions.requested") {
@@ -729,7 +785,7 @@ export function aggregateToolCategoryDetail(
         }
       }
 
-      if (event.type === "step.completed") {
+      if ((event.type === "step.completed" || event.type === "usage.recorded")) {
         const usage = readUsage(event.data);
         const stepTok = stepTokens(usage);
         const stepCost = usage?.costUsd ?? 0;
@@ -774,7 +830,7 @@ export function aggregateToolCategoryDetail(
     }
     if (stepCount === 0) {
       for (const event of events) {
-        if (event.type === "step.completed") {
+        if ((event.type === "step.completed" || event.type === "usage.recorded")) {
           stepCount += 1;
         }
       }

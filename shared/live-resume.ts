@@ -3,6 +3,8 @@ const TURN_BOUNDARY_TYPES = new Set([
   "session.completed",
   "session.failed",
   "session.waiting",
+  "session.ended",
+  "turn.settled",
 ]);
 
 export function isTurnBoundaryEvent(event: { type: string }): boolean {
@@ -18,7 +20,16 @@ export function streamEventId(event: unknown): string | null {
     return null;
   }
   const id = (meta as { id?: unknown }).id;
-  return typeof id === "string" && id.length > 0 ? id : null;
+  if (typeof id === "string" && id.length > 0) return id;
+  const position = (meta as { position?: { line?: unknown; index?: unknown } }).position;
+  if (
+    position
+    && typeof position.line === "number"
+    && typeof position.index === "number"
+  ) {
+    return `${position.line}:${position.index}`;
+  }
+  return null;
 }
 
 function eventType(event: unknown): string | undefined {

@@ -8,7 +8,9 @@ if (!connectionString) {
 }
 
 // Supavisor transaction-mode pooling does not support prepared statements.
-const client = postgres(connectionString, { prepare: false });
+// `infer: true` keeps postgres.js 3 parameter typing. v4 otherwise lets the
+// server decide, which changes how Dates bind to `timestamp` columns.
+const client = postgres(connectionString, { prepare: false, infer: true });
 
 export const db = drizzle(client, { schema });
 export { schema };

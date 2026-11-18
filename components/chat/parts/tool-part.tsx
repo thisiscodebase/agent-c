@@ -1,82 +1,78 @@
 "use client";
 
-import type { EveMessagePart } from "eve/react";
+import type { EveToolPart } from "eve/react";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "~/components/ai-elements/tool";
 import { InputRequestCard } from "~/components/ui/input-request-card";
 import {
   getInputRequestResponseLabel,
   isInputRequestPending,
 } from "~/lib/input-request-display";
+import { toolErrorText, toolInput, toolOutput, toolUiState } from "~/lib/eve-tool";
 import { ArtifactPart } from "./artifact-part";
 import { SaveMemoryPart } from "./save-memory-part";
 
-type DynamicToolPartData = Extract<EveMessagePart, { type: "dynamic-tool" }>;
-
-function getInputRequestTitle(part: DynamicToolPartData): string {
-  const request = part.toolMetadata?.eve?.inputRequest;
-  if (part.toolName === "ask_question") return "Quick question";
-  if (request?.display === "confirmation") return "Needs your approval";
+function getInputRequestTitle(part: EveToolPart): string {
+  const request = part.interaction?.request;
+  if (part.name === "ask_question") return "Quick question";
+  if (request?.display === "confirmation" || request?.kind === "approval") {
+    return "Needs your approval";
+  }
   return "Needs your input";
-}
-
-function getInputRequestDescription(part: DynamicToolPartData): string | undefined {
-  const request = part.toolMetadata?.eve?.inputRequest;
-  if (!request) return undefined;
-  return request.prompt;
-}
-
-function getInputRequestIconCategory(part: DynamicToolPartData): string {
-  const request = part.toolMetadata?.eve?.inputRequest;
-  if (request?.display === "confirmation") return "approval";
-  return "question";
 }
 
 export function ToolPart({
   part,
   onRespond,
 }: {
-  part: DynamicToolPartData;
-  onRespond: (requestId: string, optionId: string) => void;
+  part: EveToolPart;
+  onRespond: (interactionId: string, optionId: string) => void;
 }) {
-  if (part.toolName === "save_memory") {
+  if (part.name === "save_memory") {
     return <SaveMemoryPart onRespond={onRespond} part={part} />;
   }
 
-  if (part.toolName === "create_artifact") {
+  if (part.name === "create_artifact") {
     return <ArtifactPart part={part} />;
   }
 
-  const request = part.toolMetadata?.eve?.inputRequest;
+  const request = part.interaction?.request;
+  const interaction = part.interaction;
 
-  if (request) {
+  if (request && interaction) {
     const isPending = isInputRequestPending(part);
     const respondedWith = getInputRequestResponseLabel(part);
 
     return (
       <InputRequestCard
         allowFreeform={request.allowFreeform}
-        description={getInputRequestDescription(part)}
-        iconCategory={getInputRequestIconCategory(part)}
-        isDenied={part.state === "output-denied"}
+        description={request.prompt}
+        iconCategory={request.kind === "approval" || request.display === "confirmation" ? "approval" : "question"}
+        isDenied={part.state === "rejected" || interaction.outcome === "declined"}
         isPending={isPending}
-        onSelect={(optionId) => onRespond(request.requestId, optionId)}
+        onSelect={(optionId) => onRespond(interaction.interactionId, optionId)}
         options={request.options}
         respondedWith={respondedWith}
         statusLabel={
-          request.display === "confirmation" ? "Awaiting approval" : "Waiting for you"
+          request.display === "confirmation" || request.kind === "approval"
+            ? "Awaiting approval"
+            : "Waiting for you"
         }
         title={getInputRequestTitle(part)}
       />
     );
   }
 
+  const input = toolInput(part);
+  const output = toolOutput(part);
+  const errorText = toolErrorText(part);
+
   return (
-    <Tool defaultOpen={part.state === "approval-requested" || part.state === "output-error"}>
-      <ToolHeader state={part.state} toolName={part.toolName} type="dynamic-tool" />
+    <Tool defaultOpen={part.state === "approval" || part.state === "failed"}>
+      <ToolHeader state={toolUiState(part)} toolName={part.name} type="dynamic-tool" />
       <ToolContent>
-        {"input" in part && part.input !== undefined ? <ToolInput input={part.input} /> : null}
-        {"output" in part || "errorText" in part ? (
-          <ToolOutput errorText={part.errorText} output={part.output} />
+        {input !== undefined ? <ToolInput input={input} /> : null}
+        {output !== undefined || errorText ? (
+          <ToolOutput errorText={errorText} output={output} />
         ) : null}
       </ToolContent>
     </Tool>

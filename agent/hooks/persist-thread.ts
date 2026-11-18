@@ -8,14 +8,26 @@ import {
 import { isAppUserId } from "../../shared/usage-meter.js";
 import { persistThreadEventsRemote } from "../lib/thread-persist-internal.js";
 
+function textFromDeliveryParts(data: { parts?: unknown }): string {
+  if (!Array.isArray(data.parts)) return "";
+  return data.parts
+    .map((part) => {
+      if (!part || typeof part !== "object") return "";
+      const text = (part as { text?: unknown }).text;
+      return typeof text === "string" ? text : "";
+    })
+    .filter((text) => text.trim().length > 0)
+    .join("\n");
+}
+
 function titleFromSlackEvent(event: HookEvent, ctx: HookContext): string {
   const data = "data" in event && event.data && typeof event.data === "object"
-    ? (event.data as { message?: unknown; text?: unknown })
+    ? (event.data as { message?: unknown; text?: unknown; parts?: unknown })
     : undefined;
   const raw =
     (typeof data?.message === "string" && data.message.trim())
     || (typeof data?.text === "string" && data.text.trim())
-    || "";
+    || (data ? textFromDeliveryParts(data) : "");
   return titleFromSlackMessageEvent({
     eventType: event.type,
     messageText: raw || undefined,

@@ -35,6 +35,30 @@ describe("mergeThreadState", () => {
     assert.equal(merged.session.streamIndex, 2);
   });
 
+  it("replaces a longer unreadable hook log with a positioned snapshot", () => {
+    const existing = baseState({
+      events: [
+        { type: "session.started", data: {} },
+        { type: "delivery.settled", data: { deliveryId: "del_1", outcome: "handled" } },
+        { type: "turn.settled", data: { turnId: "turn_1", outcome: "completed" } },
+      ],
+      session: { sessionId: "sess_1", streamIndex: 3 },
+    });
+    const incoming: ThreadState = {
+      session: { sessionId: "sess_1", streamIndex: 1 },
+      events: [{
+        type: "session.started",
+        data: {},
+        meta: { position: { line: 0, index: 0 }, at: "2026-11-18T00:00:00.000Z" },
+      }],
+      source: "web",
+    };
+
+    const merged = mergeThreadState(existing, incoming);
+    assert.equal(merged.events.length, 1);
+    assert.equal(merged.session.streamIndex, 3);
+  });
+
   it("replaces when the incoming log is longer", () => {
     const existing = baseState();
     const incoming: ThreadState = {

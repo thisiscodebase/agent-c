@@ -109,7 +109,11 @@ describe("resumeOptionsFromThread", () => {
   });
 
   it("returns events without session when sessionId is missing", () => {
-    const events = [{ type: "turn.started", meta: { id: "1" } }];
+    const events = [{
+      type: "turn.started",
+      data: { turnId: "turn_1" },
+      meta: { position: { line: 0, index: 0 }, at: "2026-11-18T00:00:00.000Z" },
+    }];
     const options = resumeOptionsFromThread({
       id,
       title: "Orphan",
@@ -122,6 +126,26 @@ describe("resumeOptionsFromThread", () => {
     });
     assert.equal(options.initialSession, undefined);
     assert.equal(options.initialEvents?.length, 1);
+  });
+
+  it("drops hook events that have no stream position and replays the session", () => {
+    const options = resumeOptionsFromThread({
+      id,
+      title: "Live",
+      createdAt: 0,
+      updatedAt: 0,
+      state: {
+        session: { sessionId: "sess_live", streamIndex: 12 },
+        events: [
+          { type: "session.started", data: {} },
+          { type: "delivery.settled", data: { deliveryId: "del_1", outcome: "handled" } },
+        ],
+        source: "web",
+      },
+    });
+    assert.equal(options.initialSession?.sessionId, "sess_live");
+    assert.equal(options.initialSession?.streamIndex, 0);
+    assert.equal(options.initialEvents, undefined);
   });
 
   it("returns empty options for a null state", () => {

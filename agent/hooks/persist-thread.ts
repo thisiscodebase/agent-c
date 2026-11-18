@@ -49,6 +49,12 @@ export default defineHook({
       if (!shouldPersistEvent(event.type, target.source)) {
         return;
       }
+      // Web transcripts come from the browser snapshot. Those events carry the
+      // reader position Eve needs to reopen a thread. Hook facts do not, and
+      // appending them makes the next page load throw.
+      if (target.source === "web") {
+        return;
+      }
 
       const userId = ctx.session.auth.current?.principalId;
       if (!isAppUserId(userId)) {

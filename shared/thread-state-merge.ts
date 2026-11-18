@@ -1,4 +1,5 @@
 import { normalizeAgentPrefs, type AgentPrefs } from "./agent-modes.ts";
+import { isClientReadableLog } from "./resume-thread.ts";
 import type { ThreadState, ThreadTitleMeta } from "./types/thread.ts";
 
 /**
@@ -12,9 +13,14 @@ export function mergeThreadState(
 ): ThreadState {
   const session = incoming.session;
   const existingEvents = existing?.events ?? [];
-  const events = incoming.events.length >= existingEvents.length
+  const incomingReadable = isClientReadableLog(incoming.events);
+  const existingReadable = isClientReadableLog(existingEvents);
+  // A positioned client snapshot replaces a longer hook log that Eve cannot hydrate.
+  const events = incomingReadable && !existingReadable
     ? incoming.events
-    : existingEvents;
+    : incoming.events.length >= existingEvents.length
+      ? incoming.events
+      : existingEvents;
 
   return {
     session: {
